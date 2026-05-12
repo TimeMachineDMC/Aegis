@@ -69,12 +69,12 @@ Windows：
 run_local.bat
 ```
 
-浏览器访问 `http://127.0.0.1:8000`。
+浏览器访问 `http://127.0.0.1:8080`。
 
 ### 5. 健康检查
 
 ```text
-http://127.0.0.1:8000/api/health
+http://127.0.0.1:8080/api/health
 ```
 
 ## API 端点

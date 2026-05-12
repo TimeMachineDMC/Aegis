@@ -3,12 +3,12 @@ setlocal
 cd /d "%~dp0"
 
 echo Aegis 债优盾 backend for Windows
-echo This starts the local API at http://127.0.0.1:8000
-echo Same PC test: https://timemachinedmc.github.io/Aegis/?api=http://127.0.0.1:8000
+echo This starts the local API at http://127.0.0.1:8080
+echo Same PC test: https://timemachinedmc.github.io/Aegis/?api=http://127.0.0.1:8080
 echo Other devices use the cpolar URL configured in config.js.
 echo.
 
-if "%AEGIS_PORT%"=="" set AEGIS_PORT=8000
+if "%AEGIS_PORT%"=="" set AEGIS_PORT=8080
 if not exist ".runtime" mkdir .runtime
 
 if /I "%~1"=="stop" (

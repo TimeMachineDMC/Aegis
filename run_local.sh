@@ -4,13 +4,13 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 echo "Aegis 债优盾 backend for macOS"
-echo "This starts the local API at http://127.0.0.1:8000"
-echo "Same Mac test: https://timemachinedmc.github.io/Aegis/?api=http://127.0.0.1:8000"
+echo "This starts the local API at http://127.0.0.1:8080"
+echo "Same Mac test: https://timemachinedmc.github.io/Aegis/?api=http://127.0.0.1:8080"
 echo "Other devices use the cpolar URL configured in config.js."
 echo
 
 mkdir -p .runtime
-PORT="${AEGIS_PORT:-8000}"
+PORT="${AEGIS_PORT:-8080}"
 LOG_FILE=".runtime/backend-live.log"
 
 if [ "${1:-}" = "stop" ]; then

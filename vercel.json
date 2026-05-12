@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/((?!Code/Web).*)", "destination": "/Code/Web/$1" }
+  ]
+}

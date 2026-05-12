@@ -54,7 +54,7 @@ FINANCE_DB_PATH = project_path_from_env("FINANCE_DB_PATH", PROJECT_ROOT / "Model
 LOG_FILE_PATH = project_path_from_env("CHAT_LOG_PATH", PROJECT_ROOT / "Log" / "aegis_chat_logs.jsonl")
 EVENT_LOG_PATH = project_path_from_env("EVENT_LOG_PATH", PROJECT_ROOT / "Log" / "platform_events.jsonl")
 SERVER_HOST = os.getenv("AEGIS_HOST", "0.0.0.0")
-SERVER_PORT = int(os.getenv("AEGIS_PORT", "8000"))
+SERVER_PORT = int(os.getenv("AEGIS_PORT", "8080"))
 
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 if not DEEPSEEK_API_KEY:

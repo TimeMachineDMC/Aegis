@@ -10,6 +10,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css/github-markdown-dark.css">
+    <script src="config.js"></script>
 
     <style>
         :root {
@@ -795,7 +796,7 @@
             const p = new URLSearchParams(window.location.search);
             const api = p.get('api');
             if (api) return api;
-            if (['localhost', '127.0.0.1'].includes(window.location.hostname)) return 'http://127.0.0.1:8000';
+            if (['localhost', '127.0.0.1'].includes(window.location.hostname)) return 'http://127.0.0.1:8080';
             if (window.AEGIS_CONFIG?.publicApiBase) return window.AEGIS_CONFIG.publicApiBase;
             return window.location.origin;
         })();

@@ -308,12 +308,12 @@ AI 的核心回答逻辑在 `Code/dual_api_server.py` 的 `build_system_prompt()
 run_local.bat
 ```
 
-启动后访问：`http://127.0.0.1:8000`
+启动后访问：`http://127.0.0.1:8080`
 
 ### 8.2 健康检查
 
 ```bash
-curl http://127.0.0.1:8000/api/health
+curl http://127.0.0.1:8080/api/health
 ```
 
 返回示例：
@@ -331,7 +331,7 @@ curl http://127.0.0.1:8000/api/health
 ### 8.3 查看财务数据库中有哪些表
 
 ```bash
-curl http://127.0.0.1:8000/api/finance/tables
+curl http://127.0.0.1:8080/api/finance/tables
 ```
 
 ---
@@ -344,7 +344,7 @@ curl http://127.0.0.1:8000/api/finance/tables
 2. 创建隧道：
 
 ```bash
-cpolar http 8000
+cpolar http 8080
 ```
 
 3. 复制生成的公网 URL（如 `https://7de19a52.r39.cpolar.top`）
@@ -387,7 +387,7 @@ A: 需要安装 RapidOCR：`pip install rapidocr-onnxruntime`。Windows 上可�
 A: 所有样式在 `Code/Web/index.html` 的 `<style>` 标签中。颜色变量在 `:root` 选择器，修改 `--gold`、`--bg` 等变量即可全局换色。
 
 ### Q: 网页打开空白
-A: 确保访问的是 `http://127.0.0.1:8000`（后端端口），而不是 `http://127.0.0.1:8080`（单独预览前端时用）。
+A: 确保访问的是 `http://127.0.0.1:8080`（后端端口），而不是 `http://127.0.0.1:8080`（单独预览前端时用）。
 
 ---
 
