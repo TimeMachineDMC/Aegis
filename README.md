@@ -26,8 +26,21 @@ cp .env.example Code/.env
 
 将 `Code/.env` 里的 `DEEPSEEK_API_KEY` 改成真实密钥。
 
+> **安全提示：** `Code/.env` 已被 `.gitignore` 排除，不会被提交。如果怀疑密钥泄露，请立即前往 [DeepSeek 控制台](https://platform.deepseek.com/api_keys) 轮换密钥，并更新本地 `Code/.env`。
 
-2. 启动程序：
+
+2. 配置公网后端地址：
+
+部署在 GitHub Pages 时，需要配置 cpolar / cloudflared 隧道地址。编辑 `config.js` 将 `publicApiBase` 改为你的隧道地址。也可以通过 URL 参数在运行时覆盖：
+
+```text
+https://timemachinedmc.github.io/HuXin/?api=https://your-tunnel.cpolar.top
+```
+
+本地开发无需配置，前端会自动探测 `http://127.0.0.1:8000`。
+
+
+3. 启动程序：
 
 Mac 启动后端：
 
@@ -89,7 +102,10 @@ python Code/Scripts/embedding_bge.py
 04/30/2026 增加“管理员看板”，调整证据链状态逻辑链
 
 05/01/2026 管理员看板新增“案件详情”面板，点击记录可看案情详细；聊天页证据链改为优先使用后端结构化结果，并新增案件时间线
+
 05/04/2026 新增12345、街道综治、检察业务与自主填报的标准化线索池展示，并在管理员看板加入同工地欠薪风险预警
+
+05/08/2026 外置公网后端地址到 config.js，完善 API Key 安全文档与防护
 
 ## 开源协议
 本项目采用 [MIT License](LICENSE) 许可协议。

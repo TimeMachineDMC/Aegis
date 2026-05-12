@@ -661,14 +661,20 @@
         </div>
     </main>
 
+    <script src="config.js"></script>
     <script>
-        // GitHub Pages 给其他设备使用时必须走公网 HTTPS 后端。cpolar 地址变化后，只改下面这一行。
-        const PAGE_API_BASE_URL = "https://7de19a52.r39.cpolar.top";
-        const LOCAL_BROWSER_API_BASE_URL = "http://127.0.0.1:8000";
-        const LOCAL_API_BASE_URL = window.location.protocol === "file:" ? LOCAL_BROWSER_API_BASE_URL : window.location.origin;
+        // === API Base URL Resolution (highest priority first) ===
+        // 1. ?api= query parameter     — explicit runtime override (e.g. ?api=http://127.0.0.1:8000)
+        // 2. config.js                 — persistent config file, edit when tunnel URL changes
+        // 3. window.HUXIN_API_BASE_URL — inline override before this script
+        // 4. auto-detect               — same-origin or localhost fallback
         const apiFromUrl = new URLSearchParams(window.location.search).get("api");
-        const configuredApiBase = window.HUXIN_API_BASE_URL || apiFromUrl;
-        let API_BASE_URL = (configuredApiBase || (window.location.hostname.endsWith("github.io") ? PAGE_API_BASE_URL : LOCAL_API_BASE_URL)).replace(/\/+$/, "");
+        const configApiBase = (window.HUXIN_CONFIG && window.HUXIN_CONFIG.publicApiBase) || "";
+        const implicitApiBase = window.HUXIN_API_BASE_URL || "";
+        const localApiBase = window.location.protocol === "file:"
+            ? "http://127.0.0.1:8000"
+            : window.location.origin;
+        let API_BASE_URL = (apiFromUrl || configApiBase || implicitApiBase || localApiBase).replace(/\/+$/, "");
 
         function apiEndpoint(path) {
             return `${API_BASE_URL}${path}`;
@@ -693,13 +699,13 @@
         }
 
         const apiBaseReady = (async () => {
-            if (configuredApiBase || !window.location.hostname.endsWith("github.io")) return;
-            const publicReady = await isHealthyApiBase(PAGE_API_BASE_URL);
-            if (publicReady) return;
-            const localReady = await isHealthyApiBase(LOCAL_BROWSER_API_BASE_URL);
+            if (apiFromUrl || configApiBase || implicitApiBase) return;  // explicitly configured, no probing needed
+            if (!window.location.hostname.endsWith("github.io")) return; // same-origin, assume backend is local
+            // GitHub Pages without explicit config — probe localhost as a convenience
+            const localReady = await isHealthyApiBase("http://127.0.0.1:8000");
             if (localReady) {
-                API_BASE_URL = LOCAL_BROWSER_API_BASE_URL;
-                console.info(`公网后端暂不可用，已切换到本机后端：${API_BASE_URL}`);
+                API_BASE_URL = "http://127.0.0.1:8000";
+                console.info(`已自动切换到本机后端：${API_BASE_URL}`);
             }
         })();
 
