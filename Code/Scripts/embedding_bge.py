@@ -1,5 +1,7 @@
+import json
 import os
-import shutil
+import sys
+from datetime import datetime
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -33,67 +35,159 @@ from tqdm import tqdm
 
 DATA_PATH = project_path_from_env("LEGAL_DATA_PATH", PROJECT_ROOT / "Data")
 DB_SAVE_PATH = project_path_from_env("CHROMA_DB_PATH", PROJECT_ROOT / "Model" / "chroma_db")
+MANIFEST_PATH = DB_SAVE_PATH / "chroma_manifest.json"
+
+
+def scan_files():
+    """Scan Data/ for all .txt files and return {relative_path: mtime}."""
+    files = {}
+    if not DATA_PATH.exists():
+        return files
+    for root, dirs, filenames in os.walk(DATA_PATH):
+        for filename in filenames:
+            if filename.endswith(".txt"):
+                file_path = Path(root) / filename
+                rel = str(file_path.relative_to(DATA_PATH))
+                files[rel] = file_path.stat().st_mtime
+    return files
+
+
+def load_manifest():
+    """Load the manifest of previously embedded files."""
+    if MANIFEST_PATH.exists():
+        with open(MANIFEST_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+
+def save_manifest(manifest):
+    """Save the manifest."""
+    DB_SAVE_PATH.mkdir(parents=True, exist_ok=True)
+    with open(MANIFEST_PATH, "w", encoding="utf-8") as f:
+        json.dump(manifest, f, ensure_ascii=False, indent=2)
+
+
+def load_documents(file_list):
+    """Load .txt files from Data/ and return langchain documents."""
+    documents = []
+    for rel_path in file_list:
+        file_path = DATA_PATH / rel_path
+        if not file_path.exists():
+            continue
+        try:
+            loader = TextLoader(str(file_path), encoding='utf-8')
+            docs = loader.load()
+        except UnicodeDecodeError:
+            loader = TextLoader(str(file_path), encoding='gbk')
+            docs = loader.load()
+        except Exception as e:
+            print(f"  跳过损坏文件 {rel_path}: {e}")
+            continue
+
+        category_path = str(Path(rel_path).parent) if Path(rel_path).parent != Path(".") else "根目录"
+        for d in docs:
+            d.metadata["source"] = Path(rel_path).name
+            d.metadata["category_path"] = category_path
+            d.metadata["file_path"] = rel_path
+        documents.extend(docs)
+    return documents
 
 
 def run_embedding():
-    if DB_SAVE_PATH.exists() and any(DB_SAVE_PATH.iterdir()):
-        print(f"检测到已有向量库: {DB_SAVE_PATH}")
-        print("如需重建，请手动删除该目录后重新运行。")
+    force_rebuild = "--force" in sys.argv or "--rebuild" in sys.argv
 
-    documents = []
-    print(f"1. 启动全维度扫描：正在索引 {DATA_PATH} 下的法律知识库...")
+    current_files = scan_files()
+    if not current_files:
+        raise FileNotFoundError(
+            f"未在 {DATA_PATH} 下找到 .txt 法律文档。\n"
+            "请创建 Data 目录并放入法条、案例等文本文件。"
+        )
 
-    if not DATA_PATH.exists():
-        raise FileNotFoundError(f"法律原文目录不存在：{DATA_PATH}。请创建 Data 目录并放入 .txt 法律文档。")
+    print(f"扫描到 {len(current_files)} 个法律文本文件")
 
-    for root, dirs, files in os.walk(DATA_PATH):
-        if not files:
-            continue
+    manifest = load_manifest() if not force_rebuild else {}
+    db_exists = DB_SAVE_PATH.exists() and any(DB_SAVE_PATH.iterdir())
 
-        rel_path = os.path.relpath(root, DATA_PATH)
+    if force_rebuild:
+        if db_exists:
+            print("检测到 --force，删除旧向量库后重建...")
+            import shutil
+            shutil.rmtree(DB_SAVE_PATH)
+            db_exists = False
+        manifest = {}
 
-        for filename in files:
-            if filename.endswith(".txt"):
-                file_path = os.path.join(root, filename)
-                try:
-                    loader = TextLoader(file_path, encoding='utf-8')
-                    docs = loader.load()
-                except UnicodeDecodeError:
-                    loader = TextLoader(file_path, encoding='gbk')
-                    docs = loader.load()
-                except Exception as e:
-                    print(f"跳过损坏文件 {filename}: {e}")
-                    continue
+    # Figure out which files need processing
+    new_files = []
+    modified_files = []
+    unchanged_files = []
 
-                category_path = rel_path if rel_path != "." else "根目录"
-                for d in docs:
-                    d.metadata["source"] = filename
-                    d.metadata["category_path"] = category_path
-                documents.extend(docs)
+    for rel_path, mtime in current_files.items():
+        if rel_path not in manifest:
+            new_files.append(rel_path)
+        elif manifest[rel_path] != mtime:
+            modified_files.append(rel_path)
+        else:
+            unchanged_files.append(rel_path)
 
-    print(f"成功加载 {len(documents)} 份法律/案例原始文书。")
+    # Files that were embedded before but no longer exist → stale (ignore, can't clean from ChromaDB easily)
+    stale_files = [f for f in manifest if f not in current_files]
+
+    if not db_exists:
+        # First build — process everything
+        print("首次构建：将处理所有文件")
+        to_process = list(current_files.keys())
+    elif not new_files and not modified_files:
+        print("所有文件均为最新，知识库无需更新。")
+        if stale_files:
+            print(f"注意：{len(stale_files)} 个文件已从 Data/ 中删除，但仍在向量库中（不影响检索）")
+        print(f"当前知识库包含 {len(manifest)} 个文件")
+        return
+    else:
+        print(f"  新增文件：{len(new_files)} 个")
+        print(f"  修改文件：{len(modified_files)} 个")
+        print(f"  未变文件：{len(unchanged_files)} 个（跳过）")
+        if stale_files:
+            print(f"  已删除文件：{len(stale_files)} 个（将在下次重建时清除）")
+        to_process = new_files + modified_files
+
+    print(f"\n本次需处理 {len(to_process)} 个文件")
+
+    # Load and split documents
+    documents = load_documents(to_process)
+    print(f"加载了 {len(documents)} 份文档")
+
     if not documents:
-        raise ValueError(f"未在 {DATA_PATH} 下找到 .txt 法律文档。请放入法条、案例等文本文件。")
+        print("没有可处理的文档内容")
+        return
 
-    print("2. 执行语义切块 (Chunk Size: 800, Overlap: 150)...")
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=150)
     split_docs = text_splitter.split_documents(documents)
-    print(f"切块完成，共生成 {len(split_docs)} 个逻辑片段。")
+    print(f"切分为 {len(split_docs)} 个文本块")
 
-    print("3. 初始化 BGE-M3 嵌入模型...")
+    # Initialize embedding model
+    print("初始化 BGE-M3 嵌入模型...")
     embeddings = HuggingFaceEmbeddings(model_name="BAAI/bge-m3")
 
-    print("4. 构建持久化 ChromaDB...")
-    DB_SAVE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    # Open (or create) ChromaDB
+    DB_SAVE_PATH.mkdir(parents=True, exist_ok=True)
     vectordb = Chroma(persist_directory=str(DB_SAVE_PATH), embedding_function=embeddings)
 
+    # Add in batches
     batch_size = 100
     for i in tqdm(range(0, len(split_docs), batch_size), desc="向量化进度"):
         batch_docs = split_docs[i: i + batch_size]
         vectordb.add_documents(documents=batch_docs)
 
-    print(f"\n法律知识库已就绪，存储于: {DB_SAVE_PATH}")
-    print(f"涵盖类别：法条、司法解释、法律案例 等")
+    # Update manifest with newly processed files
+    for rel_path in to_process:
+        manifest[rel_path] = current_files[rel_path]
+    save_manifest(manifest)
+
+    total_embedded = len(manifest)
+    print(f"\n知识库更新完成！")
+    print(f"  本次新增/更新：{len(to_process)} 个文件，{len(split_docs)} 个文本块")
+    print(f"  知识库总计：{total_embedded} 个文件")
+    print(f"  存储位置：{DB_SAVE_PATH}")
 
 
 if __name__ == "__main__":

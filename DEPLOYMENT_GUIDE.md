@@ -165,17 +165,18 @@ python Code/Scripts/get_headers.py
 python Code/Scripts/embedding_bge.py
 ```
 
-**执行流程：**
-1. 扫描 `Data/` 下所有 `.txt` 文件（排除 `财务数据/` 子目录下的 `.xlsx`）
-2. 将文本切分为 800 字块（重叠 150 字）
-3. 使用 BGE-M3 模型将每个文本块转为向量
-4. 存储到 `Model/chroma_db/`
+**首次运行时**会向量化所有文件。**后续运行时**自动增量更新——只处理新增和修改过的文件，跳过未变更的文件。
 
-**重建知识库**：如果修改了 Data 下的法律文本，需要删除旧库重建：
+**执行流程：**
+1. 扫描 `Data/` 下所有 `.txt` 文件（自动跳过 `财务数据/` 下的 `.xlsx`）
+2. 对比 `chroma_manifest.json` 记录，识别新增/修改/未变文件
+3. 仅对新增和修改的文件进行 800 字切块（重叠 150 字）
+4. 使用 BGE-M3 模型将文本块转为向量，追加到 `Model/chroma_db/`
+
+**强制重建**（如果遇到问题或想从头开始）：
 
 ```bash
-rm -rf Model/chroma_db
-python Code/Scripts/embedding_bge.py
+python Code/Scripts/embedding_bge.py --force
 ```
 
 ### 4.2 构建财务数据库（SQLite）
