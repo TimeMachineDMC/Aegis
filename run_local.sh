@@ -3,32 +3,30 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-echo "HuXin backend for macOS"
+echo "Aegis 债优盾 backend for macOS"
 echo "This starts the local API at http://127.0.0.1:8000"
-echo "Same Mac test: https://timemachinedmc.github.io/HuXin/?api=http://127.0.0.1:8000"
-echo "Other devices use the cpolar URL configured in index.html."
+echo "Same Mac test: https://timemachinedmc.github.io/Aegis/?api=http://127.0.0.1:8000"
+echo "Other devices use the cpolar URL configured in config.js."
 echo
 
 mkdir -p .runtime
-PORT="${HUXIN_PORT:-8000}"
+PORT="${AEGIS_PORT:-8000}"
 LOG_FILE=".runtime/backend-live.log"
 
 if [ "${1:-}" = "stop" ]; then
-  launchctl bootout "gui/$(id -u)" "$HOME/Library/LaunchAgents/com.huxin.backend.plist" >/dev/null 2>&1 || true
   pids="$(lsof -tiTCP:"${PORT}" -sTCP:LISTEN 2>/dev/null || true)"
   if [ -n "$pids" ]; then
     echo "$pids" | xargs kill >/dev/null 2>&1 || true
-    echo "Stopped HuXin backend on port ${PORT}."
+    echo "Stopped Aegis 债优盾 backend on port ${PORT}."
   else
-    echo "No HuXin backend is listening on port ${PORT}."
+    echo "No Aegis backend is listening on port ${PORT}."
   fi
   exit 0
 fi
 
 if command -v curl >/dev/null 2>&1 && curl -fsS --max-time 3 "http://127.0.0.1:${PORT}/api/health" >/dev/null 2>&1; then
-  echo "HuXin backend is already running at http://127.0.0.1:${PORT}"
-  echo "Same Mac test: https://timemachinedmc.github.io/HuXin/?api=http://127.0.0.1:${PORT}"
-  echo "Other devices use the cpolar URL configured in index.html."
+  echo "Aegis 债优盾 backend is already running at http://127.0.0.1:${PORT}"
+  echo "Same Mac test: https://timemachinedmc.github.io/Aegis/?api=http://127.0.0.1:${PORT}"
   if [ ! -t 1 ]; then
     exit 0
   fi
@@ -58,9 +56,9 @@ fi
 source .venv/bin/activate
 python -m pip install --upgrade pip
 
-if [ ! -f ".venv/.huxin_requirements_installed" ] || [ "requirements.txt" -nt ".venv/.huxin_requirements_installed" ]; then
+if [ ! -f ".venv/.aegis_requirements_installed" ] || [ "requirements.txt" -nt ".venv/.aegis_requirements_installed" ]; then
   python -m pip install -r requirements.txt
-  touch .venv/.huxin_requirements_installed
+  touch .venv/.aegis_requirements_installed
 fi
 
 if [ -d "Model/chroma_db" ] && [ ! -d ".runtime/chroma_db" ]; then
@@ -69,8 +67,8 @@ if [ -d "Model/chroma_db" ] && [ ! -d ".runtime/chroma_db" ]; then
 fi
 
 export CHROMA_DB_PATH="${CHROMA_DB_PATH:-.runtime/chroma_db}"
-export HUXIN_HOST="${HUXIN_HOST:-127.0.0.1}"
-export HUXIN_PORT="${PORT}"
+export AEGIS_HOST="${AEGIS_HOST:-127.0.0.1}"
+export AEGIS_PORT="${PORT}"
 export PYTHONUNBUFFERED=1
 
 python -u Code/dual_api_server.py 2>&1 | tee -a "$LOG_FILE"

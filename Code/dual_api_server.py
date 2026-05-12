@@ -1,11 +1,11 @@
 import io
-import hashlib
 import json
 import os
 import re
+import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 from urllib.parse import quote
 
 import docx2txt
@@ -15,7 +15,7 @@ from bs4 import BeautifulSoup, NavigableString
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml.ns import qn
-from docx.shared import Pt
+from docx.shared import Pt, Cm
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse, FileResponse
@@ -39,6 +39,7 @@ if os.getenv("HF_OFFLINE", "1").lower() in {"1", "true", "yes", "on"}:
     os.environ.setdefault("HF_DATASETS_OFFLINE", "1")
     os.environ.setdefault("HF_HUB_OFFLINE", "1")
 
+
 def project_path_from_env(name: str, default: Path) -> Path:
     raw_value = os.getenv(name)
     path = Path(raw_value).expanduser() if raw_value else default
@@ -46,1495 +47,781 @@ def project_path_from_env(name: str, default: Path) -> Path:
         path = PROJECT_ROOT / path
     return path.resolve()
 
+
+# Paths
 DB_SAVE_PATH = project_path_from_env("CHROMA_DB_PATH", PROJECT_ROOT / "Model" / "chroma_db")
-LOG_FILE_PATH = project_path_from_env("CHAT_LOG_PATH", PROJECT_ROOT / "Log" / "justitia_chat_logs.jsonl")
+FINANCE_DB_PATH = project_path_from_env("FINANCE_DB_PATH", PROJECT_ROOT / "Model" / "finance_data.db")
+LOG_FILE_PATH = project_path_from_env("CHAT_LOG_PATH", PROJECT_ROOT / "Log" / "aegis_chat_logs.jsonl")
 EVENT_LOG_PATH = project_path_from_env("EVENT_LOG_PATH", PROJECT_ROOT / "Log" / "platform_events.jsonl")
-SERVER_HOST = os.getenv("HUXIN_HOST", "0.0.0.0")
-SERVER_PORT = int(os.getenv("HUXIN_PORT", "8000"))
+SERVER_HOST = os.getenv("AEGIS_HOST", "0.0.0.0")
+SERVER_PORT = int(os.getenv("AEGIS_PORT", "8000"))
 
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 if not DEEPSEEK_API_KEY:
     raise ValueError("DEEPSEEK_API_KEY not found. Copy .env.example to Code/.env or project .env first.")
 
+# OCR Engine
 ocr_engine = None
 ocr_engine_name = None
 ocr_init_error = None
 
 
 def initialize_ocr_engine():
-    """Prefer RapidOCR for Chinese documents, then fall back to EasyOCR."""
     global ocr_engine, ocr_engine_name, ocr_init_error
-
     try:
         from rapidocr import RapidOCR
-
         ocr_engine = RapidOCR()
         ocr_engine_name = "RapidOCR(PP-OCRv4)"
         ocr_init_error = None
-        print("RapidOCR initialized successfully")
+        print("[OCR] RapidOCR initialized.")
         return
     except Exception as e:
-        ocr_init_error = f"RapidOCR initialization failed: {e}"
-        print(ocr_init_error)
-
+        ocr_init_error = f"RapidOCR init failed: {e}"
+        print(f"[OCR] {ocr_init_error}")
     try:
         import easyocr
-
         ocr_engine = easyocr.Reader(["ch_sim", "en"])
         ocr_engine_name = "EasyOCR"
-        print("EasyOCR initialized successfully")
+        print("[OCR] EasyOCR initialized.")
     except Exception as e:
-        ocr_init_error = f"{ocr_init_error}; EasyOCR initialization failed: {e}" if ocr_init_error else f"EasyOCR initialization failed: {e}"
-        print(ocr_init_error)
+        ocr_init_error = f"{ocr_init_error}; EasyOCR init failed: {e}" if ocr_init_error else f"EasyOCR init failed: {e}"
+        print(f"[OCR] {ocr_init_error}")
 
 
 initialize_ocr_engine()
 
 
-def run_ocr(image_np: np.ndarray) -> tuple[str, float | None]:
+def run_ocr(image_np: np.ndarray) -> tuple:
     if ocr_engine is None:
         raise RuntimeError(ocr_init_error or "OCR engine is not initialized")
-
     if ocr_engine_name and ocr_engine_name.startswith("RapidOCR"):
         result = ocr_engine(image_np)
-        lines = [line.strip() for line in getattr(result, "txts", ()) if str(line).strip()]
-        scores = [float(score) for score in getattr(result, "scores", ()) if score is not None]
-        confidence = round(sum(scores) / len(scores), 4) if scores else None
-        return "\n".join(lines), confidence
-
-    result = ocr_engine.readtext(image_np, detail=1, paragraph=False)
-    lines = []
-    scores = []
-    for item in result:
-        if len(item) >= 2 and str(item[1]).strip():
-            lines.append(str(item[1]).strip())
-        if len(item) >= 3:
-            scores.append(float(item[2]))
-    confidence = round(sum(scores) / len(scores), 4) if scores else None
-    return "\n".join(lines), confidence
-
-def now_text() -> str:
-    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        lines = [str(line).strip() for line in getattr(result, "txts", ()) if str(line).strip()]
+        return "\n".join(lines), None
+    else:
+        result = ocr_engine.readtext(image_np)
+        lines = [item[1] for item in result if item[2] > 0.3]
+        avg_conf = float(np.mean([item[2] for item in result])) if result else 0.0
+        return "\n".join(lines), avg_conf
 
 
-def backend_log(event: str, detail: str = ""):
-    suffix = f" | {detail}" if detail else ""
-    print(f"[{now_text()}] {event}{suffix}", flush=True)
-
-
-def append_jsonl(path: Path, payload: dict):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as f:
-        f.write(json.dumps(payload, ensure_ascii=False) + "\n")
-
-
-def record_platform_event(event_type: str, payload: dict):
-    event = {
-        "timestamp": now_text(),
-        "event_type": event_type,
-        **payload,
-    }
-    try:
-        append_jsonl(EVENT_LOG_PATH, event)
-    except Exception as e:
-        backend_log("Event Log Error", str(e))
-
-    preview = json.dumps(payload, ensure_ascii=False)
-    backend_log(f"EVENT {event_type}", preview[:600])
-
-
-def save_chat_log(
-    query: str,
-    reasoning: str,
-    answer: str,
-    sources: list,
-    user_name: str = "王某某",
-    phone: str = "133 3107 4710",
-    case_profile: dict | None = None,
-):
-    """Save chat history and reasoning to JSONL format."""
-    log_data = {
-        "timestamp": now_text(),
-        "user_name": user_name,
-        "phone": phone,
-        "user_query": query,
-        "justitia_thought": reasoning,
-        "justitia_answer": answer,
-        "reference_sources": [s.get("filename", "Unknown File") for s in sources],
-        "case_profile": case_profile or build_case_profile(query, user_name=user_name, phone=phone),
-        "status": "AI 已答复",
-    }
-    
-    try:
-        append_jsonl(LOG_FILE_PATH, log_data)
-        backend_log("PHASE2 AI_CHAT_SAVED", f"{user_name}({phone}) | {query[:120]}")
-    except Exception as e:
-        backend_log("Log Error", str(e))
-
-print(f"Loading vector model and local legal database from {DB_SAVE_PATH}...")
+# ChromaDB
+print("[Chroma] Loading legal vector database...")
 try:
     embeddings = HuggingFaceEmbeddings(model_name="BAAI/bge-m3")
     vectordb = Chroma(persist_directory=str(DB_SAVE_PATH), embedding_function=embeddings)
+    print(f"[Chroma] Loaded from {DB_SAVE_PATH}")
 except Exception as e:
-    print(f"Database loading failed: {e}")
-    raise
+    print(f"[Chroma] Failed to load: {e}")
+    vectordb = None
 
-print("Initializing DeepSeek-V4 model...")
-client = AsyncOpenAI(
-    api_key=DEEPSEEK_API_KEY,
-    base_url="https://api.deepseek.com"
-)
+# DeepSeek Client
+print("[DeepSeek] Initializing client...")
+client = AsyncOpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
 
-app = FastAPI(title="Justitia Shield Engine", description="Legal Intelligence Engine for Procuratorate")
+# FastAPI App
+app = FastAPI(title="Aegis 债优盾", description="中小债权人维权智能平台 — 股东出资义务加速到期专项")
 
-# CORS Configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=False,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
-@app.middleware("http")
-async def add_private_network_access_header(request, call_next):
-    response = await call_next(request)
-    response.headers["Access-Control-Allow-Private-Network"] = "true"
-    return response
-
-
-@app.get("/api/health")
-async def health_check():
-    return {
-        "status": "ok",
-        "database_path": str(DB_SAVE_PATH),
-        "database_exists": DB_SAVE_PATH.exists(),
-        "ocr_ready": ocr_engine is not None,
-        "ocr_engine": ocr_engine_name,
-        "ocr_init_error": ocr_init_error if ocr_engine is None else None,
-    }
-
-# ================= 2. Data Models =================
+# ================= 2. Pydantic Models =================
 class ChatRequest(BaseModel):
     query: str
     stream: bool = True
-    history: list = Field(default_factory=list)
-    top_k: int = 3
-    score_threshold: float = 1.2
-    mode: str = "spark"
-    user_name: str = "王某某"
-    phone: str = "133 3107 4710"
+    history: list = []
+    top_k: int = 5
+    score_threshold: float = 1.5
+    scenario: str = "unknown"  # 1-7 或 unknown
+    user_name: str = "债权人"
+
 
 class SourceItem(BaseModel):
     filename: str
     score: float
     content_preview: str
 
+
 class ChatResponse(BaseModel):
     answer: str
-    sources: List[SourceItem]
-
-class DocExportRequest(BaseModel):
-    title: str = "护薪法律文书"
-    html: str
-    user_name: str = "王某某"
-    phone: str = "133 3107 4710"
+    sources: List[SourceItem] = []
 
 
-class HumanSupportRequest(BaseModel):
-    phase: str
-    user_name: str = "王某某"
-    phone: str = "133 3107 4710"
-    latest_question: str = ""
-    case_summary: str = ""
-    evidence_subject: str = ""
-    evidence_amount: str = ""
+class ExportRequest(BaseModel):
+    html_content: str
+    filename: str = "债优盾法律文书"
 
 
-class CaseSubmitRequest(BaseModel):
-    user_name: str = "王某某"
-    phone: str = "133 3107 4710"
-    case_summary: str = ""
-    evidence_subject: str = ""
-    evidence_amount: str = ""
+class AdminQuery(BaseModel):
+    password: str = "admin888"
+    filters: dict = {}
 
 
-class CaseExtractRequest(BaseModel):
-    text: str
-    user_name: str = "王某某"
-    phone: str = "133 3107 4710"
-
-
-def safe_filename(title: str) -> str:
-    cleaned = re.sub(r"[\\/:*?\"<>|\r\n\t]+", "_", title).strip(" ._")
-    return (cleaned or "护薪法律文书")[:80]
-
-
-def set_document_fonts(document: Document):
-    normal = document.styles["Normal"]
-    normal.font.name = "SimSun"
-    normal.font.size = Pt(12)
-    normal._element.rPr.rFonts.set(qn("w:eastAsia"), "SimSun")
-
-
-def resolve_alignment(tag, inherited_alignment=None):
-    classes = set(tag.get("class", []) if hasattr(tag, "get") else [])
-    if "text-center" in classes:
-        return WD_ALIGN_PARAGRAPH.CENTER
-    if "text-right" in classes:
-        return WD_ALIGN_PARAGRAPH.RIGHT
-    return inherited_alignment
-
-
-def add_runs_from_node(paragraph, node, inherited_bold=False):
-    if isinstance(node, NavigableString):
-        text = str(node).replace("\xa0", " ")
-        if text:
-            run = paragraph.add_run(text)
-            run.bold = inherited_bold
-        return
-
-    if not getattr(node, "name", None):
-        return
-
-    if node.name == "br":
-        paragraph.add_run("\n")
-        return
-
-    classes = set(node.get("class", []))
-    is_bold = inherited_bold or node.name in {"strong", "b"} or "font-bold" in classes
-    for child in node.children:
-        add_runs_from_node(paragraph, child, is_bold)
-
-
-def add_html_paragraph(document: Document, tag, alignment=None):
-    paragraph = document.add_paragraph()
-    classes = set(tag.get("class", []))
-
-    if tag.name == "h1":
-        paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        for child in tag.children:
-            add_runs_from_node(paragraph, child, True)
-        for run in paragraph.runs:
-            run.font.size = Pt(18)
-        return
-
-    if tag.name in {"h2", "h3"}:
-        paragraph.alignment = alignment
-        for child in tag.children:
-            add_runs_from_node(paragraph, child, True)
-        for run in paragraph.runs:
-            run.font.size = Pt(14)
-        return
-
-    paragraph.alignment = alignment
-    if "indent-8" in classes:
-        paragraph.paragraph_format.first_line_indent = Pt(24)
-
-    for child in tag.children:
-        add_runs_from_node(paragraph, child)
-
-
-def append_html_blocks(document: Document, container, inherited_alignment=None):
-    block_tags = {"h1", "h2", "h3", "p", "li"}
-    for child in container.children:
-        if isinstance(child, NavigableString):
-            text = str(child).strip()
-            if text:
-                document.add_paragraph(text)
-            continue
-
-        if not getattr(child, "name", None) or child.name in {"script", "style"}:
-            continue
-
-        alignment = resolve_alignment(child, inherited_alignment)
-        if child.name in block_tags:
-            add_html_paragraph(document, child, alignment)
-        elif child.name == "br":
-            document.add_paragraph()
-        else:
-            append_html_blocks(document, child, alignment)
-
-
-def build_docx_bytes(title: str, html: str) -> bytes:
-    document = Document()
-    set_document_fonts(document)
-
-    section = document.sections[0]
-    section.top_margin = Pt(72)
-    section.bottom_margin = Pt(72)
-    section.left_margin = Pt(72)
-    section.right_margin = Pt(72)
-
-    soup = BeautifulSoup(html, "html.parser")
-    root = soup.body or soup
-    append_html_blocks(document, root)
-
-    buffer = io.BytesIO()
-    document.save(buffer)
-    buffer.seek(0)
-    return buffer.getvalue()
-
-
-def read_jsonl(path: Path) -> list[dict]:
-    if not path.exists():
-        return []
-
-    rows = []
-    with path.open("r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                rows.append(json.loads(line))
-            except json.JSONDecodeError:
-                continue
-    return rows
-
-
-def parse_timestamp(value: str) -> datetime | None:
-    if not value:
-        return None
-    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S"):
-        try:
-            return datetime.strptime(value[:19], fmt)
-        except ValueError:
-            continue
-    return None
-
-
-def make_request_id(prefix: str = "HX") -> str:
-    return f"{prefix}{datetime.now().strftime('%Y%m%d%H%M%S%f')[:17]}"
-
-
-def stable_int(seed: str, min_value: int, max_value: int) -> int:
-    if max_value <= min_value:
-        return min_value
-    digest = hashlib.sha1(str(seed or "").encode("utf-8")).hexdigest()
-    return min_value + int(digest[:8], 16) % (max_value - min_value + 1)
-
-
-def phase_label(phase: str) -> str:
-    labels = {
-        "phase2": "第二阶段人工援助",
-        "phase4": "第四阶段承办联系",
-        "doc": "第三阶段文书导出",
-        "submit": "第四阶段提交预审",
+# ================= 3. Utility Functions =================
+def save_chat_log(query: str, reasoning: str, answer: str, sources: list, scenario: str = "unknown"):
+    log_data = {
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "user_query": query,
+        "justitia_thought": reasoning,
+        "justitia_answer": answer,
+        "reference_sources": [s['filename'] for s in sources],
+        "scenario": scenario,
     }
-    return labels.get(phase, phase or "平台记录")
+    try:
+        LOG_FILE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with open(LOG_FILE_PATH, "a", encoding="utf-8") as f:
+            f.write(json.dumps(log_data, ensure_ascii=False) + "\n")
+    except Exception as e:
+        print(f"[Log] Write failed: {e}")
 
 
-CN_DIGITS = {"零": 0, "〇": 0, "一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9}
-CN_UNITS = {"十": 10, "百": 100, "千": 1000}
+def save_platform_event(event_type: str, data: dict):
+    try:
+        EVENT_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with open(EVENT_LOG_PATH, "a", encoding="utf-8") as f:
+            f.write(json.dumps({
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "type": event_type,
+                "data": data,
+            }, ensure_ascii=False) + "\n")
+    except Exception as e:
+        print(f"[Event] Write failed: {e}")
 
 
-def parse_chinese_amount_number(text: str) -> int:
-    normalized = re.sub(r"[元块人民币整\s]", "", str(text or "").replace("〇", "零"))
-    if not normalized:
-        return 0
-
-    short_wan = re.fullmatch(r"([一二两三四五六七八九十百千]+)万([一二两三四五六七八九])", normalized)
-    if short_wan:
-        return parse_chinese_amount_number(short_wan.group(1)) * 10000 + CN_DIGITS[short_wan.group(2)] * 1000
-
-    short_thousand = re.fullmatch(r"([一二两三四五六七八九])千([一二两三四五六七八九])", normalized)
-    if short_thousand:
-        return CN_DIGITS[short_thousand.group(1)] * 1000 + CN_DIGITS[short_thousand.group(2)] * 100
-
-    short_hundred = re.fullmatch(r"([一二两三四五六七八九])百([一二两三四五六七八九])", normalized)
-    if short_hundred:
-        return CN_DIGITS[short_hundred.group(1)] * 100 + CN_DIGITS[short_hundred.group(2)] * 10
-
-    total = 0
-    section_text = normalized
-    if "万" in normalized:
-        wan_part, section_text = normalized.split("万", 1)
-        total += parse_chinese_amount_number(wan_part) * 10000
-
-    section = 0
-    current_number = 0
-    for ch in section_text:
-        if ch in CN_DIGITS:
-            current_number = CN_DIGITS[ch]
-        elif ch in CN_UNITS:
-            section += (current_number or 1) * CN_UNITS[ch]
-            current_number = 0
-    return total + section + current_number
-
-
-def format_amount(amount: int | None) -> str:
-    return f"¥ {amount:,}" if amount else "待补充"
-
-
-def extract_amount_yuan(text: str) -> int | None:
-    text = text or ""
-    chinese_money = re.search(r"([一二两三四五六七八九十百千万零〇]{2,12})\s*(?:元|块|人民币|整)?", text)
-    if chinese_money and re.search(r"[万千百十]", chinese_money.group(1)):
-        amount = parse_chinese_amount_number(chinese_money.group(1))
-        if amount >= 1000:
-            return amount
-
-    digit_wan = re.search(r"(\d+(?:\.\d+)?)\s*万(?:\s*(\d{1,4}))?", text)
-    if digit_wan:
-        return int(float(digit_wan.group(1)) * 10000 + int(digit_wan.group(2) or 0))
-
-    digit_yuan = re.search(r"(\d{1,3}(?:,\d{3})*|\d+)(?:\.\d{1,2})?\s*[元块]", text)
-    if digit_yuan:
-        return int(digit_yuan.group(1).replace(",", ""))
-    return None
-
-
-def normalize_subject_candidate(candidate: str) -> str:
-    value = str(candidate or "")
-    value = re.sub(r"[“”\"『』《》]", "", value)
-    value = re.sub(r"^(?:您说的|所谓的|这个|那个|该|您那个|我那个|欠薪主体|用工主体|用人单位|被申请人|被告|雇主|老板)\s*(?:是|为)?\s*", "", value)
-    value = re.sub(r"(?:全称|完整名称|身份信息|统一社会信用代码|联系方式|电话|地址|盖章|签字|签名|是什么|是否|需要|请|吗|呢|？|\?).*$", "", value)
-    value = re.split(r"[，。；、,\n\r]", value)[0].strip()
-
-    org_match = re.search(r"[\u4e00-\u9fa5A-Za-z0-9（）()·]{2,40}?(?:公司|项目部|工程部|分包商|劳务队|班组)", value)
-    if org_match:
-        value = org_match.group(0)
-        value = re.sub(r"^(?:北京市西城区|北京西城区|西城区)", "", value)
-
-    value = re.sub(r"^(?:在|到|给|跟|为)", "", value)
-    value = re.sub(r"(?:那个|这个)?(?:工地|项目|现场)(?:干活|干木工|务工|上班|做工)?.*$", "", value)
-    value = re.sub(r"(?:干活|干木工|务工|上班|做工).*$", "", value)
-    value = re.sub(r"(?:欠|拖欠|差|应付).*$", "", value)
-    return value.strip()
-
-
-def is_useful_subject(candidate: str) -> bool:
-    if not candidate or len(candidate) < 2 or len(candidate) > 40:
-        return False
-    if re.fullmatch(r"(?:公司|单位|雇主|老板|被告|被申请人|项目|工地|包工头|劳动者|申请人)", candidate):
-        return False
-    if re.search(r"(?:某|XX|xxx|未知|待补充|不清楚|全称|姓名|身份|信息|电话|地址|证据|欠条|工资|金额|劳动合同|工牌|给我|帮我|写|生成|模板|起诉状|文书|咋办|怎么|需要|建议|您|我们|平台|系统|案情|那个)", candidate, re.I):
-        return False
-    return bool(re.search(r"(?:公司|项目部|工程部|分包商|劳务队|班组)$|^[\u4e00-\u9fa5A-Za-z0-9·]{1,8}(?:老板|包工头)$", candidate))
-
-
-def normalize_person_subject(raw_name: str, suffix: str = "老板") -> str:
-    name = re.sub(r"[^一-龥]", "", str(raw_name or ""))
-    if not (1 <= len(name) <= 3):
-        return ""
-    if name in {"我", "他", "她", "您", "你", "的", "这", "那", "个", "给我", "帮我", "写的", "那个", "这个", "跑了", "失联", "欠薪", "工资", "公司", "工地", "老板"}:
-        return ""
-    return f"{name}{suffix}"
-
-
-def extract_debtor_subject(text: str) -> str:
-    patterns = [
-        r"(?:在|到|给|跟|为|受雇于|入职|就职于)\s*[“\"]?([\u4e00-\u9fa5A-Za-z0-9（）()·]{2,40}?(?:公司|项目部|工程部|分包商|劳务队|班组))[”\"]?(?=那个|这个|的|工地|项目|干|做|上班|务工|施工|$)",
-        r"(?:欠薪主体|用工主体|用人单位|被申请人|被告|雇主|劳务公司)\s*[:：]\s*[“\"]?([^，。；\n\r]{2,50})",
-        r"[“\"]([\u4e00-\u9fa5A-Za-z0-9（）()·]{2,40}?(?:公司|项目部|工程部|分包商|劳务队|班组))[”\"]",
-        r"([\u4e00-\u9fa5A-Za-z0-9（）()·]{2,40}?(?:公司|项目部|工程部|分包商|劳务队|班组))",
-    ]
-    for pattern in patterns:
-        for match in re.finditer(pattern, text or ""):
-            candidate = normalize_subject_candidate(match.group(1))
-            if is_useful_subject(candidate):
-                return candidate
-
-    person_patterns = [
-        (r"([一-龥]{1,3})(老板|包工头|班组长)", 1, 2),
-        (r"(?:老板|包工头|班组长)(?:叫|是|姓|名叫)\s*([一-龥]{1,3})", 1, None),
-    ]
-    for pattern, name_idx, suffix_idx in person_patterns:
-        for match in re.finditer(pattern, text or ""):
-            suffix = match.group(suffix_idx) if suffix_idx else "老板"
-            candidate = normalize_person_subject(match.group(name_idx), suffix)
-            if is_useful_subject(candidate):
-                return candidate
-    return "待补充"
-
-
-PROJECT_NOISE_PATTERN = r"(?:给我|帮我|写|生成|模板|起诉状|文书|咋办|怎么|需要|建议|您|我们|平台|系统|案情|这个|那个|该|所谓)"
-
-
-def normalize_project_site_candidate(candidate: str) -> str:
-    value = str(candidate or "")
-    value = re.sub(r"[“”\"『』《》]", "", value)
-    value = re.split(r"[，。；、,\n\r]", value)[0].strip()
-    value = re.sub(r"^(?:在|到|位于|项目名称|工程名称|施工地点|工地位置|您那个|我那个|那个|这个|该)\s*", "", value)
-    value = re.sub(r"(?:干活|干木工|务工|上班|做工|施工|完工|离场).*$", "", value).strip()
-    value = re.sub(r"(?:那个|这个)?(?:工地|项目|工程|现场)$", lambda m: m.group(0).replace("那个", "").replace("这个", ""), value)
-    value = re.sub(r"公司(?:的)?(?:工地|项目|工程|现场)$", lambda m: m.group(0).replace("公司", ""), value)
-    value = re.sub(r"公司(?:那个|这个)(工地|项目|工程|现场)$", r"\1", value)
-    value = re.sub(r"([一-龥A-Za-z0-9·]{2,30})公司(?:那个|这个)?(工地|项目|工程|现场)$", r"\1\2", value)
-    return value.strip()
-
-
-def is_useful_project_site(candidate: str) -> bool:
-    if not candidate or candidate == "待补充" or len(candidate) < 3 or len(candidate) > 40:
-        return False
-    if re.search(PROJECT_NOISE_PATTERN, candidate):
-        return False
-    if re.fullmatch(r"(?:工地|项目|工程|现场|公司|老板|单位)", candidate):
-        return False
-    return bool(re.search(r"(?:工地|项目|工程|现场)$", candidate))
-
-
-def extract_project_site(text: str) -> str:
-    patterns = [
-        r"(?:在|到)\s*([^，。；\n\r]{2,40}?(?:工地|项目|工程|现场))",
-        r"(?:项目名称|工程名称|施工地点|工地位置)\s*[:：]\s*([^，。；\n\r]{2,60})",
-    ]
-    for pattern in patterns:
-        match = re.search(pattern, text or "")
-        if match:
-            value = normalize_project_site_candidate(match.group(1))
-            if is_useful_project_site(value):
-                return value
-    return "待补充"
-
-
-def resolve_relative_year(prefix: str | None, month: int | None = None, text: str = "") -> int:
-    current_year = datetime.now().year
-    if prefix == "去年":
-        return current_year - 1
-    if prefix == "明年":
-        return current_year + 1
-    if prefix == "今年":
-        return current_year
-    if month and month > datetime.now().month + 2 and "去年" in (text or "") and "今年" in (text or ""):
-        return current_year - 1
-    return current_year
-
-
-def classify_time_node(text: str, start: int, end: int) -> tuple[str, str, int]:
-    before = text[max(0, start - 18):start]
-    after = text[end:end + 24]
-    nearby = f"{before}{text[start:end]}{after}".strip()
-    if re.search(r"(?:干到|做到|一直到|到)$", before) or re.search(r"(?:完工|离场|结束|停工|老板跑了|失联|结算)", after):
-        return "工程完工或停止务工", nearby, 2
-    if re.search(r"(?:从|自|开始|入场|进场|上班|务工|干|做)", nearby):
-        return "开始务工", nearby, 1
-    return "案情时间节点", nearby, 0
-
-
-def extract_timeline(text: str) -> list[dict]:
-    text = text or ""
-    dated_map: dict[tuple[int, int], dict] = {}
-    date_patterns = [
-        r"(?P<year>20\d{2})\s*年\s*(?P<month>\d{1,2})\s*月(?:份)?",
-        r"(?<![年\d])(?P<prefix>去年|今年|明年)?\s*(?P<month>\d{1,2})\s*月(?:份)?",
-    ]
-
-    for pattern in date_patterns:
-        for match in re.finditer(pattern, text):
-            month = int(match.group("month"))
-            if not 1 <= month <= 12:
-                continue
-            explicit_year = match.groupdict().get("year")
-            prefix = match.groupdict().get("prefix")
-            year = int(explicit_year) if explicit_year else resolve_relative_year(prefix, month, text)
-            title, detail, priority = classify_time_node(text, match.start(), match.end())
-            if priority == 0:
-                continue
-            key = (year, month)
-            existing = dated_map.get(key)
-            if existing and existing.get("_priority", 0) >= priority:
-                continue
-            dated_map[key] = {
-                "date": f"{year}年{month}月",
-                "title": title,
-                "detail": detail,
-                "_priority": priority,
-                "_sort": (year, month),
-            }
-
-    timeline = []
-    for item in sorted(dated_map.values(), key=lambda node: node["_sort"]):
-        item.pop("_priority", None)
-        item.pop("_sort", None)
-        timeline.append(item)
-
-    current_nodes = []
-    if re.search(r"(?:欠条|结算单|工资单)", text):
-        current_nodes.append({"date": "当前", "title": "已持有书面证据", "detail": "案情中提到欠条、结算单或工资单等书面材料。"})
-    if re.search(r"(?:跑了|失联|联系不上|拖欠|不给|没给|差我)", text):
-        current_nodes.append({"date": "当前", "title": "发生欠薪争议", "detail": "案情中提到欠薪、失联或拒付工资。"})
-
-    deduped = []
-    seen = set()
-    for item in timeline + current_nodes:
-        key = (item["date"], item["title"])
-        if key not in seen:
-            seen.add(key)
-            deduped.append(item)
-    return deduped[:5]
-
-
-EVIDENCE_KEYWORDS = {
-    "欠条": ["欠条", "借条"],
-    "工资结算材料": ["结算单", "工资单", "工资表", "工资条", "工程量确认单"],
-    "聊天记录": ["微信", "聊天记录", "短信", "施工群", "群聊"],
-    "转账记录": ["转账", "银行流水", "收款", "付款记录"],
-    "劳动或用工证明": ["劳动合同", "协议", "工牌", "考勤", "打卡", "工地照片", "工作服"],
-    "证人证言": ["工友", "证人", "班组", "证明"],
-    "录音录像": ["录音", "录像", "视频"],
+# ================= 4. Scenario Definitions =================
+SCENARIOS = {
+    "1": {
+        "title": "公司欠钱不还，想追未实缴股东",
+        "description": "公司作为债务人无法清偿到期债务，债权人希望追究未足额缴纳出资的股东责任",
+        "legal_basis": ["公司法第54条", "九民纪要第6条", "公司法解释三第13条"],
+        "key_elements": ["债权债务关系证明", "公司不能清偿的证明", "股东认缴/实缴出资情况", "股东身份信息"],
+    },
+    "2": {
+        "title": "公司不能清偿，想判断能否主张股东出资加速到期",
+        "description": "公司已具备破产原因但不申请破产，债权人想主张股东出资期限加速到期",
+        "legal_basis": ["公司法第54条", "九民纪要第6条", "企业破产法第35条"],
+        "key_elements": ["债权债务关系证明", "公司不能清偿的证明", "股东出资期限约定", "公司资产负债表/审计报告"],
+    },
+    "3": {
+        "title": "债务发生后，公司延长了股东出资期限",
+        "description": "公司对债权人负有债务后，通过股东会决议延长股东出资期限，涉嫌恶意逃避债务",
+        "legal_basis": ["公司法第54条", "九民纪要第6条第(2)项"],
+        "key_elements": ["债权发生时间的证明", "股东出资期限变更的工商登记", "股东会决议文件"],
+    },
+    "4": {
+        "title": "怀疑股东出资后又把钱转走",
+        "description": "股东完成出资验资后，通过虚构交易、关联交易等方式将出资款项转出",
+        "legal_basis": ["公司法解释三第12条", "公司法第35条"],
+        "key_elements": ["股东出资验资证明", "资金转出银行流水", "关联交易证据", "公司财务账簿"],
+    },
+    "5": {
+        "title": "公司减资后导致债权无法清偿",
+        "description": "公司未依法通知债权人即进行减资程序，导致债权人利益受损",
+        "legal_basis": ["公司法第177条", "公司法第204条"],
+        "key_elements": ["公司减资工商变更记录", "减资公告文件", "未收到减资通知的证明"],
+    },
+    "6": {
+        "title": "股东转让股权后无人履行出资义务",
+        "description": "未届出资期限的股东将股权转让给明显无履行能力的主体，逃避出资义务",
+        "legal_basis": ["公司法第88条", "公司法解释三第18条"],
+        "key_elements": ["股权转让协议/工商变更", "受让方资信状况", "转让时出资期限是否已届满"],
+    },
+    "7": {
+        "title": "不确定属于哪种情况，需要系统初步判断",
+        "description": "系统将通过对话引导，帮助债权人梳理案情并自动匹配最合适的维权路径",
+        "legal_basis": ["综合适用"],
+        "key_elements": ["请尽量描述您遇到的具体情况"],
+    },
 }
 
 
-def extract_evidence_items(text: str) -> list[str]:
-    items = []
-    for label, keywords in EVIDENCE_KEYWORDS.items():
-        if any(keyword in (text or "") for keyword in keywords):
-            items.append(label)
-    return items
+def get_scenario_label(scenario: str) -> str:
+    if scenario in SCENARIOS:
+        return f"场景{scenario}：{SCENARIOS[scenario]['title']}"
+    return "通用法律咨询"
 
 
-def build_missing_items(profile: dict) -> list[str]:
-    missing = []
-    if profile["debtor_subject"] == "待补充":
-        missing.append("欠薪主体身份信息：公司全称、统一社会信用代码，或包工头姓名、电话、身份证线索。")
-    if not profile["amount_yuan"]:
-        missing.append("欠薪金额依据：欠条、工资结算单、聊天确认、转账记录或手写明细。")
-    if profile["work_period"] == "待补充":
-        missing.append("务工时间段：入场时间、完工/离场时间，以及期间实际出勤情况。")
-    if profile["project_site"] == "待补充":
-        missing.append("项目地点信息：工地名称、项目地址、总包或分包单位线索。")
-    if not profile["evidence_items"]:
-        missing.append("基础证据材料：欠条、聊天记录、工友证明、工地照片、考勤或工牌。")
-    elif "欠条" not in profile["evidence_items"] and "工资结算材料" not in profile["evidence_items"]:
-        missing.append("书面结算证据：优先补欠条、结算单，或让对方在聊天中确认欠款金额。")
-    return missing
+# ================= 5. Intent Router (法财双模) =================
+LEGAL_KEYWORDS = [
+    '法律', '法条', '条款', '民法', '刑法', '公司法', '劳动法', '合同法', '商法', '合规', '权', '法',
+    '章程', '准则', '条例', '规定', '司法解释', '知识产权', '专利', '商标', '著作权',
+    '股东', '法人', '董事', '监事', '实控人', '代理人', '原告', '被告', '第三人',
+    '连带责任', '有限责任', '股权', '债权', '债务', '担保', '抵押', '质押', '处分',
+    '诉讼', '仲裁', '起诉', '申诉', '保全', '判决', '裁定', '调解', '公证', '证据',
+    '举证', '质证', '抗辩', '追偿', '执行', '立案', '撤销', '无效', '违约', '侵权',
+    '赔偿', '滞纳金', '违约金', '不可抗力', '效力', '判例', '案例', '辩护',
+    '协议', '合同', '意向书', '备忘录', '承诺函', '授权书', '通知书', '起诉状', '答辩状',
+    '出资', '实缴', '认缴', '加速到期', '减资', '增资', '抽逃', '验资', '出资期限',
+    '债权人', '债务人', '欠债', '讨债', '追债', '债权凭证', '不能清偿', '到期债务',
+    '股东会', '决议', '扩大出资', '转让股权', '逃避债务',
+]
 
-
-def build_next_actions(profile: dict) -> list[str]:
-    actions = []
-    if profile["debtor_subject"] == "待补充":
-        actions.append("先补齐欠薪主体，至少明确公司全称或包工头姓名和联系方式。")
-    if not profile["amount_yuan"]:
-        actions.append("把欠薪金额写清楚，最好用欠条、结算单或聊天记录固定。")
-    if profile["evidence_items"]:
-        actions.append("保留证据原件和截图原图，按时间顺序整理成证据目录。")
-    actions.append("准备身份证明、联系电话、工地地点和工友联系方式，便于投诉、起诉或申请支持起诉。")
-    return actions[:4]
-
-
-def build_tracking_plan(profile: dict) -> dict:
-    if profile.get("evidence_status", "").startswith("证据较充分"):
-        current = "材料初审中"
-        next_step = "承办人员核对主体、金额和证据原件后，可进入支持起诉审查。"
-        expected = "1 个工作日内反馈初审意见"
-    elif profile.get("evidence_items"):
-        current = "待补充关键材料"
-        next_step = "优先补齐缺失材料，补充后再提交承办人员复核。"
-        expected = "补充材料后 1 个工作日内复核"
-    else:
-        current = "线索登记中"
-        next_step = "先补充欠薪主体、金额依据和至少一种基础证据。"
-        expected = "材料补齐后进入初审"
-
-    return {
-        "current_status": current,
-        "expected_response": expected,
-        "next_step": next_step,
-        "handler": "民事检察部门 / 法律援助联络员",
-        "anxiety_note": "系统已登记线索；请先保留原件和截图，不需要重复讲述案情，后续按补强清单逐项推进。",
-        "steps": [
-            {"name": "线索登记", "status": "done", "detail": "已记录咨询内容、联系方式和初步案情。"},
-            {"name": "材料初审", "status": "active", "detail": current},
-            {"name": "补强证据", "status": "pending", "detail": "根据缺失清单补充主体、金额、时间和证据。"},
-            {"name": "支持起诉审查", "status": "pending", "detail": "审查是否符合支持起诉条件并形成意见。"},
-        ],
-    }
-
-
-SOURCE_LABELS = {
-    "self_report": "农民工自主填报",
-    "hotline_12345": "12345政务服务热线",
-    "street_center": "街道综治中心",
-    "procuratorate": "检察业务数据",
-}
-
-
-STREET_HINTS = [
-    ("西单", "西城区", "西长安街街道"),
-    ("金融街", "西城区", "金融街街道"),
-    ("德胜", "西城区", "德胜街道"),
-    ("什刹海", "西城区", "什刹海街道"),
-    ("展览路", "西城区", "展览路街道"),
-    ("月坛", "西城区", "月坛街道"),
-    ("广安门", "西城区", "广安门内街道"),
-    ("牛街", "西城区", "牛街街道"),
-    ("天桥", "西城区", "天桥街道"),
-    ("大栅栏", "西城区", "大栅栏街道"),
+FINANCE_KEYWORDS = [
+    '财务', '会计', '报表', '资产', '负债', '权益', '利润', '营收', '成本', '费用',
+    '支出', '收入', '科目', '分录', '凭证', '账簿', '对账', '核算', '折旧', '摊销',
+    '毛利', '净利', '坏账', '计提', '底稿', '结转', '固定资产', '无形资产', '关联交易',
+    '税务', '税收', '纳税', '开票', '发票', '抵扣', '增值税', '所得税', '个税', '企业税',
+    '税率', '退税', '印花税', '关税', '核定征收',
+    '出资', '实缴', '认缴', '股权', '股票', '融资', '增资', '减资', '股权转让', '期权',
+    '收购', '兼并', '清算', '破产', '重整', '对赌', '估值', '尽调', '流水', '套现',
+    '盈亏', '赤字', '审计报告', '预算', '决算', '资金', '流动性', '分红',
+    '经营', '健康', '状况', '偿债', '能力', '现金流', '毛利率', '净利率', 'ROE', 'ROA',
+    '资产负债率', '流动比率', '速动比率', '应收账款', '应付账款',
 ]
 
 
-def infer_jurisdiction(profile: dict, text: str = "") -> dict:
-    corpus = f"{profile.get('project_site', '')} {profile.get('debtor_subject', '')} {text or ''}"
-    for keyword, district, street in STREET_HINTS:
-        if keyword in corpus:
-            return {"district": district, "street": street}
-    if "西城" in corpus:
-        return {"district": "西城区", "street": "属地街道待核"}
-    return {"district": "西城区", "street": "属地街道待核"}
+def detect_intent(query: str) -> dict:
+    is_legal = any(k in query for k in LEGAL_KEYWORDS)
+    is_finance = any(k in query for k in FINANCE_KEYWORDS)
+    is_domain = is_legal or is_finance or len(query) > 15
+    return {"is_legal": is_legal, "is_finance": is_finance, "is_domain": is_domain}
 
 
-def clue_id(source: str, profile: dict, suffix: str = "") -> str:
-    raw = "|".join([
-        source,
-        profile.get("worker_name", ""),
-        profile.get("phone", ""),
-        profile.get("project_site", ""),
-        profile.get("debtor_subject", ""),
-        suffix,
-    ])
-    return f"CL{hashlib.sha1(raw.encode('utf-8')).hexdigest()[:10].upper()}"
+# ================= 6. Financial DB Query Engine =================
+FINANCE_TABLE_SCHEMA = """
+本地财务数据库包含以下类型的表：
+
+第一类：标准简易表
+- 利润表 (Scode:股票代码, Date:统计日期, REV:营业总收入, NI:净利润, FINEXP:财务费用)
+- 资产负债表 (Scode:股票代码, Date:统计日期, CH:货币资金, AT:资产总计, LB:负债合计, EQU:所有者权益合计)
+- 现金流量表 (Scode:股票代码, Date:统计日期, NCPOA:经营活动产生的现金流量净额)
+
+第二类：RESSET专业数据库
+表名如：RESSET科创板利润表、RESSET新三板资产负债表、RESSET科创板现金流量表、RESSET科创板会计衍生指标 等
+RESSET表字段格式为 "中文名称_英文缩写"，例如：
+- 基础信息：公司代码_CompanyCode、最新公司全称_LComNm
+- 利润表：营业总收入_TotOpRev、净利润_NetProf、归母净利润_NPParentComp
+- 资产负债表：资产总计_TotAss、负债合计_TotLiab、货币资金_CashEqv
+- 现金流量表：经营活动产生的现金流量净额_NetOpCashFl
+- 衍生指标：基本每股收益_BasEPS、每股净资产_NAPS、净资产收益率_ROE
+
+注意：在标准简表中，股票代码查询条件为 Scode = '...'；在 RESSET 表中为 公司代码_CompanyCode = '...'。
+"""
 
 
-def build_clue(
-    source: str,
-    profile: dict,
-    jurisdiction: dict,
-    related_count: int,
-    status: str,
-    summary: str,
-    risk_tags: list[str],
-    days_ago: int = 0,
-) -> dict:
-    created_at = (datetime.now() - timedelta(days=max(0, days_ago))).strftime("%Y-%m-%d")
-    return {
-        "clue_id": clue_id(source, profile, status),
-        "source": source,
-        "source_label": SOURCE_LABELS[source],
-        "created_at": created_at,
-        "worker_name": profile.get("worker_name", "待补充") if source == "self_report" else "同工地劳动者",
-        "phone": profile.get("phone", "") if source == "self_report" else "",
-        "project_site": profile.get("project_site", "待补充"),
-        "debtor_subject": profile.get("debtor_subject", "待补充"),
-        "amount_yuan": profile.get("amount_yuan"),
-        "amount_display": profile.get("amount_display", "待补充"),
-        "issue_type": "追索劳动报酬 / 欠薪",
-        "district": jurisdiction["district"],
-        "street": jurisdiction["street"],
-        "status": status,
-        "related_count": related_count,
-        "risk_tags": risk_tags,
-        "summary": summary,
-    }
+async def query_finance_db(query: str) -> dict:
+    """AI 自动生成 SQL 并执行，返回财务查账结果"""
+    if not FINANCE_DB_PATH.exists():
+        return {"sql": None, "result": None, "context": "财务数据库尚未初始化，无本地财务数据可供查询。"}
 
+    sql_prompt = f"""你是精通 SQLite 的数据分析专家。根据以下数据库表结构，为用户的提问写一句 SQL 查询语句。
 
-def build_source_clues(profile: dict, text: str = "") -> list[dict]:
-    jurisdiction = infer_jurisdiction(profile, text)
-    site = profile.get("project_site") or "待补充"
-    subject = profile.get("debtor_subject") or "待补充"
-    seed = f"{site}|{subject}|{profile.get('amount_yuan')}|{profile.get('phone')}"
-    has_site_or_subject = is_useful_project_site(site) or is_useful_subject(subject)
-    hotline_count = stable_int(seed + "|12345", 3, 7) if has_site_or_subject else 1
-    street_count = max(1, hotline_count // 2) if has_site_or_subject else 0
-    procuratorate_count = 1 if hotline_count >= 4 or profile.get("amount_yuan") else 0
+【表结构与字段映射】
+{FINANCE_TABLE_SCHEMA}
 
-    clues = [
-        build_clue(
-            "self_report",
-            profile,
-            jurisdiction,
-            1,
-            "平台已登记",
-            "劳动者已自主填报案情、联系方式和现有证据，纳入标准化线索池。",
-            ["自主填报", "欠薪线索"],
+【用户提问】：{query}
+
+【严格要求】
+1. 只输出一句合法 SQLite 查询，用 ```sql 和 ``` 包裹。不要有任何其他文字。
+2. 根据用户提问智能推测表名和列名。
+3. 如果无法判断表名或字段，输出 ```sql\nSELECT '无法解析财务查询' AS info;\n```
+"""
+
+    try:
+        response = await client.chat.completions.create(
+            model="deepseek-chat",
+            messages=[{"role": "user", "content": sql_prompt}],
+            temperature=0.1,
         )
-    ]
+        sql_text = response.choices[0].message.content
+        match = re.search(r"```sql(.*?)```", sql_text, re.DOTALL | re.IGNORECASE)
 
-    if has_site_or_subject:
-        hotline_summary = (
-            f"近七天同工地劳动和社会保障类诉求 {hotline_count} 起，关键词集中在欠薪、结算争议和施工班组失联。"
-        )
-        if re.search(r"12345|热线|投诉|反映", text or ""):
-            hotline_summary = f"已识别劳动者曾通过政务热线或投诉渠道反映诉求；{hotline_summary}"
-        clues.append(build_clue(
-            "hotline_12345",
-            profile,
-            jurisdiction,
-            hotline_count,
-            "已派单至属地",
-            hotline_summary,
-            ["12345诉求", "同工地多发"],
-            days_ago=stable_int(seed + "|h-days", 1, 6),
-        ))
+        if not match:
+            return {"sql": None, "result": None, "context": "AI 未能生成有效的 SQL 查询。"}
 
-    if street_count:
-        clues.append(build_clue(
-            "street_center",
-            profile,
-            jurisdiction,
-            street_count,
-            "综治中心登记核验",
-            f"{jurisdiction['street']}已形成同类劳资纠纷登记 {street_count} 起，建议同步核查项目用工台账和班组人员名单。",
-            ["属地核验", "劳资纠纷"],
-            days_ago=stable_int(seed + "|s-days", 0, 4),
-        ))
+        sql_query = match.group(1).strip()
+        print(f"[Finance SQL] {sql_query}")
 
-    if procuratorate_count:
-        clues.append(build_clue(
-            "procuratorate",
-            profile,
-            jurisdiction,
-            procuratorate_count,
-            "待类案研判",
-            "检察业务侧可将该线索并入农民工薪酬领域监督线索，评估是否需要支持起诉或制发治理建议。",
-            ["检察监督", "支持起诉预审"],
-            days_ago=0,
-        ))
+        conn = sqlite3.connect(str(FINANCE_DB_PATH))
+        cursor = conn.cursor()
+        cursor.execute(sql_query)
+        rows = cursor.fetchall()
+        cols = [desc[0] for desc in cursor.description] if cursor.description else []
+        conn.close()
 
-    return clues
+        db_results = [dict(zip(cols, row)) for row in rows]
+        context = f"本地财务数据库查到的真实数据（共{len(rows)}条）：{json.dumps(db_results, ensure_ascii=False)}"
+        print(f"[Finance] 查询成功，获取 {len(rows)} 条记录")
+        return {"sql": sql_query, "result": db_results, "context": context}
+
+    except Exception as e:
+        print(f"[Finance] 查询失败: {e}")
+        return {"sql": None, "result": None, "context": f"财务数据库查询失败：{str(e)}"}
 
 
-def build_risk_alert(profile: dict, clues: list[dict]) -> dict:
-    source_counts = {}
-    for clue in clues:
-        source_counts[clue["source"]] = source_counts.get(clue["source"], 0) + int(clue.get("related_count") or 0)
-
-    total_count = sum(source_counts.values())
-    unique_sources = len([count for count in source_counts.values() if count > 0])
-    risk_score = total_count + unique_sources
-    if profile.get("debtor_subject") == "待补充":
-        risk_score += 1
-    if re.search(r"跑了|失联|联系不上|逃匿", " ".join(item.get("summary", "") for item in clues)):
-        risk_score += 1
-
-    if risk_score >= 11:
-        level = "高风险"
-        color = "red"
-        action = "建议纳入欠薪风险预警清单，启动12345、属地街道、人社劳动监察与民事检察联合核验。"
-    elif risk_score >= 7:
-        level = "中风险"
-        color = "amber"
-        action = "建议持续跟踪同工地诉求，核查用工主体、分包链条和工资支付台账。"
-    else:
-        level = "关注"
-        color = "zinc"
-        action = "建议保留线索并随新增投诉自动更新风险等级。"
-
-    tags = sorted({tag for clue in clues for tag in clue.get("risk_tags", [])})
-    if total_count >= 5 and "同工地多发" not in tags:
-        tags.append("同工地多发")
-
-    return {
-        "level": level,
-        "color": color,
-        "risk_score": risk_score,
-        "related_clue_count": total_count,
-        "project_site": profile.get("project_site", "待补充"),
-        "debtor_subject": profile.get("debtor_subject", "待补充"),
-        "source_counts": source_counts,
-        "source_labels": SOURCE_LABELS,
-        "risk_tags": tags,
-        "warning_text": f"{profile.get('project_site') or profile.get('debtor_subject') or '该项目'}已融合 {total_count} 起相关欠薪线索，风险等级：{level}。",
-        "recommended_action": action,
-        "governance_goal": "从个案办理延伸到同工地、同主体类案治理，支撑“办理一案、治理一片”。",
-    }
+def get_finance_tables() -> list:
+    if not FINANCE_DB_PATH.exists():
+        return []
+    conn = sqlite3.connect(str(FINANCE_DB_PATH))
+    cursor = conn.cursor()
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
+    tables = [row[0] for row in cursor.fetchall()]
+    conn.close()
+    return tables
 
 
-def build_data_timeline(clues: list[dict]) -> list[dict]:
-    timeline = []
-    for clue in clues:
-        if clue["source"] == "self_report":
-            continue
-        timeline.append({
-            "date": clue["created_at"],
-            "title": clue["source_label"],
-            "detail": f"{clue['status']}：{clue['summary']}",
-            "source": clue["source"],
-            "related_count": clue["related_count"],
-        })
-    return timeline[:4]
-
-
-def build_data_fusion_summary(clues: list[dict], risk_alert: dict) -> dict:
-    source_counts = risk_alert.get("source_counts", {})
-    active_sources = [SOURCE_LABELS[source] for source, count in source_counts.items() if count > 0 and source in SOURCE_LABELS]
-    return {
-        "pool_name": "农民工薪酬线索数据池",
-        "data_mode": "standardized_demo_fusion",
-        "source_count": len(active_sources),
-        "total_clues": risk_alert.get("related_clue_count", 0),
-        "active_sources": active_sources,
-        "source_counts": source_counts,
-        "standard_fields": ["诉求来源", "劳动者", "欠薪主体", "项目工地", "欠薪金额", "办理状态", "风险标签"],
-        "summary": f"已按统一字段融合 {len(active_sources)} 类来源、{risk_alert.get('related_clue_count', 0)} 起相关线索。",
-    }
-
-
-def risk_group_identity(profile: dict) -> tuple[str, str] | None:
-    site = normalize_project_site_candidate(profile.get("project_site", ""))
-    subject = normalize_subject_candidate(profile.get("debtor_subject", ""))
-    if is_useful_project_site(site):
-        return "project", site
-    if is_useful_subject(subject) and subject.endswith("公司") and any(keyword in subject for keyword, _, _ in STREET_HINTS):
-        inferred_site = normalize_project_site_candidate(f"{subject}工地")
-        if is_useful_project_site(inferred_site):
-            return "project", inferred_site
-    if is_useful_subject(subject):
-        return "subject", subject
-    return None
-
-
-def build_case_profile(text: str, user_name: str = "王某某", phone: str = "133 3107 4710") -> dict:
-    text = text or ""
-    amount = extract_amount_yuan(text)
-    timeline = extract_timeline(text)
-    dated_nodes = [item for item in timeline if re.match(r"\d{4}年\d{1,2}月", item["date"])]
-    work_period = "待补充"
-    if len(dated_nodes) >= 2:
-        work_period = f"{dated_nodes[0]['date']} 至 {dated_nodes[1]['date']}"
-    elif dated_nodes:
-        work_period = dated_nodes[0]["date"]
-
-    evidence_items = extract_evidence_items(text)
+# ================= 7. Case Profile Builder (债权人版本) =================
+def build_creditor_case_profile(query: str, scenario: str, user_name: str) -> dict:
     profile = {
-        "worker_name": user_name or "待补充",
-        "phone": phone or "",
-        "debtor_subject": extract_debtor_subject(text),
-        "amount_yuan": amount,
-        "amount_display": format_amount(amount),
-        "work_period": work_period,
-        "project_site": extract_project_site(text),
-        "evidence_items": evidence_items,
-        "timeline": timeline,
+        "creditor_name": user_name,
+        "debtor_company": "待补充",
+        "debt_amount": "待补充",
+        "debt_basis": "待补充",
+        "shareholder_info": "待补充",
+        "subscription_capital": "待补充",
+        "paid_capital": "待补充",
+        "contribution_deadline": "待补充",
+        "company_status": "待补充",
+        "existing_evidence": [],
+        "scenario": get_scenario_label(scenario),
+        "scenario_id": scenario,
     }
 
-    score = 0
-    score += 2 if profile["debtor_subject"] != "待补充" else 0
-    score += 2 if profile["amount_yuan"] else 0
-    score += 1 if profile["work_period"] != "待补充" else 0
-    score += 1 if profile["project_site"] != "待补充" else 0
-    score += min(2, len(evidence_items))
+    # Simple extraction
+    amount_match = re.search(r'(\d+[\.,]?\d*)\s*(万|元|块)', query)
+    if amount_match:
+        profile["debt_amount"] = amount_match.group(0)
 
-    if score >= 7:
-        evidence_status = "证据较充分，可进入文书生成与预审"
-    elif score >= 4:
-        evidence_status = "已有初步证据，建议补强关键材料"
-    else:
-        evidence_status = "证据不足，需补充"
+    company_match = re.search(r'(?:公司|被告|债务人)\s*(?:是|为|叫做)?\s*([^\s，。,\.]{2,30}(?:有限公司|股份有限公司|有限责任公司|公司|集团))', query)
+    if company_match:
+        profile["debtor_company"] = company_match.group(1)
 
-    profile["missing_items"] = build_missing_items(profile)
-    profile["next_actions"] = build_next_actions(profile)
-    profile["risk_flags"] = [item for item in [
-        "欠薪主体不明确" if profile["debtor_subject"] == "待补充" else "",
-        "金额缺少稳定依据" if not profile["amount_yuan"] else "",
-        "务工时间不完整" if profile["work_period"] == "待补充" else "",
-        "书面证据不足" if not evidence_items else "",
-    ] if item]
-    profile["evidence_status"] = evidence_status
-    profile["confidence"] = round(min(score, 8) / 8, 2)
-    profile["tracking_plan"] = build_tracking_plan(profile)
-    profile["source_clues"] = build_source_clues(profile, text)
-    profile["risk_alert"] = build_risk_alert(profile, profile["source_clues"])
-    profile["data_timeline"] = build_data_timeline(profile["source_clues"])
-    profile["data_fusion_summary"] = build_data_fusion_summary(profile["source_clues"], profile["risk_alert"])
+    evidence_types = []
+    if any(k in query for k in ['欠条', '借条', '借据']):
+        evidence_types.append("债权凭证（欠条/借条/借据）")
+    if any(k in query for k in ['合同', '协议']):
+        evidence_types.append("合同/协议")
+    if any(k in query for k in ['转账', '银行', '流水', '汇款']):
+        evidence_types.append("银行转账记录/流水")
+    if any(k in query for k in ['微信', '聊天', '短信']):
+        evidence_types.append("通讯记录（微信/短信）")
+    if any(k in query for k in ['工商', '企查查', '天眼查', '公示']):
+        evidence_types.append("工商登记/公示信息")
+    if any(k in query for k in ['判决', '裁定', '调解书']):
+        evidence_types.append("法院裁判文书")
+    if any(k in query for k in ['对账单', '结算单', '确认函']):
+        evidence_types.append("对账单/结算单/确认函")
+    profile["existing_evidence"] = evidence_types if evidence_types else ["待识别"]
+
     return profile
 
 
-def record_id(*parts: str) -> str:
-    raw = "|".join(str(part or "") for part in parts)
-    return hashlib.sha1(raw.encode("utf-8")).hexdigest()[:12]
+# ================= 8. Evidence Gap Analysis =================
+def analyze_evidence_gaps(profile: dict, scenario: str) -> dict:
+    """根据场景分析证据缺口"""
+    required_evidence = {
+        "1": ["债权凭证（合同/欠条/判决书）", "公司不能清偿的证明", "工商登记信息（股东认缴/实缴）", "催收记录"],
+        "2": ["债权凭证", "公司资产负债表或审计报告", "股东出资期限证明", "公司已具备破产原因的证据"],
+        "3": ["债权发生时间证明", "公司延长出资期限的工商变更", "债务发生时的公司章程"],
+        "4": ["股东出资验资证明", "资金转出的银行流水", "关联交易合同/凭证"],
+        "5": ["公司减资工商变更记录", "减资公告文件", "债权发生时间证明"],
+        "6": ["股权转让协议", "工商变更登记", "受让方资信状况证明", "转让时的公司章程"],
+        "7": ["请先描述具体案情"],
+    }
+
+    needed = required_evidence.get(scenario, required_evidence["1"])
+    existing_set = set(profile.get("existing_evidence", []))
+    gaps = [e for e in needed if not any(ex in e or e in ex for ex in existing_set)]
+
+    return {
+        "required": needed,
+        "existing": profile.get("existing_evidence", []),
+        "gaps": gaps,
+        "completeness": max(0, len(existing_set) / max(len(needed), 1)),
+    }
 
 
-def build_admin_risk_summary(records: list[dict]) -> list[dict]:
-    groups: dict[str, dict] = {}
-    for row in records:
-        profile = row.get("case_profile") or {}
-        alert = profile.get("risk_alert") or {}
-        identity = risk_group_identity(profile)
-        if not identity:
-            continue
-        identity_type, key = identity
-        project_site = key if identity_type == "project" else "待补充"
-        debtor_subject = normalize_subject_candidate(profile.get("debtor_subject", "")) if is_useful_subject(normalize_subject_candidate(profile.get("debtor_subject", ""))) else "待补充"
-        if identity_type == "subject":
-            debtor_subject = key
+# ================= 9. Core: System Prompt Builder =================
+def build_system_prompt(request: ChatRequest, legal_context: str, finance_context: str,
+                        case_profile: dict, evidence_analysis: dict) -> str:
+    scenario_label = get_scenario_label(request.scenario)
+    scenario_info = SCENARIOS.get(request.scenario, SCENARIOS["7"])
+    legal_basis_text = "、".join(scenario_info.get("legal_basis", []))
+    key_elements_text = "、".join(scenario_info.get("key_elements", []))
+    evidence_gaps_text = "、".join(evidence_analysis.get("gaps", [])) or "待用户补充信息后判断"
 
-        group = groups.setdefault(key, {
-            "project_site": project_site,
-            "debtor_subject": debtor_subject,
-            "level": alert.get("level", "关注"),
-            "color": alert.get("color", "zinc"),
-            "risk_score": 0,
-            "related_clue_count": 0,
-            "platform_record_count": 0,
-            "source_counts": {},
-            "source_labels": SOURCE_LABELS,
-            "risk_tags": set(),
-            "latest_timestamp": row.get("timestamp", ""),
-            "recommended_action": alert.get("recommended_action", "建议持续跟踪同类线索。"),
-            "governance_goal": alert.get("governance_goal", "推动个案办理向源头治理延伸。"),
-        })
+    return f"""您是"债优盾 Aegis"智能平台的 AI 法律顾问 Justitia，由债优盾团队开发。您的核心使命是帮助中小债权人维护合法权益，特别是通过主张**股东出资义务加速到期**来追讨公司债务。
 
-        group["platform_record_count"] += 1
-        group["latest_timestamp"] = max(group.get("latest_timestamp", ""), row.get("timestamp", ""))
-        group["risk_score"] = max(group["risk_score"], int(alert.get("risk_score") or 0))
-        for source, count in (alert.get("source_counts") or {}).items():
-            group["source_counts"][source] = max(group["source_counts"].get(source, 0), int(count or 0))
-        group["related_clue_count"] = max(group["related_clue_count"], int(alert.get("related_clue_count") or 0))
-        for tag in alert.get("risk_tags") or []:
-            group["risk_tags"].add(tag)
+【系统指令深度对齐】
+1. 时间锚点：当前为 2026 年春季。请确保所有法律建议符合最新的 2024 年修订后《公司法》及配套司法解释。
+2. 核心法律武器：公司法第54条（股东出资加速到期）、九民纪要第6条、公司法解释三第12-18条、企业破产法第35条。
+3. 身份定位：您是专业、冷静、精准的法律顾问，同时富有同理心。服务对象是中小债权人，语言清晰而不晦涩。
+4. RAG 驱动：优先引用【本地法律卷宗】中的法条原文、裁判观点和案例。
+5. 财务辅助：如果有【本地财务查账结果】，请结合真实数据分析目标公司的偿债能力。
 
-        level_rank = {"关注": 1, "中风险": 2, "高风险": 3}
-        if level_rank.get(alert.get("level", "关注"), 1) > level_rank.get(group["level"], 1):
-            group["level"] = alert.get("level", "关注")
-            group["color"] = alert.get("color", "zinc")
-            group["recommended_action"] = alert.get("recommended_action", group["recommended_action"])
+【当前维权场景】
+{scenario_label}
 
-    summary = []
-    for item in groups.values():
-        item["risk_tags"] = sorted(item["risk_tags"])
-        if not item["related_clue_count"]:
-            item["related_clue_count"] = sum(item["source_counts"].values())
-        display_name = item["project_site"] if item["project_site"] != "待补充" else item["debtor_subject"]
-        item["warning_text"] = (
-            f"{display_name}"
-            f"已融合 {item['related_clue_count']} 起相关欠薪线索，风险等级：{item['level']}。"
-        )
-        summary.append(item)
+【该场景法律依据】
+{legal_basis_text}
 
-    summary.sort(key=lambda item: (item["risk_score"], item["related_clue_count"], item["latest_timestamp"]), reverse=True)
-    return summary[:8]
+【该场景关键构成要件】
+{key_elements_text}
 
+【结构化案情快照】
+{json.dumps(case_profile, ensure_ascii=False, indent=2)}
 
-def engine_error_message(error: Exception) -> str:
-    raw = str(error)
-    if "401" in raw or "Authentication Fails" in raw or "invalid" in raw.lower() and "api key" in raw.lower():
-        return "远程模型认证失败，请检查后端 Code/.env 中的 DEEPSEEK_API_KEY 是否为有效 DeepSeek 密钥。"
-    return "远程模型暂时不可用，已切换为本地应急指引。"
+【证据缺口分析】
+需补强证据：{evidence_gaps_text}
+证据完整度：{evidence_analysis.get('completeness', 0) * 100:.0f}%
 
-def build_local_fallback_answer(query: str, sources: list) -> str:
-    source_names = [item.get("filename", "本地案例库") for item in sources[:2]]
-    source_text = "、".join(source_names) if source_names else "本地劳动报酬纠纷知识库"
-    profile = build_case_profile(query)
-    missing_text = "\n".join(f"- {item}" for item in profile["missing_items"][:4]) or "- 目前关键要素较完整，建议继续保留原始证据。"
-    evidence_text = "、".join(profile["evidence_items"]) or "暂未识别到明确证据材料"
-    next_action_text = "\n".join(f"{idx}. {item}" for idx, item in enumerate(profile["next_actions"], start=1))
-    return f"""我先给您一个可立即执行的维权方案。
+【本地财务查账结果】
+{finance_context}
 
-**初步识别**
+【本地法律卷宗参考】
+{legal_context}
 
-您描述的是一起追索劳动报酬纠纷。我先按现有信息抽取如下：欠薪主体为“{profile['debtor_subject']}”，欠薪金额为“{profile['amount_display']}”，务工时间为“{profile['work_period']}”，项目地点为“{profile['project_site']}”，已识别证据为“{evidence_text}”。
+【固定输出模板】
+除非用户只是问候或简单程序性问题，否则请严格按以下七段式结构输出，不得省略标题：
 
-**证据链状态**
+**一、构成要件审查**
+- 根据当前场景，逐一审查股东出资加速到期的法定构成要件是否满足
+- 已满足的标记"√"，不明确的标记"待查"
+- 引用公司法第54条及九民纪要的对应条款
 
-{profile['evidence_status']}。当前最需要补强的是：
+**二、偿债能力初步测算**
+- 如果查询到财务数据，用具体数字分析目标公司偿债能力
+- 如果无财务数据，说明哪些指标需要用户进一步提供
+- 给出偿债能力等级：健康 / 一般 / 严重不足 / 资不抵债
 
-{missing_text}
+**三、证据链研判**
+- 先给结论：证据较充分 / 已有初步证据但需补强 / 证据严重不足
+- 逐一列出已有证据和缺失证据
+- 为每个缺失证据提供替代性取证方案
 
-**下一步建议**
+**四、加速到期可行性评分**
+- 综合评估后给出 0-100 分的可行性评分
+- 说明评分依据和扣分项
+- 如果评分偏低，说明通过补哪些证据可以提升
 
-{next_action_text}
+**五、可走的维权路径**
+- 按层次说明：协商/发函 → 诉前财产保全 → 诉讼（股东出资加速到期之诉）→ 执行
+- 说明每种路径的优缺点和时效要求
+- 提示是否需要申请财产保全或证据保全
 
-如果您是农民工、取证困难、自己起诉能力弱，可以向检察机关申请支持起诉，请求帮助固定证据、梳理被告主体和诉讼请求。
+**六、下一步请您先做这几件事**
+- 给 3 到 5 个可立即执行的动作，按优先级排列
+- 每个动作说明为什么重要
 
-我已参考 {source_text} 做初步研判。远程智能模型当前不可用时，上面是本地应急指引；等密钥恢复后，系统会继续生成更完整的支持起诉分析和文书要点。"""
+**七、还需要您补充的信息**
+- 只问最影响案件推进的 3 到 5 个问题
+- 每个问题解释为什么需要这个信息
 
-# ================= 3. Core API Endpoints =================
-@app.get("/")
-async def serve_frontend():
-    return FileResponse(CODE_DIR / "Web" / "index.html")
+【交互准则】
+- 严禁提及您的 AI 架构、训练截止日期或底层模型
+- 对数字和金额务必精确，不确定时标注"待核实"
+- 如果用户上传的 OCR 结果模糊，请委婉请其通过文字补充关键数字
+- 既保持法律专业度，又让普通债权人能听懂
+- 始终以中文回答，排版利于电脑端和手机端阅读
+- 当前用户：{request.user_name}
+
+Respond strictly in Chinese.
+"""
 
 
-@app.post("/api/case-extract")
-async def extract_case(payload: CaseExtractRequest):
-    profile = build_case_profile(payload.text, payload.user_name, payload.phone)
-    backend_log(
-        "CASE_EXTRACT",
-        f"{payload.user_name}({payload.phone}) | subject={profile['debtor_subject']} | amount={profile['amount_display']} | status={profile['evidence_status']}"
-    )
-    return {"case": profile}
+# ================= 10. DOCX Export (债权人版本) =================
+def clean_html_summary(html: str) -> str:
+    if not html:
+        return "债优盾法律文书"
+    soup = BeautifulSoup(html, "html.parser")
+    for tag in soup(["script", "style", "svg", "img", "button", "input"]):
+        tag.decompose()
+    for tag in soup.find_all(True):
+        for attr in list(tag.attrs):
+            if attr not in ("colspan", "rowspan"):
+                del tag[attr]
+    cleaned = str(soup)
+    cleaned = re.sub(r'\n\s*\n', '\n', cleaned)
+    return (cleaned or "债优盾法律文书")[:80]
+
+
+def export_creditor_complaint_docx(html_content: str, filename: str = "债优盾法律文书") -> io.BytesIO:
+    soup = BeautifulSoup(html_content, "html.parser")
+    doc = Document()
+    style = doc.styles["Normal"]
+    font = style.font
+    font.name = "SimSun"
+    font.size = Pt(12)
+    style.paragraph_format.line_spacing = 1.5
+    style.paragraph_format.space_after = Pt(6)
+    for section in doc.sections:
+        section.top_margin = Cm(2.54)
+        section.bottom_margin = Cm(2.54)
+        section.left_margin = Cm(3.18)
+        section.right_margin = Cm(3.18)
+
+    # Title
+    title = doc.add_paragraph()
+    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = title.add_run("民 事 起 诉 状")
+    run.font.size = Pt(16)
+    run.bold = True
+
+    # Parse from markdown
+    text_parts = []
+    for el in soup.descendants:
+        if isinstance(el, NavigableString):
+            t = str(el).strip()
+            if t and t not in text_parts:
+                text_parts.append(t)
+
+    full_text = "\n".join(text_parts)
+    paragraphs = [p.strip() for p in full_text.split("\n") if len(p.strip()) > 5]
+
+    for p_text in paragraphs[:50]:
+        para = doc.add_paragraph()
+        if "原告" in p_text or "申请人" in p_text:
+            para.paragraph_format.first_line_indent = Cm(0)
+        else:
+            para.paragraph_format.first_line_indent = Cm(0.74)
+        run = para.add_run(p_text)
+        run.font.size = Pt(12)
+
+    buf = io.BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+    safe_filename = re.sub(r'[<>:"/\\|?*]', '_', filename)[:80]
+    return buf
+
+
+# ================= 11. API Endpoints =================
+@app.get("/api/health")
+async def health_check():
+    tables = get_finance_tables()
+    return {
+        "status": "ok",
+        "service": "Aegis 债优盾",
+        "ocr_engine": ocr_engine_name,
+        "chroma_loaded": vectordb is not None,
+        "finance_tables": len(tables),
+        "scenarios": len(SCENARIOS),
+    }
 
 
 @app.post("/api/chat")
 async def chat_endpoint(request: ChatRequest):
-    legal_context = "No relevant legal documents found in the local database."
+    intent = detect_intent(request.query)
+    finance_context = "用户问题未涉及具体财务指标查询，或本地财务库无相关记录。"
+    legal_context = "用户问题未涉及具体法律案卷，无需引用本地判例。"
     source_items = []
+    sql_meta = None
 
-    selected_model = "deepseek-reasoner" if request.mode == "prism" else "deepseek-chat"
-    
-    backend_log(
-        "PHASE2 AI_CHAT_REQUEST",
-        f"{request.user_name}({request.phone}) | {request.query[:300]} | Engine: {request.mode.upper()} ({selected_model})"
+    # Build case profile
+    case_profile = build_creditor_case_profile(request.query, request.scenario, request.user_name)
+    evidence_analysis = analyze_evidence_gaps(case_profile, request.scenario)
+
+    # Intent routing
+    if intent["is_domain"]:
+        print(f"[Intent] Legal={intent['is_legal']}, Finance={intent['is_finance']}")
+
+        # Financial query
+        if intent["is_finance"]:
+            print("[Finance] Triggering SQL generation...")
+            finance_result = await query_finance_db(request.query)
+            finance_context = finance_result["context"]
+            sql_meta = {"sql": finance_result["sql"], "result": finance_result["result"]}
+
+        # Legal RAG
+        if intent["is_legal"] and vectordb is not None:
+            print("[Legal] Searching ChromaDB...")
+            try:
+                raw_results = vectordb.similarity_search_with_score(request.query, k=request.top_k)
+                legal_context = ""
+                for i, (doc, score) in enumerate(raw_results):
+                    if score < request.score_threshold:
+                        filename = doc.metadata.get('source', '未知')
+                        category = doc.metadata.get('category_path', '')
+                        legal_context += f"\n--- 案卷{i + 1} (来源: {category}/{filename}) ---\n{doc.page_content}\n"
+                        source_items.append({
+                            "filename": f"{category}/{filename}" if category else filename,
+                            "score": round(score, 4),
+                            "content_preview": doc.page_content[:50] + "..."
+                        })
+            except Exception as e:
+                print(f"[Legal] RAG failed: {e}")
+                legal_context = f"法律知识库检索异常：{str(e)}"
+
+    # Build system prompt
+    final_system_prompt = build_system_prompt(
+        request, legal_context, finance_context, case_profile, evidence_analysis
     )
-    
-    # Keywords specific to labor disputes and wage protection
-    legal_keywords = [
-        '法律', '法条', '条款', '民法', '刑法', '公司法', '劳动法', '合同法', '合规', '法',
-        '章程', '准则', '条例', '规定', '司法解释', '原告', '被告', '第三人', 
-        '连带责任', '债权', '债务', '担保', '诉讼', '仲裁', '起诉', '申诉', '判决', '调解', 
-        '证据', '举证', '违约', '赔偿', '效力', '判例', '案例', '协议', '合同', '起诉状',
-        '欠薪', '工资', '薪水', '薪资', '农民工', '包工头', '劳动关系', '支持起诉', '援助', '维权'
-    ]
-    
-    is_legal_query = any(k in request.query for k in legal_keywords) or len(request.query) > 10
 
-    if not is_legal_query:
-        print("[Intent Filter] Daily chat detected, skipping RAG retrieval...")
-    else:
-        print("[Intent Filter] Legal query detected, initiating ChromaDB retrieval...")
-        raw_results = vectordb.similarity_search_with_score(request.query, k=request.top_k)
-        legal_context = ""
-        source_items = []
-        
-        for i, (doc, score) in enumerate(raw_results):
-            if score < request.score_threshold:
-                filename = doc.metadata.get('source', 'Unknown File')
-                legal_context += f"\n--- Document {i+1} (Source: {filename}) ---\n{doc.page_content}\n"
-                source_items.append({
-                    "filename": filename, 
-                    "score": round(score, 4),
-                    "content_preview": doc.page_content[:30] + "..."
-                })
-
-    case_profile = build_case_profile(request.query, request.user_name, request.phone)
-    case_profile_text = json.dumps(case_profile, ensure_ascii=False, indent=2)
-
-# === 增强版 System Prompt：深度结合 RAG 与 2026 法律背景 ===
-    final_system_prompt = f"""您是“护薪”检察支持起诉智能平台的智能助理 Justitia（也可以自称“小朱”），由 Huang Zitong 开发，专门服务于北京市西城区人民检察院。您的核心使命是协助农民工追索劳动报酬，并辅助检察官进行“支持起诉”的案件预审。注意，你的服务对象是维权的农民工群体，因此请保持语言精密而不失通俗，专业而不失关怀。
-
-    [系统指令深度对齐]：
-    1. 时间锚点：当前为 2026 年春季，请确保所有建议符合最新的法律时效。
-    2. 双重身份：您既是农民工的贴心法律向导，又是检察官的专业审查助理。对劳动者请使用通俗、温暖、感性的语言；对案件分析请保持严密的法理逻辑。
-    3. RAG 核心驱动：
-       - 【法条库】：基于检索到的 [Local Legal Context]，优先引用内置的最新司法解释与《保障农民工工资支付条例》。
-       - 【文书模板】：当用户信息基本完整时，必须引导并参考知识库中的“起诉状”、“支持起诉申请书”等标准模板格式生成预览。
-
-    [执行指南 - 核心五要素提取]：
-    您必须从 OCR 提取的文本或用户对话中精准锁定：
-    1) 欠薪主体（用人单位全称/包工头姓名/项目部名称）。
-    2) 劳动者身份。
-    3) 确切的欠薪数额（需与证据中的数字对齐）。
-    4) 务工时间段及项目名称。
-    5) 现有证据清单（欠条、结算单、微信记录、工牌等）。
-
-    [法律研判逻辑]：
-    - 证据校验：如果缺少关键证据（如被告身份信息模糊、无书面结算单），请明确告知并提供“替代性证据”方案（如录音、证人证言）。
-    - 支持起诉评估：根据《民事诉讼法》第十六条及西城区检察院实务，判断用户是否属于“诉讼能力弱、取证难”的弱势群体，并给出是否建议申请“检察支持起诉”的明确意见。
-    - 多源线索融合：如果结构化快照中包含 12345、街道综治中心、检察业务或自主填报线索，请只做“辅助研判”式表达，说明同工地/同主体风险，不要替代正式调查结论。
-
-    [结构化案情快照 - 必须优先依据]：
-    {case_profile_text}
-
-    [固定输出模板]：
-    除非用户只是问候或只问一个很短的程序性问题，否则请严格按以下标题输出，不要省略标题：
-    **一、我先帮您确认案情要点**
-    - 用 3 到 5 条列出欠薪主体、金额、务工时间、项目地点、现有证据。未知项明确写“待补充”，不得编造。
-    **二、证据链研判**
-    - 先给结论：证据较充分 / 已有初步证据但需补强 / 证据不足。
-    - 再说明最关键的缺口和替代性证据。
-    **三、可走的维权路径**
-    - 按劳动监察、仲裁/诉讼、检察支持起诉三个层次说明，避免吓人的法言法语。
-    - 如存在同工地多发线索，请补充一句“平台会把该线索纳入同工地风险预警，供后续联动核查参考”。
-    **四、下一步请您先做这几件事**
-    - 给 3 到 5 个可执行动作，按优先级排列。
-    **五、还需要您补充的信息**
-    - 只问最影响办案的 3 到 5 个问题。
-
-    [交互准则]：
-    - 严禁提及您的 AI 架构、训练截止日期或您是一个语言模型。
-    - 如果用户上传的 OCR 结果模糊，请委婉请其通过文字补充关键数字。
-    - 当前用户姓名：{request.user_name}。如果需要亲切称呼，王某某可称“老王”或直接称“您”；不要把用户称为“小朱”“老朱”“朱师傅”，因为“小朱”是助手自己的名字。不要凭空给用户编造其他昵称。
-    - 始终以中文回答，确保排版利于电脑端和手机端阅读。
-
-    [本地法律上下文增强]：
-    {legal_context}
-
-    Respond strictly in Chinese.
-    """
-    
     messages = [{"role": "system", "content": final_system_prompt}]
-    
     if request.history:
         for msg in request.history:
             if isinstance(msg, dict) and "role" in msg and "content" in msg:
                 messages.append({"role": msg["role"], "content": msg["content"]})
-    
     messages.append({"role": "user", "content": request.query})
 
-    if request.stream:
-        async def generate_stream():
-            meta_info = {"type": "meta", "sources": source_items}
-            yield f"data: {json.dumps(meta_info, ensure_ascii=False)}\n\n"
+    if not request.stream:
+        # Non-streaming
+        response = await client.chat.completions.create(
+            model="deepseek-chat",
+            messages=messages,
+            max_tokens=8192,
+        )
+        answer = response.choices[0].message.content
+        save_chat_log(request.query, "", answer, source_items, request.scenario)
+        return {"answer": answer, "sources": source_items}
 
-            accumulated_reasoning = ""
-            accumulated_content = ""
+    # Streaming
+    async def generate_stream():
+        meta = {"type": "meta", "sources": source_items}
+        if sql_meta:
+            meta["finance"] = sql_meta
+        yield f"data: {json.dumps(meta, ensure_ascii=False)}\n\n"
 
-            try:
-                response = await client.chat.completions.create(
-                    model=selected_model,
-                    messages=messages,
-                    stream=True,
-                    max_tokens=8192,
-                )
+        accumulated_reasoning = ""
+        accumulated_content = ""
 
-                async for chunk in response:
-                    if not chunk.choices:
-                        continue
-                        
-                    delta = chunk.choices[0].delta
-                    
-                    if hasattr(delta, 'reasoning_content') and delta.reasoning_content:
-                        accumulated_reasoning += delta.reasoning_content
-                        yield f"data: {json.dumps({'type': 'reasoning', 'content': delta.reasoning_content}, ensure_ascii=False)}\n\n"
-
-                    if hasattr(delta, 'content') and delta.content:
-                        accumulated_content += delta.content
-                        yield f"data: {json.dumps({'type': 'chunk', 'content': delta.content}, ensure_ascii=False)}\n\n"
-            
-            except Exception as e:
-                print(f"[LLM Error]: {str(e)}")
-                fallback_answer = build_local_fallback_answer(request.query, source_items)
-                accumulated_content += fallback_answer
-                yield f"data: {json.dumps({'type': 'chunk', 'content': fallback_answer}, ensure_ascii=False)}\n\n"
-                yield f"data: {json.dumps({'type': 'error', 'content': engine_error_message(e)}, ensure_ascii=False)}\n\n"
-            
-            finally:
-                save_chat_log(
-                    query=request.query,
-                    reasoning=accumulated_reasoning,
-                    answer=accumulated_content,
-                    sources=source_items,
-                    user_name=request.user_name,
-                    phone=request.phone,
-                    case_profile=build_case_profile(request.query, request.user_name, request.phone),
-                )
-                
-            yield "data: [DONE]\n\n"
-
-        return StreamingResponse(generate_stream(), media_type="text/event-stream")
-    
-    else:
         try:
             response = await client.chat.completions.create(
-                model=selected_model,
+                model="deepseek-chat",
                 messages=messages,
+                stream=True,
                 max_tokens=8192,
             )
-
-            full_answer = response.choices[0].message.content
-            full_reasoning = getattr(response.choices[0].message, 'reasoning_content', "")
-            engine_error = None
+            async for chunk in response:
+                if not chunk.choices:
+                    continue
+                delta = chunk.choices[0].delta
+                if hasattr(delta, 'reasoning_content') and delta.reasoning_content:
+                    accumulated_reasoning += delta.reasoning_content
+                    yield f"data: {json.dumps({'type': 'reasoning', 'content': delta.reasoning_content}, ensure_ascii=False)}\n\n"
+                if hasattr(delta, 'content') and delta.content:
+                    accumulated_content += delta.content
+                    yield f"data: {json.dumps({'type': 'chunk', 'content': delta.content}, ensure_ascii=False)}\n\n"
         except Exception as e:
-            print(f"[LLM Error]: {str(e)}")
-            full_answer = build_local_fallback_answer(request.query, source_items)
-            full_reasoning = ""
-            engine_error = engine_error_message(e)
+            print(f"[LLM Error] {e}")
+            fallback = f"抱歉，AI 服务暂时不可用（{str(e)[:100]}）。请稍后重试。"
+            accumulated_content += fallback
+            yield f"data: {json.dumps({'type': 'chunk', 'content': fallback}, ensure_ascii=False)}\n\n"
 
-        save_chat_log(
-            request.query,
-            full_reasoning,
-            full_answer,
-            source_items,
-            request.user_name,
-            request.phone,
-            case_profile=build_case_profile(request.query, request.user_name, request.phone),
-        )
+        save_chat_log(request.query, accumulated_reasoning, accumulated_content, source_items, request.scenario)
+        yield "data: [DONE]\n\n"
 
-        payload = {"answer": full_answer, "sources": source_items, "reasoning": full_reasoning}
-        if engine_error:
-            payload["error"] = engine_error
-        return payload
-
-@app.post("/api/export-docx")
-async def export_docx(payload: DocExportRequest):
-    title = safe_filename(payload.title)
-    if not payload.html.strip():
-        raise HTTPException(status_code=400, detail="文书内容为空，无法导出")
-
-    record_platform_event("document_exported", {
-        "stage": phase_label("doc"),
-        "user_name": payload.user_name,
-        "phone": payload.phone,
-        "question": title,
-        "status": "已生成文书",
-        "summary": f"导出文书：{title}",
-    })
-
-    docx_bytes = build_docx_bytes(title, payload.html)
-    filename = f"{title}.docx"
-    headers = {
-        "Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"
-    }
-    return StreamingResponse(
-        io.BytesIO(docx_bytes),
-        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        headers=headers,
-    )
-
-
-@app.post("/api/human-support")
-async def request_human_support(payload: HumanSupportRequest):
-    request_id = make_request_id("HS")
-    assignee = "法律援助志愿者" if payload.phase == "phase2" else "民事检察承办助理"
-    status = "待人工跟进"
-    summary_parts = [
-        payload.case_summary.strip(),
-        f"主体：{payload.evidence_subject}" if payload.evidence_subject else "",
-        f"金额：{payload.evidence_amount}" if payload.evidence_amount else "",
-    ]
-    summary = "；".join(part for part in summary_parts if part) or payload.latest_question[:160]
-
-    record_platform_event("human_support_requested", {
-        "request_id": request_id,
-        "stage": phase_label(payload.phase),
-        "user_name": payload.user_name,
-        "phone": payload.phone,
-        "question": payload.latest_question[:500],
-        "summary": summary,
-        "status": status,
-        "assignee": assignee,
-    })
-
-    return {
-        "request_id": request_id,
-        "status": status,
-        "assignee": assignee,
-        "message": f"已登记人工协助请求，编号 {request_id}。{assignee}会根据后台记录继续处理。",
-    }
-
-
-@app.post("/api/case-submit")
-async def submit_case(payload: CaseSubmitRequest):
-    request_id = make_request_id("CS")
-    profile = build_case_profile(
-        f"{payload.case_summary}\n主体：{payload.evidence_subject}\n金额：{payload.evidence_amount}",
-        payload.user_name,
-        payload.phone,
-    )
-    tracking = profile["tracking_plan"]
-    record_platform_event("case_submitted", {
-        "request_id": request_id,
-        "stage": phase_label("submit"),
-        "user_name": payload.user_name,
-        "phone": payload.phone,
-        "question": payload.case_summary[:500],
-        "summary": f"主体：{payload.evidence_subject or '待补充'}；金额：{payload.evidence_amount or '待补充'}",
-        "status": tracking["current_status"],
-        "assignee": tracking["handler"],
-        "case_profile": profile,
-    })
-    return {
-        "request_id": request_id,
-        "status": tracking["current_status"],
-        "tracking_plan": tracking,
-        "message": f"预审卷宗已登记，编号 {request_id}。",
-    }
-
-
-@app.get("/api/admin/records")
-async def admin_records(days: int = 7):
-    cutoff = datetime.now() - timedelta(days=max(1, min(days, 30)))
-    records = []
-
-    for item in read_jsonl(LOG_FILE_PATH):
-        ts = parse_timestamp(item.get("timestamp", ""))
-        if ts is None or ts < cutoff:
-            continue
-        answer = item.get("justitia_answer", "")
-        query = item.get("user_query", "")
-        profile = build_case_profile(query, item.get("user_name", "王某某"), item.get("phone", "133 3107 4710"))
-        records.append({
-            "id": record_id(item.get("timestamp"), item.get("phone"), query, "chat"),
-            "timestamp": item.get("timestamp"),
-            "stage": "第二阶段 AI研判",
-            "farmer_name": item.get("user_name", "王某某"),
-            "phone": item.get("phone", "133 3107 4710"),
-            "question": query,
-            "summary": answer[:180],
-            "status": item.get("status", "AI 已答复"),
-            "assignee": "Justitia 护薪助手",
-            "answer": answer,
-            "reasoning": item.get("justitia_thought", ""),
-            "sources": item.get("reference_sources", []),
-            "case_profile": profile,
-        })
-
-    for item in read_jsonl(EVENT_LOG_PATH):
-        ts = parse_timestamp(item.get("timestamp", ""))
-        if ts is None or ts < cutoff:
-            continue
-        question = item.get("question", "")
-        summary = item.get("summary", "")
-        profile_text = question or summary
-        if item.get("event_type") == "case_submitted":
-            profile_text = "\n".join(part for part in [question, summary] if part)
-        profile = build_case_profile(profile_text, item.get("user_name", "王某某"), item.get("phone", "133 3107 4710"))
-        records.append({
-            "id": record_id(item.get("timestamp"), item.get("phone"), item.get("request_id"), item.get("event_type")),
-            "timestamp": item.get("timestamp"),
-            "stage": item.get("stage", item.get("event_type", "平台记录")),
-            "farmer_name": item.get("user_name", "王某某"),
-            "phone": item.get("phone", "133 3107 4710"),
-            "question": question,
-            "summary": summary,
-            "status": item.get("status", "已记录"),
-            "assignee": item.get("assignee", ""),
-            "request_id": item.get("request_id", ""),
-            "event_type": item.get("event_type", ""),
-            "case_profile": profile,
-        })
-
-    records.sort(key=lambda row: row.get("timestamp", ""), reverse=True)
-    backend_log("ADMIN_DASHBOARD_QUERY", f"days={days} | records={len(records)}")
-    return {"days": days, "records": records[:200], "risk_summary": build_admin_risk_summary(records)}
+    return StreamingResponse(generate_stream(), media_type="text/event-stream")
 
 
 @app.post("/api/upload")
 async def upload_file(file: UploadFile = File(...)):
-    try:
-        contents = await file.read()
-        text = ""
-        original_filename = file.filename or "uploaded_file"
-        filename = original_filename.lower()
-        ocr_confidence = None
-        backend_log("PHASE2 FILE_UPLOAD", f"{original_filename} | {len(contents)} bytes")
-        
-        # 1. 处理 PDF/DOCX/TXT (保持原样)
-        if filename.endswith('.pdf'):
-            pdf_reader = PdfReader(io.BytesIO(contents))
-            for page in pdf_reader.pages:
-                text += page.extract_text() or ""
-        elif filename.endswith('.docx'):
-            text = docx2txt.process(io.BytesIO(contents))
-        elif filename.endswith('.txt'):
-            text = contents.decode('utf-8')
-            
-        # 2. 处理图片证据 (OCR)
-        elif filename.endswith(('.png', '.jpg', '.jpeg', '.bmp')):
-            if ocr_engine is None:
-                return {"error": f"OCR 引擎未就绪：{ocr_init_error or '请检查 rapidocr/easyocr 与模型文件是否安装完整'}"}
+    content = await file.read()
+    ext = Path(file.filename).suffix.lower()
 
-            backend_log("PHASE2 OCR_START", f"{ocr_engine_name} | {original_filename}")
-            image = Image.open(io.BytesIO(contents)).convert('RGB')
-            image_np = np.array(image)
-            text, ocr_confidence = run_ocr(image_np)
+    extracted_text = ""
+    ocr_confidence = None
 
-            if not text.strip():
-                return {"error": "OCR 未识别到有效文字，请换一张更清晰的图片，或直接输入欠条上的金额、签名和日期。"}
+    if ext in (".jpg", ".jpeg", ".png", ".bmp", ".tiff"):
+        try:
+            from PIL import Image
+            img = Image.open(io.BytesIO(content)).convert("RGB")
+            img_np = np.array(img)
+            extracted_text, ocr_confidence = run_ocr(img_np)
+        except Exception as e:
+            raise HTTPException(500, f"OCR 处理失败：{str(e)}")
 
-            print("\n" + "="*30 + " 扫描结果可视化 " + "="*30, flush=True)
-            print(text, flush=True) # 这里会在后端控制台完整输出图片文字
-            print("="*76 + "\n", flush=True)
-            
-            confidence_log = f"，平均置信度: {ocr_confidence}" if ocr_confidence is not None else ""
-            backend_log("PHASE2 OCR_DONE", f"{original_filename} | 提取字数: {len(text)}{confidence_log}")
-            
-        else:
-            return {"error": "暂不支持该文件格式"}
+    elif ext == ".pdf":
+        reader = PdfReader(io.BytesIO(content))
+        for page in reader.pages:
+            t = page.extract_text()
+            if t:
+                extracted_text += t + "\n"
 
-        return {
-            "filename": original_filename,
-            "content_preview": text[:500],
-            "full_content": text,
-            "ocr_engine": ocr_engine_name if filename.endswith(('.png', '.jpg', '.jpeg', '.bmp')) else None,
-            "ocr_confidence": ocr_confidence,
-        }
-    except Exception as e:
-        backend_log("Parse Error", str(e))
-        return {"error": f"文件解析失败: {str(e)}"}
+    elif ext in (".docx", ".doc"):
+        extracted_text = docx2txt.process(io.BytesIO(content))
 
+    elif ext == ".txt":
+        try:
+            extracted_text = content.decode("utf-8")
+        except UnicodeDecodeError:
+            extracted_text = content.decode("gbk")
+
+    else:
+        raise HTTPException(400, f"不支持的文件格式：{ext}")
+
+    extracted_text = extracted_text.strip()[:8000]
+    save_platform_event("file_upload", {
+        "filename": file.filename,
+        "ext": ext,
+        "text_length": len(extracted_text),
+        "ocr_confidence": ocr_confidence,
+    })
+
+    return {
+        "filename": file.filename,
+        "text": extracted_text,
+        "confidence": ocr_confidence,
+        "engine": ocr_engine_name,
+    }
+
+
+@app.post("/api/export-docx")
+async def export_docx(request: ExportRequest):
+    buf = export_creditor_complaint_docx(request.html_content, request.filename)
+    safe_filename = re.sub(r'[<>:"/\\|?*]', '_', request.filename)[:80]
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(safe_filename)}.docx"}
+    )
+
+
+@app.get("/api/finance/tables")
+async def list_finance_tables():
+    tables = get_finance_tables()
+    db_exists = FINANCE_DB_PATH.exists()
+    return {"db_exists": db_exists, "tables": tables, "count": len(tables)}
+
+
+@app.get("/api/scenarios")
+async def get_scenarios():
+    return SCENARIOS
+
+
+# ================= 12. Admin Dashboard =================
+@app.get("/api/admin/events")
+async def get_admin_events(password: str = ""):
+    events = []
+    if EVENT_LOG_PATH.exists():
+        with open(EVENT_LOG_PATH, "r", encoding="utf-8") as f:
+            for line in f:
+                if line.strip():
+                    events.append(json.loads(line))
+    return {"events": events[-200:], "total": len(events)}
+
+
+# ================= 13. Static Frontend =================
+WEB_DIR = CODE_DIR / "Web"
+
+
+@app.get("/")
+async def serve_frontend():
+    if (WEB_DIR / "index.html").exists():
+        return FileResponse(WEB_DIR / "index.html")
+    raise HTTPException(404, "Frontend not found")
+
+
+@app.get("/{path:path}")
+async def serve_static(path: str):
+    file_path = WEB_DIR / path
+    if file_path.exists() and file_path.is_file():
+        return FileResponse(file_path)
+    # Fallback to SPA
+    if (WEB_DIR / "index.html").exists():
+        return FileResponse(WEB_DIR / "index.html")
+    raise HTTPException(404, "Not found")
+
+
+# ================= 14. Entry Point =================
 if __name__ == "__main__":
-    backend_log("SERVER_START", f"Justitia Shield API Server starting at http://{SERVER_HOST}:{SERVER_PORT}")
-    uvicorn.run(app, host=SERVER_HOST, port=SERVER_PORT)
+    print(f"\n{'='*60}")
+    print(f"  Aegis 债优盾 — 中小债权人维权智能平台")
+    print(f"  股东出资义务加速到期专项 AI 法律顾问")
+    print(f"{'='*60}\n")
+    uvicorn.run(app, host=SERVER_HOST, port=SERVER_PORT, log_level="info")

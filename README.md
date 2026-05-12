@@ -1,24 +1,30 @@
-# HuXin “护薪”检查支持起诉智能平台
+# Aegis 债优盾 — 中小债权人维权智能平台
 
-HuXin 是一个面向农民工欠薪维权场景的法律智能平台。当前项目包含 FastAPI 后端、前端、对话接口、Chroma 本地法律知识库检索、文件解析、RapidOCR 图片证据提取与 DOCX 文书导出能力。
-
+Aegis 债优盾是一个面向中小债权人的法律智能平台，核心聚焦**股东出资义务加速到期**专项维权。项目整合了 FastAPI 后端、AI 对话、Chroma 法律知识库检索、财务数据库查账、文件 OCR 解析与 DOCX 文书导出能力。
 
 ## 项目结构
 
 ```text
 Code/
-  dual_api_server.py        # FastAPI 后端与静态前端托管
-  Web/index.html            # 本地运行使用的前端页面
-  Scripts/embedding_bge.py  # 从 Data 文本库重建 Chroma 向量库
-Model/chroma_db/            # 当前可运行的 Chroma 向量库
-Log/                        # 本地运行时聊天日志，不提交到 Git
+  dual_api_server.py        # FastAPI 主后端
+  Web/index.html            # 前端页面（SPA）
+  Scripts/embedding_bge.py  # 从 Data/ 法律文本构建 Chroma 向量库
+  Scripts/init_finance_db.py # 从 Data/财务数据/ Excel 构建 SQLite 财务库
+  Scripts/get_headers.py    # 扫描 Excel 表头
+Data/
+  法律案例/                 # 法律案例 txt 文件
+  法条/                    # 法律法规 txt 文件
+  司法解释/                # 司法解释 txt 文件
+  财务数据/                # 财务报表 xlsx 文件
+Model/
+  chroma_db/               # Chroma 向量库
+  finance_data.db          # SQLite 财务数据库
+Log/                       # 聊天日志与平台事件
 ```
 
 ## 快速开始
 
-HuXin 使用后端启动脚本：Mac 用 `run_local.sh`，Windows 用 `run_local.bat`。它们只负责把本机后端启动在 `http://127.0.0.1:8000`。
-
-1. 第一次运行前准备环境变量：
+### 1. 准备环境变量
 
 ```bash
 cp .env.example Code/.env
@@ -26,86 +32,80 @@ cp .env.example Code/.env
 
 将 `Code/.env` 里的 `DEEPSEEK_API_KEY` 改成真实密钥。
 
-> **安全提示：** `Code/.env` 已被 `.gitignore` 排除，不会被提交。如果怀疑密钥泄露，请立即前往 [DeepSeek 控制台](https://platform.deepseek.com/api_keys) 轮换密钥，并更新本地 `Code/.env`。
+> **安全提示：** `Code/.env` 已被 `.gitignore` 排除，不会被提交。
 
-
-2. 配置公网后端地址：
+### 2. 配置公网后端地址
 
 部署在 GitHub Pages 时，需要配置 cpolar / cloudflared 隧道地址。编辑 `config.js` 将 `publicApiBase` 改为你的隧道地址。也可以通过 URL 参数在运行时覆盖：
 
 ```text
-https://timemachinedmc.github.io/HuXin/?api=https://your-tunnel.cpolar.top
+https://timemachinedmc.github.io/Aegis/?api=https://your-tunnel.cpolar.top
 ```
 
-本地开发无需配置，前端会自动探测 `http://127.0.0.1:8000`。
+### 3. 构建知识库
 
-
-3. 启动程序：
-
-Mac 启动后端：
-
-```bash
-./run_local.sh
-```
-
-Windows 启动后端：
-
-```bat
-run_local.bat
-```
-
-如果后端已经在运行，脚本会直接显示实时后端日志。浏览器里发起 AI 研判、文书导出、提交预审、人工协助请求时，终端会同步打印记录。此时按 `Ctrl-C` 只是停止看日志，不会关闭后端。
-
-关闭后端：
-
-```bash
-./run_local.sh stop
-```
-
-Windows：
-
-```bat
-run_local.bat stop
-```
-
-3. 后端日志出现 `Uvicorn running on http://127.0.0.1:8000` 后，本机测试可以打开：
-
-```text
-https://timemachinedmc.github.io/HuXin/?api=http://127.0.0.1:8000
-```
-
-健康检查地址是 `http://127.0.0.1:8000/api/health`。
-
-启动脚本会把 `Model/chroma_db` 复制到 `.runtime/chroma_db` 后再加载，避免 Chroma 运行时写入污染 Git 里保存的知识库快照。需要刷新运行库时，删除 `.runtime/chroma_db` 后重新启动即可。
-
-
-## 重建法律知识库
-
-默认会直接使用已提交的 `Model/chroma_db`。如果要从原始 `.txt` 法律文本重建，把文本放入 `Data/`，然后运行：
+**法律知识库**（从 Data/ 下所有 .txt 文件构建）：
 
 ```bash
 source .venv/bin/activate
 python Code/Scripts/embedding_bge.py
 ```
 
-如需第一次下载 `BAAI/bge-m3`，置 `.env` 中 `HF_OFFLINE=0`。
+**财务数据库**（从 Data/财务数据/ 下所有 .xlsx 文件构建）：
 
+```bash
+python Code/Scripts/init_finance_db.py
+```
 
-## 更新日志
+### 4. 启动后端
 
-04/24/2026 初版完成上线
+macOS：
+```bash
+./run_local.sh
+```
 
-04/27/2026 接入DeepSeek-V4
+Windows：
+```bat
+run_local.bat
+```
 
-04/28/2026 主 OCR 换成 RapidOCR(PP-OCRv4)，新增真实文件导出接口 /api/export-docx
+浏览器访问 `http://127.0.0.1:8000`。
 
-04/30/2026 增加“管理员看板”，调整证据链状态逻辑链
+### 5. 健康检查
 
-05/01/2026 管理员看板新增“案件详情”面板，点击记录可看案情详细；聊天页证据链改为优先使用后端结构化结果，并新增案件时间线
+```text
+http://127.0.0.1:8000/api/health
+```
 
-05/04/2026 新增12345、街道综治、检察业务与自主填报的标准化线索池展示，并在管理员看板加入同工地欠薪风险预警
+## API 端点
 
-05/08/2026 外置公网后端地址到 config.js，完善 API Key 安全文档与防护
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/api/chat` | AI 对话（支持 SSE 流式） |
+| POST | `/api/upload` | 文件上传 + OCR |
+| POST | `/api/export-docx` | 法律文书 DOCX 导出 |
+| GET | `/api/finance/tables` | 财务数据库表列表 |
+| GET | `/api/scenarios` | 维权场景定义 |
+| GET | `/api/health` | 健康检查 |
+| GET | `/api/admin/events` | 管理看板事件 |
+
+## 维权场景
+
+1. **主线**：公司欠钱不还，想追未实缴股东
+2. **主线**：公司不能清偿，判断能否主张股东出资加速到期
+3. 债务发生后，公司延长了股东出资期限
+4. 怀疑股东出资后又把钱转走（抽逃出资）
+5. 公司减资后导致债权无法清偿
+6. 股东转让股权后无人履行出资义务
+7. 不确定属于哪种情况，需要系统初步判断
+
+## 技术栈
+
+- 后端：FastAPI + DeepSeek V3/V4 + ChromaDB (BGE-M3) + SQLite
+- 前端：原生 HTML/CSS/JS + Tailwind CSS + Marked.js
+- OCR：RapidOCR (PP-OCRv4) / EasyOCR
+- 文档：python-docx
 
 ## 开源协议
+
 本项目采用 [MIT License](LICENSE) 许可协议。

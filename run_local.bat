@@ -2,25 +2,24 @@
 setlocal
 cd /d "%~dp0"
 
-echo HuXin backend for Windows
+echo Aegis 债优盾 backend for Windows
 echo This starts the local API at http://127.0.0.1:8000
-echo Same PC test: https://timemachinedmc.github.io/HuXin/?api=http://127.0.0.1:8000
-echo Other devices use the cpolar URL configured in index.html.
+echo Same PC test: https://timemachinedmc.github.io/Aegis/?api=http://127.0.0.1:8000
+echo Other devices use the cpolar URL configured in config.js.
 echo.
 
-if "%HUXIN_PORT%"=="" set HUXIN_PORT=8000
+if "%AEGIS_PORT%"=="" set AEGIS_PORT=8000
 if not exist ".runtime" mkdir .runtime
 
 if /I "%~1"=="stop" (
-    powershell -NoProfile -Command "$p=(Get-NetTCPConnection -LocalPort %HUXIN_PORT% -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique); if($p){$p | ForEach-Object { Stop-Process -Id $_ -Force }; Write-Host 'Stopped HuXin backend on port %HUXIN_PORT%.'} else {Write-Host 'No HuXin backend is listening on port %HUXIN_PORT%.'}"
+    powershell -NoProfile -Command "$p=(Get-NetTCPConnection -LocalPort %AEGIS_PORT% -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique); if($p){$p | ForEach-Object { Stop-Process -Id $_ -Force }; Write-Host 'Stopped Aegis backend on port %AEGIS_PORT%.'} else {Write-Host 'No Aegis backend is listening on port %AEGIS_PORT%.'}"
     exit /b 0
 )
 
-powershell -NoProfile -Command "try { Invoke-WebRequest -UseBasicParsing -TimeoutSec 3 http://127.0.0.1:%HUXIN_PORT%/api/health | Out-Null; exit 0 } catch { exit 1 }" >nul 2>nul
+powershell -NoProfile -Command "try { Invoke-WebRequest -UseBasicParsing -TimeoutSec 3 http://127.0.0.1:%AEGIS_PORT%/api/health | Out-Null; exit 0 } catch { exit 1 }" >nul 2>nul
 if "%ERRORLEVEL%"=="0" (
-    echo HuXin backend is already running at http://127.0.0.1:%HUXIN_PORT%
-    echo Same PC test: https://timemachinedmc.github.io/HuXin/?api=http://127.0.0.1:%HUXIN_PORT%
-    echo Other devices use the cpolar URL configured in index.html.
+    echo Aegis 债优盾 backend is already running at http://127.0.0.1:%AEGIS_PORT%
+    echo Same PC test: https://timemachinedmc.github.io/Aegis/?api=http://127.0.0.1:%AEGIS_PORT%
     echo.
     echo Showing live backend logs. Press Ctrl-C to stop watching logs; backend keeps running.
     if exist ".runtime\backend-live.log" (
@@ -52,7 +51,7 @@ if exist "Model\chroma_db" if not exist ".runtime\chroma_db" (
 )
 
 if "%CHROMA_DB_PATH%"=="" set CHROMA_DB_PATH=.runtime\chroma_db
-if "%HUXIN_HOST%"=="" set HUXIN_HOST=127.0.0.1
+if "%AEGIS_HOST%"=="" set AEGIS_HOST=127.0.0.1
 set PYTHONUNBUFFERED=1
 
 python -u Code\dual_api_server.py

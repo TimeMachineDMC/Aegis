@@ -4,2203 +4,950 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Justitia 护薪 | 检察支持起诉智能平台</title>
+    <title>Aegis 债优盾 | 中小债权人维权智能平台</title>
     <link rel="icon" type="image/svg+xml"
-        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%2309090b%22/><path d=%22M50 25v50M30 40l20-5 20 5M30 40c0 10 5 15 10 15s10-5 10-15M70 40c0 10-5 15-10 15s-10-5-10-15%22 fill=%22none%22 stroke=%22%23f59e0b%22 stroke-width=%225%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/></svg>">
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%230f172a%22/><text y=%2268%22 x=%2250%22 text-anchor=%22middle%22 font-size=%2250%22>🛡</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css/github-markdown-dark.css">
 
     <style>
         :root {
-            --bg-dark: #09090b;
-            --accent-amber: #f59e0b;
-            --glass-zinc: rgba(24, 24, 27, 0.8);
+            --bg-dark: #0f172a;
+            --accent: #38bdf8;
+            --accent2: #818cf8;
+            --glass: rgba(30, 41, 59, 0.85);
+            --card: rgba(30, 41, 59, 0.6);
         }
 
         body {
             background-color: var(--bg-dark);
-            color: #f4f4f5;
-            background-image: radial-gradient(circle at 50% -20%, #1e1b4b, transparent);
-            overflow-x: hidden;
+            color: #e2e8f0;
+            background-image: radial-gradient(circle at 50% -10%, #1e3a5f, transparent 60%),
+                radial-gradient(circle at 80% 60%, #1e1b4b, transparent 50%);
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
         }
 
-        /* 视图切换动画 */
         .view-section {
-            animation: fadeIn 0.4s ease-in-out forwards;
+            animation: fadeSlide 0.35s ease-out;
         }
 
-        @keyframes fadeIn {
+        @keyframes fadeSlide {
             from {
                 opacity: 0;
-                transform: translateY(10px);
+                transform: translateY(12px);
             }
-
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
 
-        /* 对话框排版优化 */
-        .chat-container {
-            height: calc(100vh - 190px);
-            overflow-y: auto;
-            padding-bottom: 120px !important;
+        .glass {
+            background: var(--glass);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
         }
 
-        #view-chat main {
-            min-height: calc(100vh - 150px);
-            align-items: flex-start;
+        .card {
+            background: var(--card);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .card:hover {
+            border-color: rgba(56, 189, 248, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(56, 189, 248, 0.1);
+        }
+
+        .card-main {
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            background: rgba(14, 165, 233, 0.08);
+        }
+
+        .chat-container {
+            height: calc(100vh - 210px);
+            overflow-y: auto;
+            padding-bottom: 100px;
+            scroll-behavior: smooth;
         }
 
         .markdown-body {
-            background-color: transparent !important;
+            background: transparent !important;
             font-size: 15px !important;
-            line-height: 1.8;
-            color: #d4d4d8 !important;
+            line-height: 1.85;
+            color: #cbd5e1 !important;
+        }
+
+        .markdown-body h2 {
+            color: var(--accent) !important;
+            border-bottom: 1px solid rgba(56, 189, 248, 0.2) !important;
+            padding-bottom: 6px;
         }
 
         .markdown-body strong {
-            color: var(--accent-amber);
-            font-weight: 800;
+            color: #fbbf24;
+            font-weight: 700;
         }
 
         .markdown-body table {
             width: 100%;
             border-collapse: collapse;
-            margin: 16px 0;
-            font-size: 14px;
+            margin: 14px 0;
+            font-size: 13px;
         }
 
         .markdown-body th,
         .markdown-body td {
             border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 10px 14px;
+            padding: 8px 12px;
             text-align: left;
         }
 
         .markdown-body th {
-            background: rgba(245, 158, 11, 0.1);
-            color: var(--accent-amber);
-            font-weight: bold;
-            border-bottom: 2px solid var(--accent-amber);
-        }
-
-        .bubble-ai {
-            background: var(--glass-zinc);
-            border: 1px solid rgba(245, 158, 11, 0.1);
-            position: relative;
-            box-shadow: 0 4px 30px rgba(245, 158, 11, 0.04);
-            padding: 1.5rem !important;
-        }
-
-        .bubble-ai::before {
-            content: "";
-            position: absolute;
-            left: 0;
-            top: 20%;
-            bottom: 20%;
-            width: 2px;
-            background: var(--accent-amber);
-            box-shadow: 0 0 10px var(--accent-amber);
-        }
-
-        .bubble-user {
-            background: #18181b;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-            padding: 1rem 1.25rem !important;
-        }
-
-        .reasoning-panel {
-            background: rgba(39, 39, 42, 0.4);
-            border-left: 2px dashed #3f3f46;
-            margin: 12px 0;
-            padding: 12px 16px;
-            font-size: 13px;
-            color: #71717a;
-            border-radius: 0 8px 8px 0;
-        }
-
-        /* 发光进度条样式 */
-        .step-node {
-            transition: all 0.5s ease;
-        }
-
-        .step-node.active {
-            background: var(--accent-amber);
-            box-shadow: 0 0 15px var(--accent-amber), 0 0 30px rgba(245, 158, 11, 0.5);
-            border-color: transparent;
-        }
-
-        .step-node.completed {
-            background: var(--accent-amber);
-            border-color: transparent;
-        }
-
-        .step-line {
-            transition: all 0.5s ease;
-        }
-
-        .step-line.active {
-            background: var(--accent-amber);
-            box-shadow: 0 0 10px var(--accent-amber);
-        }
-
-        .glow-generating {
-            animation: borderPulse 2s infinite ease-in-out;
-        }
-
-        @keyframes borderPulse {
-
-            0%,
-            100% {
-                border-color: rgba(255, 255, 255, 0.1);
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-            }
-
-            50% {
-                border-color: rgba(245, 158, 11, 0.6);
-                box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
-            }
+            background: rgba(56, 189, 248, 0.1);
+            color: var(--accent);
         }
 
         ::-webkit-scrollbar {
-            width: 4px;
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
         }
 
-        ::-webkit-scrollbar-thumb {
-            background: #27272a;
+        .pulse-dot {
+            width: 10px;
+            height: 10px;
+            background: #22c55e;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+            }
+        }
+
+        .score-ring {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 800;
+            border: 4px solid;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #0ea5e9, #6366f1);
+            color: white;
+            border: none;
+            padding: 10px 24px;
             border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(56, 189, 248, 0.3);
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .tag-legal {
+            background: rgba(99, 102, 241, 0.2);
+            color: #a5b4fc;
+        }
+
+        .tag-finance {
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ade80;
         }
     </style>
 </head>
 
-<body class="antialiased font-sans">
-
-    <header
-        class="border-b border-white/5 p-4 bg-black/20 backdrop-blur-xl sticky top-0 z-30 flex items-center justify-between">
-        <div class="flex items-center gap-6">
-            <div class="flex items-center gap-3 cursor-pointer" onclick="goHomeFromBrand()">
-                <div class="text-amber-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 3v18" />
-                        <path d="m5 8 7-5 7 5" />
-                        <path d="M3 10h18" />
-                        <path d="M21 21H3" />
-                        <path d="M12 12H3" />
-                        <path d="M12 12h9" />
-                    </svg>
-                </div>
-                <div>
-                    <h1 class="text-sm font-black tracking-[0.2em] text-white uppercase">Justitia 护薪</h1>
-                    <p class="text-[9px] text-amber-500/80 tracking-widest mt-0.5">西城区检察院 支持起诉平台</p>
-                </div>
-            </div>
-
-            <nav id="main-nav" class="hidden flex items-center gap-6 ml-8 border-l border-white/10 pl-8">
-                <button type="button" data-target="view-home" onclick="goToStep(1)"
-                    class="nav-btn text-amber-500 font-bold text-sm transition-colors hover:text-amber-400">工作台</button>
-                <button type="button" data-target="view-chat" onclick="goToStep(2)"
-                    class="nav-btn text-zinc-400 font-bold text-sm transition-colors hover:text-amber-400">智能研判</button>
-                <button type="button" data-target="view-doc" onclick="goToStep(3)"
-                    class="nav-btn text-zinc-400 font-bold text-sm transition-colors hover:text-amber-400">文书中心</button>
-            </nav>
-        </div>
-
-        <div id="user-profile" class="hidden flex items-center gap-4">
-            <div class="text-right">
-                <p id="profile-name" class="text-xs text-zinc-300 font-bold">王某某</p>
-                <p id="profile-phone" class="text-[10px] text-zinc-500 font-mono">133****4710</p>
-            </div>
-            <div id="profile-avatar"
-                class="h-8 w-8 rounded-full bg-zinc-800 border border-amber-500/30 flex items-center justify-center text-amber-500 font-bold">
-                王
+<body class="min-h-screen">
+    <!-- ==================== Navigation Bar ==================== -->
+    <nav class="glass sticky top-0 z-50 px-6 py-3 mx-4 mt-3 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <span class="text-2xl">🛡️</span>
+            <div>
+                <h1 class="text-lg font-bold text-white">Aegis 债优盾</h1>
+                <p class="text-xs text-slate-400">中小债权人维权智能平台</p>
             </div>
         </div>
-    </header>
-
-    <div id="progress-container" class="hidden max-w-4xl mx-auto pt-8 pb-4 px-6 relative z-20">
-        <div class="flex items-center justify-between relative">
-            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-zinc-800 -z-10 rounded-full"></div>
-            <div id="line-1"
-                class="step-line absolute left-0 top-1/2 -translate-y-1/2 w-0 h-1 bg-zinc-800 -z-10 rounded-full"></div>
-
-            <div class="flex flex-col items-center">
-                <div id="node-1"
-                    class="step-node active w-8 h-8 rounded-full border-2 border-zinc-600 bg-zinc-900 flex items-center justify-center text-xs font-bold">
-                    1</div>
-                <p id="text-1" class="text-[11px] mt-2 font-bold text-amber-500 tracking-wider">线索收集</p>
-            </div>
-            <div class="flex flex-col items-center">
-                <div id="node-2"
-                    class="step-node w-8 h-8 rounded-full border-2 border-zinc-600 bg-zinc-900 flex items-center justify-center text-xs font-bold text-zinc-500">
-                    2</div>
-                <p class="text-[11px] mt-2 font-bold text-zinc-500 tracking-wider" id="text-2">法律研判</p>
-            </div>
-            <div class="flex flex-col items-center">
-                <div id="node-3"
-                    class="step-node w-8 h-8 rounded-full border-2 border-zinc-600 bg-zinc-900 flex items-center justify-center text-xs font-bold text-zinc-500">
-                    3</div>
-                <p class="text-[11px] mt-2 font-bold text-zinc-500 tracking-wider" id="text-3">文书生成</p>
-            </div>
-            <div class="flex flex-col items-center">
-                <div id="node-4"
-                    class="step-node w-8 h-8 rounded-full border-2 border-zinc-600 bg-zinc-900 flex items-center justify-center text-xs font-bold text-zinc-500">
-                    4</div>
-                <p class="text-[11px] mt-2 font-bold text-zinc-500 tracking-wider" id="text-4">检察介入</p>
-            </div>
+        <div class="flex items-center gap-2" id="nav-buttons">
+            <button onclick="switchView('landing')" id="nav-landing"
+                class="px-3 py-1.5 text-sm rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition">首页</button>
+            <button onclick="switchView('chat')" id="nav-chat"
+                class="px-3 py-1.5 text-sm rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition">智能对话</button>
+            <button onclick="switchView('doc')" id="nav-doc"
+                class="px-3 py-1.5 text-sm rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition">文书导出</button>
+            <button onclick="switchView('admin')" id="nav-admin"
+                class="px-3 py-1.5 text-sm rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition">管理看板</button>
         </div>
-    </div>
+    </nav>
 
-    <main id="view-login" class="view-section flex items-center justify-center min-h-[70vh]">
-        <div class="bg-zinc-900/50 p-8 rounded-2xl border border-white/5 shadow-2xl w-[28rem] max-w-[92vw] backdrop-blur-sm text-center">
-            <h2 class="text-xl font-bold text-white mb-2">维权通道登录</h2>
-            <p class="text-xs text-zinc-500 mb-6">实名认证保障您的合法权益</p>
+    <!-- ==================== Landing: Scenario Selection ==================== -->
+    <div id="view-landing" class="view-section max-w-5xl mx-auto px-6 pt-12 pb-20">
+        <div class="text-center mb-10">
+            <h2 class="text-3xl font-bold text-white mb-3">选择您的维权场景</h2>
+            <p class="text-slate-400 text-lg">系统将根据您的场景，提供针对性的证据分析、法律研判和行动指引</p>
+        </div>
 
-            <div class="grid grid-cols-1 gap-3 mb-5 text-left">
-                <button type="button" id="login-worker-card" onclick="selectLoginAccount('worker')"
-                    class="login-account border border-amber-500 bg-amber-500/10 rounded-xl px-4 py-3 transition-colors">
-                    <p class="text-sm font-bold text-zinc-100">王某某 · 农民工端</p>
-                    <p class="text-xs text-zinc-500 mt-1">133 3107 4710</p>
-                </button>
-                <button type="button" id="login-admin-card" onclick="selectLoginAccount('admin')"
-                    class="login-account border border-zinc-800 bg-zinc-950 rounded-xl px-4 py-3 transition-colors hover:border-zinc-600">
-                    <p class="text-sm font-bold text-zinc-100">管理员 · 平台看板</p>
-                    <p class="text-xs text-zinc-500 mt-1">188 1193 9453</p>
-                </button>
-            </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="scenario-grid">
+            <!-- Scenarios injected by JS -->
+        </div>
 
-            <input id="login-phone" type="text" value="133 3107 4710" disabled
-                class="w-full bg-zinc-950 border border-zinc-800 text-zinc-300 text-center py-3 rounded-xl mb-4 focus:outline-none">
-            <input id="login-code" type="text" value="8888"
-                class="w-full bg-zinc-950 border border-zinc-800 text-amber-500 font-mono tracking-[0.5em] text-center py-3 rounded-xl mb-8 focus:outline-none">
-
-            <button type="button" onclick="doLogin()"
-                class="w-full bg-amber-500 hover:bg-amber-400 text-black font-bold py-3 rounded-xl transition-all shadow-[0_0_15px_rgba(245,158,11,0.4)]">
-                验证并进入系统
+        <div class="mt-8 text-center">
+            <button onclick="quickStart()"
+                class="btn-primary px-8 py-3 text-lg">
+                直接开始咨询（AI 自动判断场景）
             </button>
         </div>
-    </main>
-
-    <main id="view-home" class="view-section max-w-4xl mx-auto p-6 mt-10" style="display: none;">
-        <h2 id="home-title" class="text-2xl font-bold text-white mb-2">您好，王某某</h2>
-        <p class="text-sm text-zinc-400 mb-10">请选择您需要办理的业务。Justitia 引擎将全程辅助您梳理证据并生成法律文书。</p>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div onclick="openChat('voice')"
-                class="group relative bg-zinc-900/60 border border-zinc-800 rounded-2xl p-6 cursor-pointer hover:border-amber-500/50 transition-all">
-                <div class="absolute -right-4 -top-4 w-24 h-24 bg-amber-500/10 rounded-full blur-xl"></div>
-                <div class="text-amber-500 mb-4 bg-amber-500/10 w-12 h-12 rounded-xl flex items-center justify-center">
-                    🎤</div>
-                <h3 class="text-lg font-bold text-zinc-100 mb-2">语音说委屈</h3>
-                <p class="text-xs text-zinc-500">不会打字没关系，直接把您被欠薪的经过说给 AI 听，自动提炼事实。</p>
-            </div>
-
-            <div onclick="openChat('photo')"
-                class="group relative bg-zinc-900/60 border border-zinc-800 rounded-2xl p-6 cursor-pointer hover:border-amber-500/50 transition-all">
-                <div class="text-amber-500 mb-4 bg-amber-500/10 w-12 h-12 rounded-xl flex items-center justify-center">
-                    📷</div>
-                <h3 class="text-lg font-bold text-zinc-100 mb-2">拍照传证据</h3>
-                <p class="text-xs text-zinc-500">对准欠条、工资单或聊天记录拍照，智能引擎自动识别金额和日期。</p>
-            </div>
-
-            <div onclick="openDoc()"
-                class="group relative bg-zinc-900/60 border border-zinc-800 rounded-2xl p-6 cursor-pointer hover:border-amber-500/50 transition-all">
-                <div class="text-amber-500 mb-4 bg-amber-500/10 w-12 h-12 rounded-xl flex items-center justify-center">
-                    📑</div>
-                <h3 class="text-lg font-bold text-zinc-100 mb-2">文书一键成</h3>
-                <p class="text-xs text-zinc-500">根据提取线索，一键生成符合西城区检察院标准的《支持起诉申请书》。</p>
-            </div>
-        </div>
-    </main>
-
-    <div id="view-chat" class="view-section relative" style="display: none;">
-        <main class="max-w-5xl mx-auto flex gap-6 px-4">
-            <div class="w-64 mt-6 hidden md:block">
-                <div class="bg-zinc-900/80 border border-white/5 rounded-xl p-4 sticky top-24">
-                    <h4
-                        class="text-xs font-bold text-amber-500 mb-4 uppercase tracking-widest border-b border-white/5 pb-2">
-                        📋 证据链状态</h4>
-                    <ul class="space-y-3 text-sm" id="evidence-list">
-                        <li class="flex items-center gap-2 text-zinc-500"><span
-                                class="w-2 h-2 rounded-full bg-zinc-700"></span> 欠薪主体信息</li>
-                        <li class="flex items-center gap-2 text-zinc-500"><span
-                                class="w-2 h-2 rounded-full bg-zinc-700"></span> 劳动关系证明</li>
-                        <li class="flex items-center gap-2 text-zinc-500"><span
-                                class="w-2 h-2 rounded-full bg-zinc-700"></span> 具体欠薪金额</li>
-                    </ul>
-
-                    <div id="data-fusion-panel" class="mt-5 pt-4 border-t border-white/5">
-                        <h4 class="text-xs font-bold text-zinc-500 mb-3 uppercase tracking-widest">下一步提示</h4>
-                        <div class="rounded-lg border border-white/5 bg-zinc-950/70 p-3">
-                            <p class="text-xs text-zinc-500">发送案情后自动提示缺什么材料、是否需要打12345或去街道反映。</p>
-                        </div>
-                    </div>
-
-                    <div class="mt-5 pt-4 border-t border-white/5">
-                        <h4 class="text-xs font-bold text-zinc-500 mb-3 uppercase tracking-widest">案件时间线</h4>
-                        <ol id="case-timeline-list" class="space-y-3 text-xs text-zinc-500">
-                            <li>发送案情后自动生成。</li>
-                        </ol>
-                    </div>
-
-                    <div class="mt-6 pt-4 border-t border-white/5 space-y-3">
-                        <button type="button" onclick="requestJudgment()"
-                            class="w-full text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 py-2 rounded-lg transition-colors border border-transparent hover:border-amber-500/50">
-                            1. 请求 AI 综合研判
-                        </button>
-                        <button type="button" onclick="openDoc()"
-                            class="w-full text-xs bg-amber-500 hover:bg-amber-400 text-black font-bold py-2 rounded-lg transition-all shadow-[0_0_10px_rgba(245,158,11,0.2)]">
-                            2. 确认无误，生成文书 ➔
-                        </button>
-                    </div>
-
-                    <div class="mt-4 pt-4 border-t border-white/5">
-                        <button type="button" onclick="requestHumanSupport('phase2')"
-                            class="w-full text-xs text-zinc-500 hover:text-amber-500 py-2 transition-colors flex items-center justify-center gap-1">
-                            🙋 证据不足？转接人工援助
-                        </button>
-                        <p id="phase2-support-status" class="mt-2 text-[11px] leading-relaxed text-zinc-500"></p>
-                    </div>
-                </div>
-            </div>
-
-            <div id="chat-box" class="flex-1 p-4 chat-container space-y-6">
-                <div class="flex justify-start">
-                    <div class="bubble-ai rounded-r-xl max-w-[100%] shadow-2xl">
-                        <p class="text-amber-500 font-bold mb-3 tracking-tighter text-xs">JUSTITIA 护薪助手</p>
-                        <div class="text-zinc-300 text-sm leading-relaxed" id="chat-greeting">
-                            您好！我是西城区检察院的智能助手。请问有什么我可以帮您？
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </main>
-
-        <footer id="chat-footer" class="fixed bottom-4 w-full bg-transparent z-40 pointer-events-none">
-            <div class="max-w-5xl mx-auto flex gap-6 px-4 w-full">
-                <div class="w-64 hidden md:block"></div>
-
-                <div class="flex-1 pointer-events-auto">
-                    <div id="file-list" class="flex flex-wrap gap-2 mb-4"></div>
-                    <div class="relative group">
-                        <div
-                            class="absolute -inset-0.5 bg-gradient-to-r from-amber-500/20 to-purple-500/20 rounded-2xl blur opacity-30 group-focus-within:opacity-100 transition duration-1000">
-                        </div>
-                        <div id="input-wrapper"
-                            class="relative bg-zinc-900/90 border border-white/10 rounded-2xl p-3 shadow-2xl backdrop-blur-xl">
-                            <div class="flex items-end gap-2">
-                                <button type="button" id="voice-trigger" onclick="simulateVoiceInput()"
-                                    class="p-3 text-zinc-500 hover:text-amber-500 transition-all transform hover:scale-110">🎤</button>
-                                <button type="button" id="upload-trigger"
-                                    class="p-3 text-zinc-500 hover:text-amber-500 transition-all transform hover:scale-110">📷</button>
-                                <input type="file" id="file-input" class="hidden" accept=".pdf,.docx,.txt,image/*"
-                                    multiple>
-
-                                <textarea id="user-input" rows="1" placeholder="输入纠纷详情，或点击左侧麦克风语音描述..."
-                                    class="flex-1 bg-transparent border-none text-zinc-200 placeholder-zinc-600 text-sm py-3 focus:outline-none resize-none max-h-48 overflow-y-auto"></textarea>
-
-                                <button type="button" id="send-btn"
-                                    class="bg-amber-500 hover:bg-amber-400 text-black p-3 rounded-xl transition-all active:scale-90 font-bold">发送</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </footer>
     </div>
 
-    <main id="view-doc" class="view-section max-w-5xl mx-auto p-6 mt-6" style="display: none;">
-        <div class="flex justify-between items-center mb-6">
-            <div>
-                <h2 class="text-xl font-bold text-white flex items-center gap-2">
-                    📑 法律文书工作台
-                </h2>
-                <p class="text-xs text-zinc-500 mt-1">根据提取的证据，自由切换并生成所需的文书模板</p>
-            </div>
-            <div class="flex gap-3">
-                <button type="button" onclick="backToChat()"
-                    class="bg-zinc-800 border border-zinc-700 text-zinc-400 px-4 py-2 rounded-lg text-sm hover:text-white transition-colors flex items-center gap-2">
-                    ⇠ 返回智能研判
-                </button>
-                <button type="button" onclick="exportDoc('word')"
-                    class="bg-zinc-800 border border-zinc-700 text-zinc-300 px-4 py-2 rounded-lg text-sm hover:text-white hover:border-zinc-500 transition-colors flex items-center gap-2">
-                    💾 导出 Word
-                </button>
-                <button type="button" onclick="submitToProcuratorate()"
-                    class="bg-amber-500 text-black px-4 py-2 rounded-lg text-sm font-bold shadow-lg hover:bg-amber-400 transition-colors flex items-center gap-2">
-                    🚀 一键提交检察院审核
-                </button>
+    <!-- ==================== Chat View ==================== -->
+    <div id="view-chat" class="view-section relative" style="display:none;">
+        <!-- Scenario Badge -->
+        <div class="max-w-4xl mx-auto px-6 pt-4 flex items-center gap-3 flex-wrap">
+            <span id="chat-scenario-badge"
+                class="tag tag-legal text-sm px-4 py-1.5">未选择场景</span>
+            <button onclick="switchView('landing')"
+                class="text-xs text-slate-400 hover:text-white underline">切换场景</button>
+            <span class="text-xs text-slate-500 ml-auto" id="chat-model-indicator">DeepSeek-V4</span>
+        </div>
+
+        <!-- Chat Area -->
+        <div class="max-w-4xl mx-auto px-6">
+            <div class="chat-container glass p-6 mt-3" id="chat-messages">
+                <div class="text-center text-slate-500 py-16" id="chat-empty">
+                    <p class="text-5xl mb-4">🛡️</p>
+                    <p class="text-lg font-semibold text-white mb-2">债优盾 AI 法律顾问已就绪</p>
+                    <p class="text-sm">请描述您遇到的债务问题，或上传相关材料</p>
+                    <p class="text-xs text-slate-600 mt-2">支持图片（OCR 识别）、PDF、Word、TXT</p>
+                </div>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <div class="col-span-1 space-y-4">
-                <div class="bg-zinc-900/50 p-4 rounded-xl border border-white/5">
-                    <h3 class="text-xs font-bold text-amber-500 mb-3 uppercase tracking-widest">📋 选择文书类型</h3>
-                    <div class="space-y-2">
-                        <label
-                            class="flex items-center gap-2 p-2 rounded-lg hover:bg-zinc-800 cursor-pointer border border-transparent hover:border-zinc-700 transition-all">
-                            <input type="radio" name="doc_type" value="qisuzhuang" checked
-                                onchange="switchTemplate(this.value)" class="accent-amber-500">
-                            <span class="text-sm text-zinc-300">1. 民事起诉状</span>
-                        </label>
-                        <label
-                            class="flex items-center gap-2 p-2 rounded-lg hover:bg-zinc-800 cursor-pointer border border-transparent hover:border-zinc-700 transition-all">
-                            <input type="radio" name="doc_type" value="sq_zhichiqisu"
-                                onchange="switchTemplate(this.value)" class="accent-amber-500">
-                            <span class="text-sm text-zinc-300">2. 检察支持起诉申请书</span>
-                        </label>
-                        <label
-                            class="flex items-center gap-2 p-2 rounded-lg hover:bg-zinc-800 cursor-pointer border border-transparent hover:border-zinc-700 transition-all">
-                            <input type="radio" name="doc_type" value="ws_zhichiqisu"
-                                onchange="switchTemplate(this.value)" class="accent-amber-500">
-                            <span class="text-sm text-zinc-300">3. 支持起诉书</span>
-                        </label>
-                        <label
-                            class="flex items-center gap-2 p-2 rounded-lg hover:bg-zinc-800 cursor-pointer border border-transparent hover:border-zinc-700 transition-all">
-                            <input type="radio" name="doc_type" value="fayuan" onchange="switchTemplate(this.value)"
-                                class="accent-amber-500">
-                            <span class="text-sm text-zinc-300">4. 法律援助申请书</span>
-                        </label>
-                    </div>
-                </div>
+        <!-- Input Bar -->
+        <div class="fixed bottom-0 left-0 right-0 z-40 pb-4 pt-2"
+            style="background: linear-gradient(transparent, var(--bg-dark) 30%);">
+            <div class="max-w-4xl mx-auto px-6">
+                <div class="glass p-3 flex items-end gap-3">
+                    <!-- File Upload -->
+                    <label class="cursor-pointer p-2.5 rounded-lg hover:bg-white/5 transition text-slate-400 hover:text-white"
+                        title="上传文件">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                        </svg>
+                        <input type="file" id="file-input" accept="image/*,.pdf,.docx,.doc,.txt"
+                            onchange="handleFileUpload(this)" class="hidden" multiple>
+                    </label>
 
-                <div class="bg-zinc-900/50 p-4 rounded-xl border border-white/5">
-                    <h3 class="text-xs font-bold text-zinc-500 mb-4">自动填充变量值 (AI 提取)</h3>
-                    <div class="space-y-4 text-xs">
-                        <div><span class="text-zinc-600 block mb-1">原告 / 申请人</span><span
-                                class="text-amber-500 font-bold bg-amber-500/10 px-2 py-1 rounded">王某某</span></div>
-                        <div><span class="text-zinc-600 block mb-1">被告 / 被申请人</span><span
-                                class="text-zinc-300 bg-zinc-800 px-2 py-1 rounded">德拉曼公司</span></div>
-                        <div><span class="text-zinc-600 block mb-1">涉案金额</span><span
-                                class="text-red-400 font-bold bg-red-500/10 px-2 py-1 rounded">¥ 25,000.00</span></div>
-                    </div>
-                    <button type="button"
-                        onclick="switchTemplate(document.querySelector('input[name=doc_type]:checked').value)"
-                        class="w-full mt-6 border border-zinc-700 text-zinc-400 py-2 rounded-lg text-xs hover:bg-zinc-800 hover:text-white transition-colors">
-                        🔄 重新从变量渲染模板
+                    <!-- Voice Button (Fake - fills preset text) -->
+                    <button onclick="fakeVoiceInput()"
+                        class="p-2.5 rounded-lg hover:bg-white/5 transition text-slate-400 hover:text-white"
+                        title="语音输入">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                        </svg>
+                    </button>
+
+                    <!-- Text Input -->
+                    <textarea id="chat-input" rows="1"
+                        class="flex-1 bg-transparent border-none outline-none resize-none text-white placeholder-slate-500 py-2 text-sm"
+                        placeholder="描述您的债务问题..."
+                        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"
+                        oninput="autoResize(this)"></textarea>
+
+                    <!-- Send Button -->
+                    <button onclick="sendMessage()"
+                        class="btn-primary px-5 py-2.5 flex-shrink-0 disabled:opacity-40" id="send-btn">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
                     </button>
                 </div>
-
-                <div class="bg-zinc-900/50 p-4 rounded-xl border border-white/5">
-                    <h3 class="text-xs font-bold text-amber-500 mb-3 uppercase tracking-widest">白话说明卡</h3>
-                    <div id="doc-guide-card" class="text-xs text-zinc-400 leading-relaxed space-y-2">
-                        <p>生成文书后，这里会同步解释这份材料的用途、需要核对的内容和下一步提交方式。</p>
-                    </div>
-                </div>
             </div>
+        </div>
 
-            <div class="col-span-1 lg:col-span-3 bg-[#fdfdfd] p-10 rounded-xl shadow-2xl relative min-h-[70vh] group overflow-y-auto"
-                style="max-height: 75vh;">
-                <div
-                    class="absolute top-4 right-4 text-xs font-bold text-amber-700 bg-amber-100/80 px-3 py-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-sm border border-amber-200">
-                    ✏️ 点击任意文字即可直接编辑
-                </div>
-
-                <div id="editable-doc" contenteditable="true"
-                    class="focus:outline-none rounded-lg p-2 h-full text-black text-[15px] leading-loose font-serif">
+        <!-- Evidence Panel (Right Sidebar on Desktop) -->
+        <div id="evidence-panel"
+            class="fixed right-4 top-24 w-72 glass p-4 hidden lg:block text-xs overflow-y-auto"
+            style="max-height: calc(100vh - 140px);">
+            <h3 class="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                <span class="pulse-dot"></span> 案件画像
+            </h3>
+            <div id="evidence-content" class="space-y-2 text-slate-400">
+                <p class="text-slate-500">发送第一条消息后自动生成</p>
+            </div>
+            <div class="mt-4 pt-3 border-t border-white/10" id="score-display">
+                <p class="text-xs text-slate-500 mb-1">加速到期可行性</p>
+                <div class="flex items-center gap-3">
+                    <div class="score-ring border-slate-600 text-slate-500" id="score-ring">--</div>
+                    <p class="text-xs text-slate-500">等待分析</p>
                 </div>
             </div>
         </div>
-    </main>
+    </div>
 
-    <main id="view-status" class="view-section max-w-3xl mx-auto p-6 mt-12" style="display: none;">
-        <div class="bg-zinc-900/80 border border-amber-500/30 rounded-2xl p-10 shadow-2xl relative overflow-hidden">
-            <div class="absolute -top-20 -right-20 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl"></div>
-
-            <div class="text-center mb-8 relative z-10">
-                <div
-                    class="w-20 h-20 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-6 shadow-[0_0_30px_rgba(34,197,94,0.3)]">
-                    ✓
-                </div>
-                <h2 class="text-2xl font-bold text-white mb-2">支持起诉申请已成功提交</h2>
-                <p id="tracking-anxiety-note" class="text-zinc-400">系统已生成智能预审卷宗，并同步登记后续跟进事项。</p>
-                <div class="mt-6 inline-block bg-zinc-950 border border-zinc-800 px-6 py-3 rounded-lg">
-                    <span class="text-xs text-zinc-500 mr-2">智能预收案号：</span>
-                    <span id="tracking-case-number" class="text-amber-500 font-mono font-bold tracking-widest">登记中</span>
-                </div>
-                <p id="case-submit-meta" class="text-xs text-zinc-500 mt-3"></p>
-            </div>
-
-            <div id="tracking-summary-card"
-                class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-8 relative z-10">
-                <div class="rounded-xl border border-white/5 bg-zinc-950/70 p-4">
-                    <p class="text-xs text-zinc-500 mb-1">当前状态</p>
-                    <p id="tracking-current-status" class="text-sm font-bold text-amber-400">材料登记中</p>
-                </div>
-                <div class="rounded-xl border border-white/5 bg-zinc-950/70 p-4">
-                    <p class="text-xs text-zinc-500 mb-1">预计反馈</p>
-                    <p id="tracking-expected-response" class="text-sm font-bold text-zinc-200">登记成功后生成</p>
-                </div>
-                <div class="rounded-xl border border-white/5 bg-zinc-950/70 p-4">
-                    <p class="text-xs text-zinc-500 mb-1">负责跟进</p>
-                    <p id="tracking-handler" class="text-sm font-bold text-zinc-200">民事检察部门</p>
-                </div>
-            </div>
-
-            <div class="relative pl-6 border-l-2 border-zinc-800 space-y-8 mb-12 ml-4">
-                <div id="tracking-steps"></div>
-            </div>
-
-            <div class="flex gap-4 justify-center">
-                <button onclick="goToStep(1)"
-                    class="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-bold rounded-xl transition-colors border border-transparent hover:border-zinc-600">
-                    返回工作台
-                </button>
-                <button type="button" onclick="requestHumanSupport('phase4')"
-                    class="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-black text-sm font-bold rounded-xl transition-all shadow-lg flex items-center gap-2">
-                    📞 联系承办人 (转人工)
-                </button>
-            </div>
-            <div id="phase4-support-status"
-                class="mt-6 rounded-xl border border-white/10 bg-zinc-950/80 px-4 py-3 text-xs text-zinc-400 hidden">
-            </div>
-        </div>
-    </main>
-
-    <main id="view-admin" class="view-section max-w-6xl mx-auto p-6 mt-8" style="display: none;">
-        <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
-            <div>
-                <h2 class="text-2xl font-bold text-white mb-2">平台记录看板</h2>
-                <p class="text-sm text-zinc-400">近七天 AI 研判、文书导出、预审提交与人工协助请求。</p>
-            </div>
-            <button type="button" onclick="loadAdminRecords()"
-                class="self-start md:self-auto bg-zinc-800 border border-zinc-700 text-zinc-200 px-4 py-2 rounded-lg text-sm hover:border-amber-500/50 transition-colors">
-                刷新记录
+    <!-- ==================== Document Export View ==================== -->
+    <div id="view-doc" class="view-section max-w-4xl mx-auto px-6 pt-8 pb-20" style="display:none;">
+        <h2 class="text-2xl font-bold text-white mb-6">法律文书导出</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            <button onclick="generateDoc('complaint')" class="card p-6 text-left">
+                <h3 class="font-bold text-white mb-2">📝 民事起诉状</h3>
+                <p class="text-sm text-slate-400">股东出资纠纷 / 债权人代位权纠纷</p>
+            </button>
+            <button onclick="generateDoc('support')" class="card p-6 text-left">
+                <h3 class="font-bold text-white mb-2">📋 支持起诉申请书</h3>
+                <p class="text-sm text-slate-400">向检察机关申请支持起诉</p>
+            </button>
+            <button onclick="generateDoc('evidence_list')" class="card p-6 text-left">
+                <h3 class="font-bold text-white mb-2">📎 证据清单</h3>
+                <p class="text-sm text-slate-400">整理并列出已有证据和缺失证据</p>
+            </button>
+            <button onclick="generateDoc('preservation')" class="card p-6 text-left">
+                <h3 class="font-bold text-white mb-2">🔒 财产保全申请书</h3>
+                <p class="text-sm text-slate-400">诉前/诉中财产保全申请</p>
             </button>
         </div>
+        <div class="glass p-6" id="doc-preview">
+            <p class="text-slate-500 text-center py-8">选择上方文书类型，自动生成预览</p>
+        </div>
+        <div class="mt-4 text-right">
+            <button onclick="exportDocx()" class="btn-primary px-6 py-2.5" id="export-btn" disabled>
+                导出 DOCX 文件
+            </button>
+        </div>
+    </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div class="bg-zinc-900/70 border border-white/5 rounded-xl p-4">
-                <p class="text-xs text-zinc-500 mb-2">记录总数</p>
-                <p id="admin-total-count" class="text-2xl font-bold text-white">0</p>
-            </div>
-            <div class="bg-zinc-900/70 border border-white/5 rounded-xl p-4">
-                <p class="text-xs text-zinc-500 mb-2">人工待跟进</p>
-                <p id="admin-pending-count" class="text-2xl font-bold text-amber-500">0</p>
-            </div>
-            <div class="bg-zinc-900/70 border border-white/5 rounded-xl p-4">
-                <p class="text-xs text-zinc-500 mb-2">最近同步</p>
-                <p id="admin-last-sync" class="text-sm font-mono text-zinc-300">--</p>
+    <!-- ==================== Admin Dashboard ==================== -->
+    <div id="view-admin" class="view-section max-w-6xl mx-auto px-6 pt-8 pb-20" style="display:none;">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-white">管理看板</h2>
+            <div class="flex items-center gap-2">
+                <span class="pulse-dot"></span>
+                <span class="text-xs text-slate-400">系统运行中</span>
             </div>
         </div>
 
-        <section id="admin-risk-summary"
-            class="mb-6 border border-amber-500/20 bg-zinc-950/70 rounded-xl p-5 hidden">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
-                <div>
-                    <p class="text-xs text-amber-500 font-bold tracking-widest uppercase">风险预警</p>
-                    <h3 class="text-lg font-bold text-white mt-1">同工地 / 同主体欠薪线索聚合</h3>
-                </div>
-                <span class="text-xs text-zinc-500">近七天多源线索池</span>
+        <!-- Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" id="admin-stats">
+            <div class="card p-4 text-center">
+                <p class="text-2xl font-bold text-white" id="stat-total">--</p>
+                <p class="text-xs text-slate-400">总咨询次数</p>
             </div>
-            <div id="admin-risk-list" class="grid grid-cols-1 lg:grid-cols-2 gap-3"></div>
-        </section>
-
-        <section id="admin-case-detail"
-            class="hidden mb-6 border border-amber-500/20 bg-zinc-950/70 rounded-xl overflow-hidden">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-5 py-4 border-b border-white/5">
-                <div>
-                    <p class="text-xs text-amber-500 font-bold tracking-widest uppercase">案件详情</p>
-                    <h3 id="admin-detail-title" class="text-lg font-bold text-white mt-1">--</h3>
-                </div>
-                <button type="button" onclick="closeAdminDetail()"
-                    class="self-start md:self-auto text-xs text-zinc-500 hover:text-zinc-200 transition-colors">关闭</button>
+            <div class="card p-4 text-center">
+                <p class="text-2xl font-bold text-green-400" id="stat-scored">--</p>
+                <p class="text-xs text-slate-400">已完成评分</p>
             </div>
-            <div class="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-0">
-                <div class="p-5 border-b lg:border-b-0 lg:border-r border-white/5">
-                    <div id="admin-detail-facts" class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm"></div>
-                    <div class="mt-5">
-                        <p class="text-xs text-zinc-500 font-bold mb-2">原始问题 / 摘要</p>
-                        <p id="admin-detail-question" class="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap"></p>
-                    </div>
-                    <div class="mt-5">
-                        <p class="text-xs text-zinc-500 font-bold mb-2">AI 答复 / 处理记录</p>
-                        <div id="admin-detail-answer" class="text-sm text-zinc-400 leading-relaxed max-h-48 overflow-y-auto pr-2"></div>
-                    </div>
-                </div>
-                <div class="p-5">
-                    <p class="text-xs text-zinc-500 font-bold mb-3">案件时间线</p>
-                    <ol id="admin-detail-timeline" class="space-y-3 text-sm"></ol>
-                    <div class="mt-5">
-                        <p class="text-xs text-zinc-500 font-bold mb-2">待补强材料</p>
-                        <ul id="admin-detail-missing" class="space-y-2 text-sm text-zinc-400"></ul>
-                    </div>
-                    <div class="mt-5">
-                        <p class="text-xs text-zinc-500 font-bold mb-2">标准化线索池</p>
-                        <div id="admin-detail-clues" class="space-y-2 text-sm"></div>
-                    </div>
-                </div>
+            <div class="card p-4 text-center">
+                <p class="text-2xl font-bold text-amber-400" id="stat-files">--</p>
+                <p class="text-xs text-slate-400">文件上传</p>
             </div>
-        </section>
-
-        <div class="bg-zinc-900/70 border border-white/5 rounded-xl overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="min-w-full text-left text-sm">
-                    <thead class="bg-zinc-950/80 text-xs text-zinc-500 uppercase tracking-wider">
-                        <tr>
-                            <th class="px-4 py-3">时间</th>
-                            <th class="px-4 py-3">阶段</th>
-                            <th class="px-4 py-3">农民工</th>
-                            <th class="px-4 py-3">问题 / 摘要</th>
-                            <th class="px-4 py-3">解决情况</th>
-                            <th class="px-4 py-3">处理人</th>
-                        </tr>
-                    </thead>
-                    <tbody id="admin-records-body" class="divide-y divide-white/5 text-zinc-300">
-                        <tr>
-                            <td colspan="6" class="px-4 py-8 text-center text-zinc-500">登录后自动加载。</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div class="card p-4 text-center">
+                <p class="text-2xl font-bold text-blue-400" id="stat-docs">--</p>
+                <p class="text-xs text-slate-400">文书导出</p>
             </div>
         </div>
-    </main>
 
-    <script src="config.js"></script>
+        <!-- Events Table -->
+        <div class="glass p-4 overflow-x-auto">
+            <h3 class="font-bold text-white mb-4">平台事件日志</h3>
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-slate-400 text-left border-b border-white/10">
+                        <th class="px-3 py-2">时间</th>
+                        <th class="px-3 py-2">类型</th>
+                        <th class="px-3 py-2">场景</th>
+                        <th class="px-3 py-2">摘要</th>
+                    </tr>
+                </thead>
+                <tbody id="admin-events" class="text-slate-300"></tbody>
+            </table>
+            <div class="mt-4 flex gap-4">
+                <button onclick="refreshAdmin()" class="text-xs text-slate-400 hover:text-white underline">刷新</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // === API Base URL Resolution (highest priority first) ===
-        // 1. ?api= query parameter     — explicit runtime override (e.g. ?api=http://127.0.0.1:8000)
-        // 2. config.js                 — persistent config file, edit when tunnel URL changes
-        // 3. window.HUXIN_API_BASE_URL — inline override before this script
-        // 4. auto-detect               — same-origin or localhost fallback
-        const apiFromUrl = new URLSearchParams(window.location.search).get("api");
-        const configApiBase = (window.HUXIN_CONFIG && window.HUXIN_CONFIG.publicApiBase) || "";
-        const implicitApiBase = window.HUXIN_API_BASE_URL || "";
-        const localApiBase = window.location.protocol === "file:"
-            ? "http://127.0.0.1:8000"
-            : window.location.origin;
-        let API_BASE_URL = (apiFromUrl || configApiBase || implicitApiBase || localApiBase).replace(/\/+$/, "");
-
-        function apiEndpoint(path) {
-            return `${API_BASE_URL}${path}`;
-        }
-
-        async function isHealthyApiBase(baseUrl) {
-            const controller = new AbortController();
-            const timer = setTimeout(() => controller.abort(), 2500);
-            try {
-                const response = await fetch(`${baseUrl.replace(/\/+$/, "")}/api/health`, {
-                    signal: controller.signal,
-                    cache: 'no-store'
-                });
-                if (!response.ok) return false;
-                const data = await response.json();
-                return data.status === "ok";
-            } catch (error) {
-                return false;
-            } finally {
-                clearTimeout(timer);
+        // ==================== Configuration ====================
+        const API_BASE = (() => {
+            const params = new URLSearchParams(window.location.search);
+            const apiParam = params.get('api');
+            if (apiParam) return apiParam;
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                return `http://127.0.0.1:8000`;
             }
-        }
-
-        const apiBaseReady = (async () => {
-            if (apiFromUrl || configApiBase || implicitApiBase) return;  // explicitly configured, no probing needed
-            if (!window.location.hostname.endsWith("github.io")) return; // same-origin, assume backend is local
-            // GitHub Pages without explicit config — probe localhost as a convenience
-            const localReady = await isHealthyApiBase("http://127.0.0.1:8000");
-            if (localReady) {
-                API_BASE_URL = "http://127.0.0.1:8000";
-                console.info(`已自动切换到本机后端：${API_BASE_URL}`);
+            if (window.AEGIS_CONFIG && window.AEGIS_CONFIG.publicApiBase) {
+                return window.AEGIS_CONFIG.publicApiBase;
             }
+            return window.location.origin;
         })();
 
-        async function apiFetch(path, options) {
-            await apiBaseReady;
-            return fetch(apiEndpoint(path), options);
-        }
-
-        const views = ['view-login', 'view-home', 'view-chat', 'view-doc', 'view-status', 'view-admin'];
-        const stepViewMap = {
-            1: 'view-home',
-            2: 'view-chat',
-            3: 'view-doc',
-            4: 'view-status'
-        };
-        const viewStepMap = {
-            'view-home': 1,
-            'view-chat': 2,
-            'view-doc': 3,
-            'view-status': 4
-        };
-        let currentStep = 0;
-        let maxUnlockedStep = 0;
-        const accounts = {
-            worker: { role: 'worker', name: '王某某', phone: '133 3107 4710', avatar: '王' },
-            admin: { role: 'admin', name: '管理员', phone: '188 1193 9453', avatar: '管' }
-        };
-        const sourceLabels = {
-            self_report: '自主填报',
-            hotline_12345: '12345热线',
-            street_center: '街道综治',
-            procuratorate: '检察业务'
-        };
-        const sourceTone = {
-            self_report: 'bg-green-500/10 text-green-400 border-green-500/20',
-            hotline_12345: 'bg-sky-500/10 text-sky-300 border-sky-500/20',
-            street_center: 'bg-purple-500/10 text-purple-300 border-purple-500/20',
-            procuratorate: 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-        };
-        let selectedLoginRole = 'worker';
-        let currentUser = accounts.worker;
-        let lastUserQuestion = "";
-        let lastEvidenceSnapshot = { subject: "待补充", amount: "待补充", status: "证据不足，需补充" };
-        let lastCaseProfile = null;
-        let lastTrackingRequestId = "";
-        let adminRecords = [];
-        let adminRiskSummary = [];
-
-        function switchView(targetId) {
-            // 隐藏所有视图
-            views.forEach(id => {
-                const view = document.getElementById(id);
-                if (view) view.style.display = 'none';
-            });
-
-            // 显示目标视图
-            const targetEl = document.getElementById(targetId);
-            if (!targetEl) return;
-            targetEl.style.display = (targetId === 'view-login') ? 'flex' : 'block';
-
-            // 底栏显隐
-            document.getElementById('chat-footer').style.display = (targetId === 'view-chat') ? 'block' : 'none';
-
-            // 导航栏高亮逻辑
-            const navBtns = document.querySelectorAll('.nav-btn');
-            navBtns.forEach(btn => {
-                btn.classList.remove('text-amber-500');
-                btn.classList.add('text-zinc-400');
-                if (btn.dataset.target === targetId) {
-                    btn.classList.remove('text-zinc-400');
-                    btn.classList.add('text-amber-500');
-                }
-            });
-            updateNavAvailability();
-        }
-
-        function selectLoginAccount(role) {
-            selectedLoginRole = role;
-            const account = accounts[role];
-            document.getElementById('login-phone').value = account.phone;
-            document.querySelectorAll('.login-account').forEach(btn => {
-                btn.classList.remove('border-amber-500', 'bg-amber-500/10');
-                btn.classList.add('border-zinc-800', 'bg-zinc-950');
-            });
-            const active = document.getElementById(role === 'admin' ? 'login-admin-card' : 'login-worker-card');
-            active.classList.remove('border-zinc-800', 'bg-zinc-950');
-            active.classList.add('border-amber-500', 'bg-amber-500/10');
-        }
-
-        function updateIdentityDisplay() {
-            document.getElementById('profile-name').innerText = currentUser.name;
-            document.getElementById('profile-phone').innerText = currentUser.phone.replace(/^(\d{3})\s?(\d{4})\s?(\d{4})$/, '$1****$3');
-            document.getElementById('profile-avatar').innerText = currentUser.avatar;
-            const homeTitle = document.getElementById('home-title');
-            if (homeTitle) homeTitle.innerText = `您好，${currentUser.name}`;
-        }
-
-        function doLogin() {
-            const code = document.getElementById('login-code').value.trim();
-            if (code !== '8888') {
-                alert('验证码错误，请输入 8888。');
-                return;
-            }
-
-            currentUser = accounts[selectedLoginRole];
-            updateIdentityDisplay();
-            document.getElementById('user-profile').classList.remove('hidden');
-
-            if (currentUser.role === 'admin') {
-                document.getElementById('progress-container').classList.add('hidden');
-                document.getElementById('main-nav').classList.add('hidden');
-                switchView('view-admin');
-                loadAdminRecords();
-                return;
-            }
-
-            document.getElementById('progress-container').classList.remove('hidden');
-            document.getElementById('main-nav').classList.remove('hidden');
-            switchView('view-home');
-            updateProgress(1);
-        }
-
-        function updateNavAvailability() {
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                const targetStep = viewStepMap[btn.dataset.target] || 0;
-                const locked = targetStep > maxUnlockedStep;
-                btn.disabled = locked;
-                btn.classList.toggle('opacity-40', locked);
-                btn.classList.toggle('cursor-not-allowed', locked);
-            });
-        }
-
-        function updateProgress(step, { unlock = true } = {}) {
-            currentStep = step;
-            if (unlock) maxUnlockedStep = Math.max(maxUnlockedStep, step);
-
-            for (let i = 1; i <= 4; i++) {
-                const node = document.getElementById(`node-${i}`);
-                const text = document.getElementById(`text-${i}`);
-                const unlocked = i <= maxUnlockedStep;
-                const interactiveClass = unlocked ? "cursor-pointer hover:scale-105" : "cursor-not-allowed opacity-60";
-
-                // 增加空值检查，防止报错
-                if (node) node.className = `step-node w-8 h-8 rounded-full border-2 border-zinc-600 bg-zinc-900 flex items-center justify-center text-xs font-bold text-zinc-500 transition-all ${interactiveClass}`;
-                if (text) text.className = `text-[11px] mt-2 font-bold text-zinc-500 tracking-wider transition-colors ${unlocked ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`;
-            }
-
-            const line = document.getElementById('line-1');
-            if (line) line.style.width = ((Math.max(maxUnlockedStep, step) - 1) * 33.3) + "%";
-
-            for (let i = 1; i <= maxUnlockedStep; i++) {
-                const node = document.getElementById(`node-${i}`);
-                const text = document.getElementById(`text-${i}`);
-                if (!node || !text) continue;
-
-                if (i === step) {
-                    node.className = "step-node active w-8 h-8 rounded-full border-2 border-transparent bg-amber-500 text-black flex items-center justify-center text-xs font-bold shadow-[0_0_15px_rgba(245,158,11,0.5)] cursor-pointer transition-all hover:scale-105";
-                    text.className = "text-[11px] mt-2 font-bold text-amber-500 tracking-wider cursor-pointer transition-colors";
-                } else {
-                    node.className = "step-node completed w-8 h-8 rounded-full border-2 border-transparent bg-amber-500/90 text-black flex items-center justify-center text-xs font-bold cursor-pointer transition-all hover:scale-105";
-                    text.className = "text-[11px] mt-2 font-bold text-amber-500/80 tracking-wider cursor-pointer transition-colors hover:text-amber-400";
-                }
-            }
-
-            updateNavAvailability();
-        }
-
-        function goToStep(step) {
-            if (step > maxUnlockedStep) {
-                alert("请先完成当前阶段，再进入后续办案流程。");
-                return;
-            }
-
-            const targetView = stepViewMap[step];
-            if (!targetView) return;
-
-            switchView(targetView);
-            updateProgress(step, { unlock: false });
-            if (step === 3) {
-                switchTemplate(document.querySelector('input[name=doc_type]:checked').value);
-            }
-        }
-
-        function goHomeFromBrand() {
-            if (currentUser.role === 'admin') {
-                switchView('view-admin');
-                loadAdminRecords();
-                return;
-            }
-            if (maxUnlockedStep > 0) {
-                goToStep(1);
-            } else {
-                switchView('view-login');
-            }
-        }
-
-        function initProgressNavigation() {
-            for (let i = 1; i <= 4; i++) {
-                const controls = [document.getElementById(`node-${i}`), document.getElementById(`text-${i}`)];
-                controls.forEach(control => {
-                    if (!control) return;
-                    control.setAttribute('role', 'button');
-                    control.setAttribute('tabindex', '0');
-                    control.addEventListener('click', () => goToStep(i));
-                    control.addEventListener('keydown', (event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                            event.preventDefault();
-                            goToStep(i);
-                        }
-                    });
-                });
-            }
-        }
-
-        async function submitToProcuratorate() {
-            if (maxUnlockedStep < 3) {
-                alert("请先完成智能研判并生成文书，再提交检察支持起诉申请。");
-                return;
-            }
-            switchView('view-status');
-            updateProgress(4); // 进度条走到最后一步
-            renderTrackingCard(lastCaseProfile, "");
-
-            const meta = document.getElementById('case-submit-meta');
-            if (meta) meta.innerText = "正在向后端登记预审提交记录...";
-
-            try {
-                const response = await apiFetch('/api/case-submit', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        user_name: currentUser.name,
-                        phone: currentUser.phone,
-                        case_summary: lastUserQuestion || "用户提交支持起诉预审",
-                        evidence_subject: lastEvidenceSnapshot.subject,
-                        evidence_amount: lastEvidenceSnapshot.amount,
-                    })
-                });
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.detail || data.message || `HTTP ${response.status}`);
-                if (meta) meta.innerText = data.message || `后端已登记，编号 ${data.request_id}`;
-                lastTrackingRequestId = data.request_id || "";
-                if (data.tracking_plan && lastCaseProfile) {
-                    lastCaseProfile = { ...lastCaseProfile, tracking_plan: data.tracking_plan };
-                }
-                renderTrackingCard(lastCaseProfile, lastTrackingRequestId);
-            } catch (error) {
-                if (meta) meta.innerText = `后端登记失败：${error.message || '请检查服务是否运行'}`;
-            }
-        }
-
-        function openChat(mode) {
-            switchView('view-chat');
-            const greeting = document.getElementById('chat-greeting');
-            if (mode === 'voice') {
-                greeting.innerHTML = "您好，已开启智能倾听模式。您可以点击下方麦克风，直接用语音告诉我发生了什么事。";
-            } else if (mode === 'photo') {
-                greeting.innerHTML = "您好，已开启智能取证模式。请点击下方上传按钮，拍摄您的欠条或工资单。";
-                setTimeout(() => document.getElementById('file-input').click(), 500);
-            }
-            updateProgress(2);
-        }
-
-        function simulateVoiceInput() {
-            const input = document.getElementById('user-input');
-            const fakeVoice = "去年10月份我在西单德拉曼公司那个工地干木工。干到今年1月份完工了老板跑了，差我两万五千块，现在手里就一张欠条，咋办？";
-            let i = 0;
-            input.value = "";
-            input.placeholder = "正在录音识别中...";
-            const wrapper = document.getElementById('input-wrapper');
-            wrapper.classList.add('glow-generating');
-
-            const typing = setInterval(() => {
-                input.value += fakeVoice.charAt(i);
-                i++;
-
-                // 🔥 新增：打字机效果时同步上扩高度
-                input.style.height = 'auto';
-                input.style.height = Math.min(input.scrollHeight, 200) + 'px';
-
-                if (i >= fakeVoice.length) {
-                    clearInterval(typing);
-                    wrapper.classList.remove('glow-generating');
-                    input.placeholder = "输入纠纷详情...";
-                }
-            }, 50);
-        }
-
-        // 模拟灯光亮起：将提取到的证据点亮
-        function lightUpEvidence() {
-            const list = document.getElementById('evidence-list');
-            list.innerHTML = `
-                <li class="flex items-center gap-2 text-zinc-300 animate-in fade-in duration-500"><span class="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_#f59e0b]"></span> 欠薪主体：北京某建筑工程公司</li>
-                <li class="flex items-center gap-2 text-zinc-300 animate-in fade-in duration-700"><span class="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_#f59e0b]"></span> 欠薪金额：¥ 25,000.00</li>
-                <li class="flex items-center gap-2 text-zinc-500 animate-in fade-in duration-1000"><span class="w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_#ef4444]"></span> 缺失证据：劳动合同 / 工牌</li>
-            `;
-        }
-
-        // 综合研判按钮的实际点击逻辑
-        function requestJudgment() {
-            const input = document.getElementById('user-input');
-            // 自动在输入框填入提示词，并调用发送函数
-            input.value = "请综合研判目前我提供的线索，指出我的证据链是否完整？如果我要去西城检察院申请支持起诉，还缺什么材料？";
-            handleSend();
-        }
-
-        // ================= 文书模板系统 =================
-        // 预设四份官方标准文书模板
-        const docTemplates = {
-            'qisuzhuang': `
-                <h1 class="text-center text-2xl font-bold mb-10 tracking-widest">民 事 起 诉 状</h1>
-                <p><strong>原告：</strong><span class="text-blue-700 bg-blue-50 px-1">王某某</span>，性别，XX年XX月XX日出生，民族，住址：XX省XX市XX县XX乡XX村XX组，公民身份号码：，联系电话：。</p>
-                <p><strong>被告一：</strong><span class="text-blue-700 bg-blue-50 px-1">德拉曼公司</span> / 包工头姓名 / 全称，住所地： ， 统一社会信用代码 / 公民身份号码：，法定代表人：（职务：），联系电话：。</p>
-                <p><strong>被告二：</strong>（如有分包方、发包方，列为共同被告）全称，住所地：，统一社会信用代码：，法定代表人：，联系电话：。</p>
-                
-                <h3 class="font-bold text-lg mt-8 mb-4 border-b-2 border-black pb-1 inline-block">诉讼请求</h3>
-                <p class="pl-4">1. 依法判令被告一支付原告拖欠劳动报酬共计人民币 <span class="text-red-600 font-bold underline">25,000</span> 元及逾期付款利息（利息以 <span class="text-red-600 font-bold underline">25,000</span> 元为基数，自XX年XX月XX日起，按全国银行间同业拆借中心公布的贷款市场报价利率（LPR）计算至款项实际付清之日止）；</p>
-                <p class="pl-4">2. 依法判令被告二对上述债务承担连带清偿责任；</p>
-                <p class="pl-4">3. 本案案件受理费、保全费等全部诉讼费用由二被告承担。</p>
-                
-                <h3 class="font-bold text-lg mt-8 mb-4 border-b-2 border-black pb-1 inline-block">事实与理由</h3>
-                <p class="indent-8">原告系进城务工农民工，自XX年XX月起，受被告一招录 / 雇佣，在XX项目（项目地址：）从事XX岗位工作，双方约定劳动报酬标准为XX元 / 月 / 日，工资结算方式为XX。</p>
-                <p class="indent-8">原告入职后，严格按照被告要求提供劳务，圆满完成各项工作任务，但被告一自XX年XX月起，无故拖欠原告劳动报酬，截至起诉之日，累计拖欠金额达 <span class="text-red-600 font-bold underline">25,000</span> 元。原告多次通过上门催讨、电话沟通等方式向被告主张权利，被告均以...</p>
-                
-                <div class="mt-16 text-right pr-12">
-                    <p class="mb-4">此致</p>
-                    <p class="font-bold">XX人民法院</p>
-                    <p class="mt-12">具状人：______________</p>
-                    <p class="mt-4">____年____月____日</p>
-                </div>
-            `,
-            'sq_zhichiqisu': `
-                <h1 class="text-center text-2xl font-bold mb-10 tracking-widest">检察支持起诉申请书</h1>
-                <p><strong>申请人（原告）：</strong><span class="text-blue-700 bg-blue-50 px-1">王某某</span>，性别，XX年XX月XX日出生，民族，住址：，公民身份号码：，联系电话：。</p>
-                <p><strong>被申请人（被告）：</strong><span class="text-blue-700 bg-blue-50 px-1">德拉曼公司</span> / 全称，住所地：，身份信息 / 统一社会信用代码：，联系电话：。</p>
-                
-                <h3 class="font-bold text-lg mt-8 mb-4 border-b-2 border-black pb-1 inline-block">申请事项</h3>
-                <p class="indent-8">请求XX人民检察院依法对申请人诉 <span class="text-blue-700 bg-blue-50 px-1">德拉曼公司</span>（被申请人）追索劳动报酬纠纷一案，支持申请人向人民法院提起民事诉讼。</p>
-                
-                <h3 class="font-bold text-lg mt-8 mb-4 border-b-2 border-black pb-1 inline-block">事实与理由</h3>
-                <p class="indent-8">申请人系进城务工农民工，于XX年XX月至XX年XX月，在被申请人承建 / 发包的XX项目提供劳务，被申请人无故拖欠申请人劳动报酬 <span class="text-red-600 font-bold underline">25,000</span> 元，经申请人多次催讨，被申请人拒不支付。</p>
-                <p class="indent-8">申请人作为弱势群体，缺乏法律专业知识，诉讼能力较弱，且被长期拖欠工资，经济条件困难，无力独立通过诉讼途径维护自身合法劳动权益。被申请人拖欠农民工工资的行为，不仅侵害申请人个人财产权益，更违反劳动保障法律法规，损害社会公平正义，影响农民工群体合法权益保障及社会和谐稳定。</p>
-                <p class="indent-8">依据《中华人民共和国民事诉讼法》第十六条、《人民检察院民事诉讼监督规则》及最高人民法院、最高人民检察院关于民事支持起诉相关规定，特向贵院申请支持起诉，恳请贵院依法审查并支持申请人的诉讼请求，帮助申请人依法追索被拖欠的劳动报酬。</p>
-                
-                <p class="font-bold mt-8">附：相关证据材料</p>
-                <p class="pl-4">1. 申请人身份证复印件；</p>
-                <p class="pl-4">2. 被申请人身份 / 工商信息；</p>
-                <p class="pl-4">3. 拖欠工资相关证据（欠条、结算单、考勤记录等）；</p>
-                <p class="pl-4">4. 经济困难相关证明材料。</p>
-                
-                <div class="mt-16 text-right pr-12">
-                    <p class="mb-4">此致</p>
-                    <p class="font-bold">XX人民检察院</p>
-                    <p class="mt-12">申请人（签名 / 捺印）：______________</p>
-                    <p class="mt-4">____年____月____日</p>
-                </div>
-            `,
-            'ws_zhichiqisu': `
-                <h1 class="text-center text-2xl font-bold mb-4 tracking-widest">支持起诉书</h1>
-                <p class="text-center mb-10 leading-loose">XX人民检察院<br>支持起诉书<br>检民支〔〕XXXXX号</p>
-                
-                <p><strong>支持起诉人：</strong>XX人民检察院</p>
-                
-                <p class="indent-8 mt-6">本院受理 <span class="text-blue-700 bg-blue-50 px-1">王某某</span>（申请人）申请支持起诉其与 <span class="text-blue-700 bg-blue-50 px-1">德拉曼公司</span>（被申请人）追索劳动报酬纠纷一案，经审查查明： <span class="text-blue-700 bg-blue-50 px-1">王某某</span>（申请人）系进城务工农民工，在XX项目提供劳务，被申请人 <span class="text-blue-700 bg-blue-50 px-1">德拉曼公司</span> 拖欠其劳动报酬 <span class="text-red-600 font-bold underline">25,000</span> 元，该事实有欠条、工资结算单、证人证言等证据予以证实，债权债务关系明确。</p>
-                
-                <p class="indent-8 mt-4">本院认为：劳动者依法享有获得劳动报酬的权利，被申请人拖欠农民工工资的行为，违反《保障农民工工资支付条例》《中华人民共和国劳动法》相关规定，严重侵害农民工合法权益。申请人作为经济困难的弱势群体，诉讼能力不足，为维护农民工合法权益，彰显司法为民宗旨，维护社会公平正义，依据《中华人民共和国民事诉讼法》第十六条之规定，决定支持 <span class="text-blue-700 bg-blue-50 px-1">王某某</span>（申请人）向贵院提起民事诉讼，请依法审理。</p>
-                
-                <div class="mt-16 text-right pr-12">
-                    <p class="mb-4">此致</p>
-                    <p class="font-bold">XX人民法院</p>
-                    <p class="mt-12 font-bold">XX人民检察院（公章）</p>
-                    <p class="mt-4">____年____月____日</p>
-                </div>
-            `,
-            'fayuan': `
-                <h1 class="text-center text-2xl font-bold mb-10 tracking-widest">法律援助申请书</h1>
-                <p><strong>申请人：</strong><span class="text-blue-700 bg-blue-50 px-1">王某某</span>，性别，XX年XX月XX日出生，民族，住址：，公民身份号码：，联系电话：。</p>
-                
-                <h3 class="font-bold text-lg mt-8 mb-4 border-b-2 border-black pb-1 inline-block">申请事项</h3>
-                <p class="indent-8">请求XX法律援助机构依法为申请人追索劳动报酬纠纷一案提供法律援助，指派法律援助律师代理本案。</p>
-                
-                <h3 class="font-bold text-lg mt-8 mb-4 border-b-2 border-black pb-1 inline-block">事实与理由</h3>
-                <p class="indent-8">申请人系进城务工农民工，XX年XX月至XX年XX月，在XX项目务工，被 <span class="text-blue-700 bg-blue-50 px-1">德拉曼公司</span>（用人单位 / 包工头）拖欠劳动报酬共计 <span class="text-red-600 font-bold underline">25,000</span> 元，经多次催讨无果，拟通过诉讼 / 劳动仲裁途径维权。</p>
-                <p class="indent-8">申请人以务工收入为唯一生活来源，无固定经济收入，家庭经济困难，无能力支付法律服务费用；且申请人法律知识匮乏，不具备独立参与诉讼、仲裁的能力，无法有效维护自身合法权益。</p>
-                <p class="indent-8">根据《中华人民共和国法律援助法》第三十一条 “进城务工人员请求支付劳动报酬、工伤赔偿，因经济困难没有委托代理人的，可以向法律援助机构申请法律援助” 之规定，申请人符合法律援助申请条件，特向贵机构提出法律援助申请，恳请依法予以批准。</p>
-                
-                <h3 class="font-bold text-lg mt-8 mb-4 border-b-2 border-black pb-1 inline-block">承诺事项</h3>
-                <p class="indent-8">本人承诺，所提交的全部申请材料及所述内容均真实、合法、有效，如有虚假，自愿承担一切法律责任。</p>
-                
-                <p class="font-bold mt-8">附：相关材料</p>
-                <p class="pl-4">1. 申请人身份证复印件；</p>
-                <p class="pl-4">2. 经济困难证明（村 / 居委会、乡镇政府出具）；</p>
-                <p class="pl-4">3. 拖欠工资相关证据材料；</p>
-                <p class="pl-4">4. 案件相关情况说明。</p>
-                
-                <div class="mt-16 text-right pr-12">
-                    <p class="mb-4">此致</p>
-                    <p class="font-bold">XX法律援助中心（司法局）</p>
-                    <p class="mt-12">申请人（签名 / 捺印）：______________</p>
-                    <p class="mt-4">____年____月____日</p>
-                </div>
-            `
+        const SCENARIOS = {
+            "1": { title: "公司欠钱不还，想追未实缴股东", desc: "公司作为债务人无法清偿到期债务，追究未足额缴纳出资的股东责任", icon: "🏛️",
+                main: true },
+            "2": { title: "公司不能清偿，判断能否主张出资加速到期", desc: "公司已具备破产原因但不申请破产，主张股东出资期限加速到期", icon: "⚖️", main: true },
+            "3": { title: "债务发生后，公司延长了股东出资期限", desc: "公司对债权人负有债务后，通过决议延长股东出资期限逃避债务", icon: "📅" },
+            "4": { title: "怀疑股东出资后又把钱转走", desc: "股东验资后通过虚构交易等方式将出资款项转出（抽逃出资）", icon: "💸" },
+            "5": { title: "公司减资后导致债权无法清偿", desc: "公司未依法通知债权人即减资，损害债权人利益", icon: "📉" },
+            "6": { title: "股东转让股权后无人履行出资义务", desc: "未届出资期限的股东转让股权给无履行能力的主体", icon: "🔄" },
+            "7": { title: "不确定属于哪种情况", desc: "系统将引导梳理案情，自动匹配最合适的维权路径", icon: "🤔" },
         };
 
-        function buildDocGuideHtml(type) {
-            const profile = lastCaseProfile || {};
-            const subject = profile.debtor_subject || lastEvidenceSnapshot.subject || '待补充';
-            const amount = profile.amount_display || lastEvidenceSnapshot.amount || '待补充';
-            const missing = profile.missing_items || [];
-            const docPurpose = {
-                qisuzhuang: '交给法院，说明你向谁要工资、要多少钱、事实和证据是什么。',
-                sq_zhichiqisu: '交给检察院，说明你为什么需要检察机关支持起诉。',
-                ws_zhichiqisu: '供检察机关内部审查后形成正式支持起诉意见时参考。',
-                fayuan: '交给法律援助机构，说明你需要律师或法律服务帮助。'
-            }[type] || '用于说明欠薪事实和维权请求。';
-
-            const missingHtml = missing.length
-                ? missing.slice(0, 4).map(item => `<li>${escapeHtml(item)}</li>`).join('')
-                : `<li>目前没有明显缺口，但仍需核对原件、签名、日期和联系方式。</li>`;
-
-            return `
-                <section class="mt-10 border-t border-gray-300 pt-6 text-sm leading-loose">
-                    <h2 class="font-bold text-lg mb-3">给申请人的白话说明</h2>
-                    <p><strong>这份材料是做什么的：</strong>${escapeHtml(docPurpose)}</p>
-                    <p><strong>系统已识别的关键事实：</strong>欠薪主体为 ${escapeHtml(subject)}，金额为 ${escapeHtml(amount)}。</p>
-                    <p><strong>签字前请重点核对：</strong>姓名、手机号、欠薪金额、务工时间、工地名称、被告/被申请人信息，以及每一份证据是否真实。</p>
-                    <p><strong>还建议补充：</strong></p>
-                    <ol class="pl-6 list-decimal">${missingHtml}</ol>
-                    <p><strong>下一步：</strong>保留欠条或截图原件，按证据目录整理材料；如果看不懂文书内容，请让法律援助人员或承办人员逐项解释后再签字。</p>
-                </section>
-            `;
-        }
-
-        function renderDocumentTemplate(type) {
-            return `${docTemplates[type] || ''}${buildDocGuideHtml(type)}`;
-        }
-
-        function updateDocGuideCard(type) {
-            const card = document.getElementById('doc-guide-card');
-            if (!card) return;
-            const profile = lastCaseProfile || {};
-            const missing = profile.missing_items || [];
-            card.innerHTML = `
-                <p><strong class="text-zinc-200">用途：</strong>${escapeHtml({
-                    qisuzhuang: '法院起诉用',
-                    sq_zhichiqisu: '申请检察支持起诉用',
-                    ws_zhichiqisu: '检察机关审查参考',
-                    fayuan: '申请法律援助用'
-                }[type] || '维权材料')}</p>
-                <p><strong class="text-zinc-200">签字前核对：</strong>主体、金额、日期、证据名称和联系方式。</p>
-                <p><strong class="text-zinc-200">待补：</strong>${escapeHtml(missing[0] || '暂无明显缺口，建议核对原件。')}</p>
-            `;
-        }
-
-        // 切换模板渲染
-        function switchTemplate(type) {
-            const editor = document.getElementById('editable-doc');
-            if (docTemplates[type]) {
-                editor.style.opacity = 0;
-                setTimeout(() => {
-                    editor.innerHTML = renderDocumentTemplate(type);
-                    updateDocGuideCard(type);
-                    editor.style.opacity = 1;
-                }, 150);
-            }
-        }
-
-        function getSelectedDocMeta() {
-            const selected = document.querySelector('input[name=doc_type]:checked');
-            if (!selected) return { type: 'legal_aid', title: '护薪法律文书' };
-            const labelText = selected.closest('label')?.innerText || selected.value;
-            const title = labelText.replace(/^\s*\d+\.\s*/, '').trim() || '护薪法律文书';
-            return { type: selected.value, title };
-        }
-
-        function sanitizeFileName(name) {
-            return name.replace(/[\\/:*?"<>|\r\n\t]+/g, '_').replace(/^\.+|\.+$/g, '').trim() || '护薪法律文书';
-        }
-
-        function downloadBlob(blob, filename) {
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            URL.revokeObjectURL(url);
-        }
-
-        function exportAsWordHtml(title, html) {
-            const wordHtml = `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title></head><body>${html}</body></html>`;
-            const blob = new Blob([wordHtml], { type: 'application/msword;charset=utf-8' });
-            downloadBlob(blob, `${sanitizeFileName(title)}.doc`);
-        }
-
-        async function exportDoc(format) {
-            const editor = document.getElementById('editable-doc');
-            const { title } = getSelectedDocMeta();
-            const html = editor.innerHTML.trim();
-
-            if (!html) {
-                alert("当前文书内容为空，无法导出。");
-                return;
-            }
-
-            try {
-                const response = await apiFetch('/api/export-docx', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ title, html, user_name: currentUser.name, phone: currentUser.phone })
-                });
-
-                if (!response.ok) {
-                    const detail = await response.text();
-                    throw new Error(detail || `HTTP ${response.status}`);
-                }
-
-                const blob = await response.blob();
-                downloadBlob(blob, `${sanitizeFileName(title)}.docx`);
-            } catch (error) {
-                console.warn("DOCX 导出失败，已使用本地 Word 兼容格式兜底:", error);
-                exportAsWordHtml(title, html);
-                alert("后端 DOCX 导出暂不可用，已为您生成 Word 可打开的本地文档。");
-            }
-        }
-
-        // 确保打开文档页时，默认渲染第一个模板
-        function openDoc() {
-            if (maxUnlockedStep < 3) {
-                alert("请先在智能研判阶段发送案情或证据，待系统完成研判后再生成文书。");
-                if (maxUnlockedStep < 2) openChat();
-                return;
-            }
-            switchView('view-doc');
-            updateProgress(3);
-            // 每次进入时重新渲染当前选中的模板
-            switchTemplate(document.querySelector('input[name=doc_type]:checked').value);
-        }
-
-        function backToChat() {
-            switchView('view-chat');
-            updateProgress(2, { unlock: false }); // 视图回退，已解锁阶段保留
-        }
-
-        function buildCaseSummary() {
-            const parts = [];
-            if (lastUserQuestion) parts.push(`最近问题：${lastUserQuestion}`);
-            if (lastEvidenceSnapshot.subject !== "待补充") parts.push(`欠薪主体：${lastEvidenceSnapshot.subject}`);
-            if (lastEvidenceSnapshot.amount !== "待补充") parts.push(`欠薪金额：${lastEvidenceSnapshot.amount}`);
-            if (lastCaseProfile?.work_period && lastCaseProfile.work_period !== "待补充") parts.push(`务工时间：${lastCaseProfile.work_period}`);
-            if (lastCaseProfile?.project_site && lastCaseProfile.project_site !== "待补充") parts.push(`项目地点：${lastCaseProfile.project_site}`);
-            if (lastCaseProfile?.evidence_items?.length) parts.push(`证据材料：${lastCaseProfile.evidence_items.join('、')}`);
-            parts.push(`证据链：${lastEvidenceSnapshot.status}`);
-            return parts.join("；");
-        }
-
-        async function requestHumanSupport(phase) {
-            const isPhase4 = phase === 'phase4';
-            const statusEl = document.getElementById(isPhase4 ? 'phase4-support-status' : 'phase2-support-status');
-            if (statusEl) {
-                statusEl.classList.remove('hidden');
-                statusEl.innerText = "正在向后端发送人工协助请求...";
-            }
-
-            try {
-                const response = await apiFetch('/api/human-support', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        phase,
-                        user_name: currentUser.name,
-                        phone: currentUser.phone,
-                        latest_question: lastUserQuestion || userInput?.value?.trim() || "",
-                        case_summary: buildCaseSummary(),
-                        evidence_subject: lastEvidenceSnapshot.subject,
-                        evidence_amount: lastEvidenceSnapshot.amount,
-                    })
-                });
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.detail || data.message || `HTTP ${response.status}`);
-
-                const message = `${data.message} 当前状态：${data.status}；处理人：${data.assignee}`;
-                if (statusEl) statusEl.innerText = message;
-                if (!isPhase4 && typeof appendMessage === "function") {
-                    appendMessage('ai', `**人工协助已发起**\n\n${message}`);
-                }
-            } catch (error) {
-                const message = `人工协助请求失败：${error.message || '请确认后端服务正在运行。'}`;
-                if (statusEl) statusEl.innerText = message;
-                if (!isPhase4 && typeof appendMessage === "function") {
-                    appendMessage('ai', message);
-                }
-            }
-        }
-
-        async function loadAdminRecords() {
-            const tbody = document.getElementById('admin-records-body');
-            const totalEl = document.getElementById('admin-total-count');
-            const pendingEl = document.getElementById('admin-pending-count');
-            const syncEl = document.getElementById('admin-last-sync');
-            if (!tbody) return;
-
-            tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-zinc-500">正在读取后端记录...</td></tr>`;
-            try {
-                const response = await apiFetch('/api/admin/records?days=7');
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.detail || `HTTP ${response.status}`);
-
-                const records = data.records || [];
-                adminRiskSummary = data.risk_summary || [];
-                renderAdminRiskSummary(adminRiskSummary);
-                const pending = records.filter(row => /待/.test(row.status || "")).length;
-                totalEl.innerText = records.length;
-                pendingEl.innerText = pending;
-                syncEl.innerText = new Date().toLocaleString('zh-CN', { hour12: false });
-
-                if (!records.length) {
-                    adminRecords = [];
-                    tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-zinc-500">近七天暂无记录。</td></tr>`;
-                    return;
-                }
-
-                adminRecords = records;
-                tbody.innerHTML = records.map(row => `
-                    <tr class="hover:bg-zinc-800/40 cursor-pointer" onclick="openAdminDetail('${escapeHtml(row.id || "")}')">
-                        <td class="px-4 py-3 whitespace-nowrap text-xs text-zinc-500">${escapeHtml(row.timestamp || "")}</td>
-                        <td class="px-4 py-3 whitespace-nowrap">${escapeHtml(row.stage || "")}</td>
-                        <td class="px-4 py-3 whitespace-nowrap">
-                            <div class="font-bold text-zinc-100">${escapeHtml(row.farmer_name || "")}</div>
-                            <div class="text-xs text-zinc-500">${escapeHtml(row.phone || "")}</div>
-                        </td>
-                        <td class="px-4 py-3 min-w-[18rem]">
-                            <div class="line-clamp-2">${escapeHtml(row.question || row.summary || "")}</div>
-                            ${row.request_id ? `<div class="text-[11px] text-amber-500 mt-1">编号：${escapeHtml(row.request_id)}</div>` : ""}
-                        </td>
-                        <td class="px-4 py-3 whitespace-nowrap">
-                            <span class="rounded-full px-2 py-1 text-xs ${/待/.test(row.status || "") ? 'bg-amber-500/10 text-amber-400' : 'bg-green-500/10 text-green-400'}">${escapeHtml(row.status || "已记录")}</span>
-                        </td>
-                        <td class="px-4 py-3 whitespace-nowrap text-zinc-400">${escapeHtml(row.assignee || "")}</td>
-                    </tr>
-                `).join("");
-            } catch (error) {
-                renderAdminRiskSummary([]);
-                tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-red-300">读取失败：${escapeHtml(error.message || '请确认后端服务正在运行。')}</td></tr>`;
-            }
-        }
-
-        function renderFact(label, value, emphasis = false) {
-            return `
-                <div class="border border-white/5 bg-zinc-900/60 rounded-lg p-3">
-                    <p class="text-[11px] text-zinc-500 mb-1">${escapeHtml(label)}</p>
-                    <p class="text-sm ${emphasis ? 'text-amber-400 font-bold' : 'text-zinc-200'}">${escapeHtml(value || "待补充")}</p>
-                </div>
-            `;
-        }
-
-        function sourceLabel(source, profile = null) {
-            const labels = profile?.risk_alert?.source_labels || {};
-            const raw = labels[source] || sourceLabels[source] || source;
-            return String(raw).replace('政务服务', '').replace('农民工', '');
-        }
-
-        function riskBadgeClass(level = "") {
-            if (/高/.test(level)) return 'bg-red-500/10 text-red-300 border-red-500/30';
-            if (/中/.test(level)) return 'bg-amber-500/10 text-amber-300 border-amber-500/30';
-            return 'bg-zinc-800 text-zinc-300 border-zinc-700';
-        }
-
-        function mergedTimeline(profile) {
-            const timeline = [...(profile?.timeline || [])];
-            const seen = new Set();
-            return timeline.filter(item => {
-                const key = `${item.date || ""}|${item.title || ""}|${item.detail || ""}`;
-                if (seen.has(key)) return false;
-                seen.add(key);
-                return true;
-            });
-        }
-
-        function renderDataFusionPanel(profile) {
-            const panel = document.getElementById('data-fusion-panel');
-            if (!panel) return;
-            const risk = profile?.risk_alert || {};
-            const missing = profile?.missing_items || [];
-            const actions = [];
-            if (profile?.debtor_subject === "待补充") actions.push("先补清公司全称，或老板、包工头的姓名和电话。");
-            if (!profile?.amount_yuan) actions.push("把欠薪金额写清楚，最好用欠条、结算单或聊天记录固定。");
-            if (!(profile?.evidence_items || []).length) actions.push("先拍照保存欠条、聊天记录、工地照片、工牌或考勤。");
-            if (Number(risk.related_clue_count || 0) >= 4 && profile?.project_site !== "待补充") {
-                actions.push("可以同时拨打12345，或去工地属地街道综治中心反映欠薪。");
-            }
-            if (!actions.length && missing.length) actions.push(...missing.slice(0, 2).map(item => item.replace(/：.*/, "")));
-            if (!actions.length) actions.push("证据已经比较清楚，先保存原件和截图，下一步可生成文书或提交预审。");
-            const tip = Number(risk.related_clue_count || 0) >= 4
-                ? "后台已自动比对同工地线索；你这边只需要按下面几步做。"
-                : "系统会先帮你整理缺口，不需要反复讲案情。";
-
-            panel.innerHTML = `
-                <h4 class="text-xs font-bold text-zinc-500 mb-3 uppercase tracking-widest">下一步提示</h4>
-                <div class="rounded-lg border border-white/5 bg-zinc-950/70 p-3">
-                    <p class="text-[11px] leading-relaxed text-zinc-500 mb-3">${escapeHtml(tip)}</p>
-                    <ul class="space-y-2 text-xs text-zinc-300">
-                        ${actions.slice(0, 3).map(item => `<li class="flex gap-2"><span class="text-amber-500">•</span><span>${escapeHtml(item)}</span></li>`).join("")}
-                    </ul>
-                </div>
-            `;
-        }
-
-        function renderSourceChips(counts = {}, profile = null) {
-            return Object.keys(sourceLabels).map(source => {
-                const count = Number(counts[source] || 0);
-                if (!count) return "";
-                return `<span class="rounded-md border px-2 py-1 ${sourceTone[source] || 'bg-zinc-800 text-zinc-300 border-zinc-700'}">${escapeHtml(sourceLabel(source, profile))} ${count}起</span>`;
-            }).join("");
-        }
-
-        function renderAdminRiskSummary(summary = []) {
-            const section = document.getElementById('admin-risk-summary');
-            const list = document.getElementById('admin-risk-list');
-            if (!section || !list) return;
-            if (!summary.length) {
-                section.classList.add('hidden');
-                list.innerHTML = "";
-                return;
-            }
-            section.classList.remove('hidden');
-            list.innerHTML = summary.slice(0, 6).map(item => `
-                <div class="border border-white/5 bg-zinc-900/60 rounded-xl p-4">
-                    <div class="flex items-start justify-between gap-3">
-                        <div>
-                            <p class="text-sm font-bold text-white">${escapeHtml(item.project_site !== "待补充" ? item.project_site : item.debtor_subject || "待补充项目")}</p>
-                            <p class="text-xs text-zinc-500 mt-1">${escapeHtml(item.debtor_subject || "主体待补充")}</p>
-                        </div>
-                        <span class="rounded-full border px-2 py-1 text-xs ${riskBadgeClass(item.level)}">${escapeHtml(item.level || "关注")}</span>
-                    </div>
-                    <p class="text-xs text-zinc-400 leading-relaxed mt-3">${escapeHtml(item.warning_text || "")}</p>
-                    <div class="flex flex-wrap gap-2 mt-3 text-[11px]">${renderSourceChips(item.source_counts || {})}</div>
-                    <p class="text-[11px] text-zinc-500 leading-relaxed mt-3">${escapeHtml(item.recommended_action || "")}</p>
-                </div>
-            `).join("");
-        }
-
-        function renderSourceClues(profile) {
-            const clues = profile?.source_clues || [];
-            if (!clues.length) {
-                return `<p class="text-zinc-500">暂无多源线索。</p>`;
-            }
-            return clues.map(clue => `
-                <div class="rounded-lg border border-white/5 bg-zinc-900/60 p-3">
-                    <div class="flex items-center justify-between gap-2">
-                        <span class="rounded-md border px-2 py-1 text-xs ${sourceTone[clue.source] || 'bg-zinc-800 text-zinc-300 border-zinc-700'}">${escapeHtml(sourceLabel(clue.source, profile))}</span>
-                        <span class="text-xs text-zinc-500">${escapeHtml(clue.created_at || "")} · ${Number(clue.related_count || 0)}起</span>
-                    </div>
-                    <p class="text-xs text-zinc-300 leading-relaxed mt-2">${escapeHtml(clue.summary || "")}</p>
-                    <p class="text-[11px] text-zinc-500 mt-2">${escapeHtml(clue.status || "")} · ${escapeHtml(clue.street || "属地待核")}</p>
-                </div>
-            `).join("");
-        }
-
-        function renderTimelineItems(profile) {
-            const timeline = mergedTimeline(profile);
-            if (!timeline.length) {
-                return `<li class="text-zinc-500">暂无明确时间节点。</li>`;
-            }
-            return timeline.map(item => `
-                <li class="relative pl-4 border-l border-amber-500/30">
-                    <span class="absolute -left-[5px] top-1.5 w-2 h-2 rounded-full bg-amber-500"></span>
-                    <p class="text-amber-400 text-xs font-bold">${escapeHtml(item.date || "时间待补充")}</p>
-                    <p class="text-zinc-200 font-bold">${escapeHtml(item.title || "案情节点")}</p>
-                    <p class="text-xs text-zinc-500 leading-relaxed mt-1">${escapeHtml(item.detail || "")}</p>
-                </li>
-            `).join("");
-        }
-
-        function renderTrackingCard(profile, requestId = "") {
-            const plan = profile?.tracking_plan || {};
-            const numberEl = document.getElementById('tracking-case-number');
-            const statusEl = document.getElementById('tracking-current-status');
-            const expectedEl = document.getElementById('tracking-expected-response');
-            const handlerEl = document.getElementById('tracking-handler');
-            const noteEl = document.getElementById('tracking-anxiety-note');
-            const stepsEl = document.getElementById('tracking-steps');
-            if (!numberEl || !stepsEl) return;
-
-            numberEl.innerText = requestId || lastTrackingRequestId || "待登记";
-            statusEl.innerText = plan.current_status || profile?.evidence_status || "材料登记中";
-            expectedEl.innerText = plan.expected_response || "登记后 1 个工作日内反馈";
-            handlerEl.innerText = plan.handler || "民事检察部门 / 法律援助联络员";
-            noteEl.innerText = plan.anxiety_note || "系统已登记线索；请保留证据原件，按补强清单等待后续反馈。";
-
-            const steps = plan.steps || [
-                { name: "线索登记", status: "done", detail: "已记录咨询内容和联系方式。" },
-                { name: "材料初审", status: "active", detail: statusEl.innerText },
-                { name: "补强证据", status: "pending", detail: "根据缺失清单补充材料。" },
-                { name: "支持起诉审查", status: "pending", detail: "形成支持起诉审查意见。" },
-            ];
-            stepsEl.innerHTML = steps.map(step => {
-                const done = step.status === "done";
-                const active = step.status === "active";
-                const dot = done ? "bg-green-500" : (active ? "bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)] animate-pulse" : "bg-zinc-700");
-                const color = done ? "text-green-500" : (active ? "text-amber-500" : "text-zinc-500");
-                return `
-                    <div class="relative mb-8">
-                        <div class="absolute -left-[31px] top-1 w-4 h-4 rounded-full ${dot} ring-4 ring-zinc-900"></div>
-                        <h4 class="text-sm font-bold ${color}">${escapeHtml(step.name || "")}</h4>
-                        <p class="text-xs text-zinc-500 mt-1">${escapeHtml(step.detail || "")}</p>
-                    </div>
-                `;
-            }).join("");
-        }
-
-        function openAdminDetail(id) {
-            const row = adminRecords.find(item => item.id === id);
-            if (!row) return;
-            const profile = row.case_profile || {};
-            document.getElementById('admin-case-detail').classList.remove('hidden');
-            document.getElementById('admin-detail-title').innerText = `${row.farmer_name || "农民工"} · ${row.stage || "平台记录"} · ${row.status || "已记录"}`;
-            document.getElementById('admin-detail-facts').innerHTML = [
-                renderFact('欠薪主体', profile.debtor_subject, profile.debtor_subject !== "待补充"),
-                renderFact('欠薪金额', profile.amount_display, profile.amount_display !== "待补充"),
-                renderFact('务工时间', profile.work_period),
-                renderFact('项目地点', profile.project_site),
-                renderFact('现有证据', (profile.evidence_items || []).join('、') || '待补充'),
-                renderFact('证据状态', profile.evidence_status || row.status || '已记录', true),
-                renderFact('追踪状态', profile.tracking_plan?.current_status || row.status || '已记录'),
-                renderFact('预计反馈', profile.tracking_plan?.expected_response || '待登记'),
-                renderFact('融合线索', `${profile.risk_alert?.related_clue_count || 0} 起`, Boolean(profile.risk_alert?.related_clue_count)),
-                renderFact('风险等级', profile.risk_alert?.level || '待识别', /高|中/.test(profile.risk_alert?.level || "")),
-            ].join("");
-            document.getElementById('admin-detail-question').innerText = row.question || row.summary || "暂无";
-            document.getElementById('admin-detail-answer').innerHTML = row.answer ? marked.parse(row.answer) : escapeHtml(row.summary || "暂无详细处理记录");
-            document.getElementById('admin-detail-timeline').innerHTML = renderTimelineItems(profile);
-            const missing = profile.missing_items || [];
-            document.getElementById('admin-detail-missing').innerHTML = missing.length
-                ? missing.map(item => `<li class="flex gap-2"><span class="text-amber-500">•</span><span>${escapeHtml(item)}</span></li>`).join("")
-                : `<li class="text-zinc-500">暂无明显缺口。</li>`;
-            document.getElementById('admin-detail-clues').innerHTML = renderSourceClues(profile);
-            document.getElementById('admin-case-detail').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-
-        function closeAdminDetail() {
-            document.getElementById('admin-case-detail').classList.add('hidden');
-        }
-
-
-        // ==== Chat API 核心交互 ====
-        const chatBox = document.getElementById('chat-box');
-        const userInput = document.getElementById('user-input');
-        const sendBtn = document.getElementById('send-btn');
-        const fileInput = document.getElementById('file-input');
-        const uploadTrigger = document.getElementById('upload-trigger');
-        const fileListContainer = document.getElementById('file-list');
-        const inputWrapper = document.getElementById('input-wrapper');
-
-        let attachedFiles = [];
-        let isGenerating = false;
+        let currentScenario = "unknown";
         let chatHistory = [];
+        let currentSources = [];
+        let docHtmlContent = "";
 
-        // --- 改动点 1: 输入框高度自动伸缩逻辑 ---
-        userInput.addEventListener('input', function () {
-            this.style.height = 'auto';
-            // 向上扩展，最高 200px，超过则滚动
-            const newHeight = Math.min(this.scrollHeight, 200);
-            this.style.height = newHeight + 'px';
-        });
+        // ==================== View Switching ====================
+        function switchView(view) {
+            const ids = ['view-landing', 'view-chat', 'view-doc', 'view-admin'];
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = 'none';
+            });
 
-        userInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
-        });
-        sendBtn.addEventListener('click', (e) => { e.preventDefault(); handleSend(); });
-        uploadTrigger.onclick = () => fileInput.click();
+            const viewMap = {
+                'landing': 'view-landing',
+                'chat': 'view-chat',
+                'doc': 'view-doc',
+                'admin': 'view-admin',
+            };
 
-        // --- 改动点 2: 完善文件处理与删除逻辑 ---
+            const target = viewMap[view] || 'view-landing';
+            const el = document.getElementById(target);
+            if (el) el.style.display = 'block';
+            window.scrollTo(0, 0);
 
-        // 创建单个文件标签的函数
-        function createTag(name, isLoading = false) {
+            // Update nav
+            document.querySelectorAll('#nav-buttons button').forEach(b => {
+                b.classList.remove('text-white', 'bg-white/10');
+            });
+            const navBtn = document.getElementById(`nav-${view}`);
+            if (navBtn) navBtn.classList.add('text-white', 'bg-white/10');
+
+            if (view === 'landing') renderScenarios();
+            if (view === 'admin') refreshAdmin();
+        }
+
+        // ==================== Scenario Cards ====================
+        function renderScenarios() {
+            const grid = document.getElementById('scenario-grid');
+            if (!grid) return;
+
+            grid.innerHTML = Object.entries(SCENARIOS).map(([id, s]) => `
+                <div class="card ${s.main ? 'card-main' : ''} p-5 cursor-pointer" onclick="selectScenario('${id}')">
+                    <div class="flex items-start gap-4">
+                        <span class="text-3xl">${s.icon}</span>
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-1">
+                                <h3 class="font-bold text-white text-sm">${s.title}</h3>
+                                ${s.main ? '<span class="tag tag-legal text-xs">主线</span>' : ''}
+                            </div>
+                            <p class="text-xs text-slate-400">${s.desc}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function selectScenario(scenarioId) {
+            currentScenario = scenarioId;
+            const s = SCENARIOS[scenarioId];
+            updateScenarioBadge(scenarioId);
+            switchView('chat');
+
+            // Add system context message
+            const chatEl = document.getElementById('chat-messages');
+            const emptyEl = document.getElementById('chat-empty');
+            if (emptyEl) emptyEl.style.display = 'none';
+
             const div = document.createElement('div');
-            div.className = `flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-bold tracking-tighter ${isLoading ? 'bg-zinc-800 text-zinc-600 animate-pulse' : 'bg-amber-500/10 border border-amber-500/20 text-amber-500'}`;
+            div.className = 'mb-4 text-center';
+            div.innerHTML =
+                `<span class="tag tag-legal text-sm px-4 py-1.5">已选择：${s.icon} ${s.title}</span>`;
+            chatEl.appendChild(div);
 
-            const textSpan = document.createElement('span');
-            textSpan.innerText = (isLoading ? "解析中: " : "已提取: ") + name;
-            div.appendChild(textSpan);
+            // Auto-send a starter query
+            const starters = {
+                "1": "我想追讨公司欠我的债务，但公司说没钱，我想追究未实缴股东的责任",
+                "2": "请帮我判断我的情况能不能主张股东出资加速到期",
+                "3": "债务发生后，公司延长了股东的出资期限，我该怎么办",
+                "4": "我怀疑公司股东出资后又把钱转走了，怎么证明",
+                "5": "公司减资后我的债权无法清偿，请问有什么办法",
+                "6": "股东把股权转让给了一个没钱的人，我还能追他吗",
+                "7": "我不确定我的情况属于哪种类型，请帮我初步判断一下",
+            };
 
-            if (!isLoading) {
-                // 删除按钮
-                const delBtn = document.createElement('button');
-                delBtn.type = "button";
-                delBtn.className = "ml-1 hover:text-white text-xs transition-colors";
-                delBtn.innerHTML = "×";
-                delBtn.onclick = () => {
-                    // 从数组中删除
-                    attachedFiles = attachedFiles.filter(f => f.name !== name);
-                    // 重新渲染列表
-                    renderTags();
-                };
-                div.appendChild(delBtn);
+            setTimeout(() => {
+                document.getElementById('chat-input').value = starters[scenarioId] || "";
+                sendMessage();
+            }, 300);
+        }
+
+        function quickStart() {
+            currentScenario = "7";
+            updateScenarioBadge("7");
+            switchView('chat');
+            setTimeout(() => {
+                document.getElementById('chat-input').value = "请帮我分析我的债权情况";
+                sendMessage();
+            }, 300);
+        }
+
+        function updateScenarioBadge(scenarioId) {
+            const badge = document.getElementById('chat-scenario-badge');
+            if (!badge) return;
+            const s = SCENARIOS[scenarioId];
+            if (s) {
+                badge.textContent = `${s.icon} 场景${scenarioId}：${s.title}`;
+                badge.className = s.main ? 'tag tag-legal text-sm px-4 py-1.5' :
+                    'tag tag-finance text-sm px-4 py-1.5';
+            } else {
+                badge.textContent = '通用法律咨询';
             }
+        }
+
+        // ==================== Voice Input (Fake) ====================
+        function fakeVoiceInput() {
+            const input = document.getElementById('chat-input');
+            const presets = [
+                "我有一笔债务，公司说没钱还，股东也没有实缴完出资，我该怎么追讨？",
+                "请你帮我分析一下，我的情况能不能要求股东出资加速到期？",
+                "我有公司的工商信息，想让你帮我看看股东出资情况是否正常。",
+                "债务人公司正在减资，我的债权会不会受影响？",
+            ];
+            const preset = presets[Math.floor(Math.random() * presets.length)];
+            input.value = preset;
+            input.style.height = 'auto';
+            input.style.height = input.scrollHeight + 'px';
+            input.focus();
+
+            // Brief highlight animation
+            input.style.transition = 'all 0.15s';
+            input.style.borderColor = '#38bdf8';
+            setTimeout(() => { input.style.borderColor = ''; }, 500);
+        }
+
+        // ==================== Chat ====================
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const query = input.value.trim();
+            if (!query) return;
+
+            const emptyEl = document.getElementById('chat-empty');
+            if (emptyEl) emptyEl.style.display = 'none';
+
+            // Render user message
+            appendMessage('user', query);
+            input.value = '';
+            input.style.height = 'auto';
+            chatHistory.push({ role: "user", content: query });
+
+            // Render AI placeholder
+            const aiDiv = appendMessage('ai', '');
+            const contentDiv = aiDiv.querySelector('.ai-content');
+            const reasoningDiv = aiDiv.querySelector('.ai-reasoning');
+
+            const sendBtn = document.getElementById('send-btn');
+            sendBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query: query,
+                        stream: true,
+                        history: chatHistory.slice(0, -1),
+                        scenario: currentScenario,
+                        user_name: "债权人",
+                    }),
+                });
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                let fullContent = '';
+                let fullReasoning = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+
+                    for (const line of lines) {
+                        if (!line.startsWith('data: ')) continue;
+                        const jsonStr = line.slice(6);
+                        if (jsonStr === '[DONE]') continue;
+
+                        try {
+                            const data = JSON.parse(jsonStr);
+                            if (data.type === 'meta') {
+                                if (data.sources) currentSources = data.sources;
+                                updateEvidencePanel(data);
+                            } else if (data.type === 'reasoning') {
+                                fullReasoning += data.content;
+                                if (reasoningDiv) reasoningDiv.innerHTML = marked.parse(
+                                    '<details><summary>思考过程</summary>' + data.content + '</details>');
+                            } else if (data.type === 'chunk') {
+                                fullContent += data.content;
+                                if (contentDiv) contentDiv.innerHTML = marked.parse(fullContent);
+                                scrollChat();
+                                updateScoreFromContent(fullContent);
+                            }
+                        } catch (e) { /* skip partial JSON */ }
+                    }
+                }
+
+                chatHistory.push({ role: "assistant", content: fullContent });
+
+            } catch (e) {
+                if (contentDiv) contentDiv.innerHTML =
+                    `<p class="text-red-400">网络错误：${e.message}。请检查后端是否运行在 ${API_BASE}</p>`;
+            }
+
+            sendBtn.disabled = false;
+            scrollChat();
+        }
+
+        function appendMessage(role, text) {
+            const container = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = 'mb-5';
+
+            if (role === 'user') {
+                div.innerHTML = `
+                    <div class="flex justify-end">
+                        <div class="max-w-[85%] glass px-4 py-2.5 rounded-2xl rounded-br-md">
+                            <p class="text-sm text-white whitespace-pre-wrap">${escapeHtml(text)}</p>
+                        </div>
+                    </div>`;
+            } else {
+                div.innerHTML = `
+                    <div class="flex gap-3">
+                        <span class="text-xl flex-shrink-0 mt-1">🛡️</span>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs text-slate-500 mb-1">Justitia · AI 法律顾问</p>
+                            <div class="ai-reasoning text-xs text-slate-500"></div>
+                            <div class="ai-content markdown-body"></div>
+                        </div>
+                    </div>`;
+                if (text) {
+                    const contentDiv = div.querySelector('.ai-content');
+                    if (contentDiv) contentDiv.innerHTML = marked.parse(text);
+                }
+            }
+
+            container.appendChild(div);
+            scrollChat();
             return div;
         }
 
-        // 统一渲染附件列表的函数
-        function renderTags() {
-            fileListContainer.innerHTML = "";
-            attachedFiles.forEach(file => {
-                fileListContainer.appendChild(createTag(file.name));
-            });
+        function scrollChat() {
+            const container = document.getElementById('chat-messages');
+            if (container) {
+                container.scrollTop = container.scrollHeight;
+            }
         }
 
-        fileInput.onchange = async (e) => {
-            const files = Array.from(e.target.files);
-            for (const file of files) {
-                if (attachedFiles.some(f => f.name === file.name)) continue;
+        // ==================== Evidence Panel ====================
+        function updateEvidencePanel(meta) {
+            const panel = document.getElementById('evidence-content');
+            if (!panel) return;
 
-                const loadingTag = createTag(file.name, true);
-                fileListContainer.appendChild(loadingTag);
+            let html = '';
+            if (meta.sources && meta.sources.length > 0) {
+                html += '<p class="text-white font-semibold mb-1">法律参考：</p>';
+                meta.sources.slice(0, 3).forEach(s => {
+                    html +=
+                        `<p class="text-xs mb-1"><span class="tag tag-legal">${escapeHtml(s.filename)}</span></p>`;
+                });
+            }
+            if (meta.finance && meta.finance.sql) {
+                html += '<p class="text-white font-semibold mt-3 mb-1">财务查询：</p>';
+                html +=
+                    `<p class="text-xs font-mono text-green-400 break-all">${escapeHtml(meta.finance.sql.substring(0, 100))}</p>`;
+            }
+            if (!html) html = '<p class="text-slate-500">等待更多信息...</p>';
+            panel.innerHTML = html;
+        }
+
+        function updateScoreFromContent(content) {
+            const scoreMatch = content.match(/可行性评分[：:]\s*(\d{1,3})\s*分?/);
+            if (scoreMatch) {
+                const score = parseInt(scoreMatch[1]);
+                updateScoreRing(score);
+            }
+        }
+
+        function updateScoreRing(score) {
+            const ring = document.getElementById('score-ring');
+            if (!ring) return;
+            ring.textContent = score;
+            ring.style.borderColor = score >= 70 ? '#22c55e' : score >= 40 ? '#f59e0b' : '#ef4444';
+            ring.style.color = score >= 70 ? '#22c55e' : score >= 40 ? '#f59e0b' : '#ef4444';
+        }
+
+        // ==================== File Upload ====================
+        async function handleFileUpload(input) {
+            const files = input.files;
+            if (!files.length) return;
+
+            const emptyEl = document.getElementById('chat-empty');
+            if (emptyEl) emptyEl.style.display = 'none';
+
+            for (const file of files) {
+                appendMessage('user', `📎 上传文件：${file.name}`);
 
                 const formData = new FormData();
                 formData.append('file', file);
 
                 try {
-                    // 发起真实上传
-                    const res = await apiFetch('/api/upload', {
+                    const resp = await fetch(`${API_BASE}/api/upload`, {
                         method: 'POST',
-                        body: formData
+                        body: formData,
                     });
+                    const data = await resp.json();
 
-                    if (!res.ok) throw new Error(`HTTP 错误: ${res.status}`);
+                    if (data.text) {
+                        const preview = data.text.length > 500 ? data.text.substring(0, 500) + '...' : data.text;
+                        const aiDiv = appendMessage('ai', '');
+                        const contentDiv = aiDiv.querySelector('.ai-content');
+                        if (contentDiv) contentDiv.innerHTML = marked.parse(
+                            `**文件识别结果** (${data.engine || 'OCR'})\n\n\`\`\`\n${preview}\n\`\`\`\n\n已自动提取以上文本。您可以基于这些内容向我提问。`
+                        );
 
-                    const data = await res.json();
-                    loadingTag.remove();
+                        chatHistory.push({ role: "user", content: `[上传文件: ${file.name}]` });
+                        chatHistory.push({
+                            role: "assistant",
+                            content: `文件识别结果：\n${data.text}`
+                        });
 
-                    if (data.error) {
-                        throw new Error(data.error);
-                    }
-
-                    if (data.full_content) {
-                        attachedFiles.push({ name: file.name, content: data.full_content });
-                        renderTags(); // 渲染带删除按钮的标签
-                        if (typeof updateRealEvidence === "function") updateRealEvidence(data.full_content);
-                        else if (typeof lightUpEvidence === "function") lightUpEvidence();
-                    } else {
-                        throw new Error("未从文件中解析到可用文字，请换一份清晰材料或手动输入关键信息。");
-                    }
-                } catch (err) {
-                    loadingTag.remove();
-                    console.error("上传失败:", err);
-                    alert(`上传失败：${err.message || '请确认后端服务可访问。'}\n\n当前后端：${API_BASE_URL}`);
-                }
-            }
-            fileInput.value = "";
-        };
-
-        async function appendMessage(role, text, type = 'content') {
-            const wrapper = document.createElement('div');
-            wrapper.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-2 duration-300 w-full`;
-            const div = document.createElement('div');
-
-            if (type === 'reasoning') {
-                div.className = "reasoning-panel max-w-[85%] group cursor-pointer";
-                div.innerHTML = `<div class="text-amber-500 font-bold mb-1">⚖️ 检察研判逻辑 (Thought)</div><div class="thought-content text-zinc-400">${text}</div>`;
-            } else {
-                div.className = role === 'user' ? "bubble-user rounded-2xl p-4 max-w-[85%] text-sm text-zinc-100" : "bubble-ai rounded-r-xl p-6 max-w-[90%] text-sm markdown-body";
-                if (role === 'user') div.innerText = text; else div.innerHTML = marked.parse(text);
-            }
-            wrapper.appendChild(div);
-            chatBox.appendChild(wrapper);
-            chatBox.scrollTop = chatBox.scrollHeight;
-            return div;
-        }
-
-        async function handleSend() {
-            if (isGenerating) return;
-            const rawInput = userInput.value.trim();
-
-            // 如果既没说话也没传文件，就拦截
-            if (!rawInput && attachedFiles.length === 0) {
-                alert("⚠️ 请先输入维权详情，或上传相关证据后再发送！");
-                return;
-            }
-
-            isGenerating = true;
-            sendBtn.style.opacity = '0.5';
-            inputWrapper.classList.add('glow-generating');
-            updateProgress(2);
-
-            // --- 核心修改 1: 拼接真实证据内容 ---
-            let finalPrompt = rawInput;
-            if (attachedFiles.length > 0) {
-                finalPrompt += "\n\n【补充证据资料（OCR 自动识别）】：\n";
-                attachedFiles.forEach(file => {
-                    finalPrompt += `---文件名：${file.name}---\n证据文字内容：\n${file.content}\n`;
-                });
-            }
-            lastUserQuestion = rawInput || finalPrompt;
-            updateRealEvidence(finalPrompt);
-
-            await appendMessage('user', rawInput || `已上传 ${attachedFiles.length} 份证据`);
-            userInput.value = '';
-            userInput.style.height = 'auto';
-
-            const reasoningDiv = await appendMessage('ai', '正在比对西城区最新案例库与法规...', 'reasoning');
-            const aiMsgDiv = await appendMessage('ai', '...');
-
-            let fullReasoning = "";
-            let fullContent = "";
-
-            try {
-                const response = await apiFetch('/api/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        query: finalPrompt, // 发送带真实证据文字的 Prompt
-                        history: chatHistory,
-                        stream: true,
-                        user_name: currentUser.name,
-                        phone: currentUser.phone
-                    })
-                });
-
-                if (!response.ok) throw new Error("Server response failed");
-
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-                aiMsgDiv.innerHTML = "";
-
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-                    const chunk = decoder.decode(value);
-                    const lines = chunk.split('\n');
-                    for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            const dataStr = line.slice(6).trim();
-                            if (dataStr === '[DONE]') {
-                                reasoningDiv.style.borderLeftColor = "#10b981";
-                                if (!fullReasoning) {
-                                    reasoningDiv.querySelector('.thought-content').innerText = "已完成本地法条检索与案情要素抽取。";
-                                }
-                                break;
-                            }
-                            try {
-                                const data = JSON.parse(dataStr);
-                                if (data.type === 'reasoning') {
-                                    fullReasoning += data.content;
-                                    reasoningDiv.querySelector('.thought-content').innerText = fullReasoning;
-                                } else if (data.type === 'chunk') {
-                                    fullContent += data.content;
-                                    aiMsgDiv.innerHTML = marked.parse(fullContent);
-                                } else if (data.type === 'error') {
-                                    const warningHtml = `<div class="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-200">${escapeHtml(data.content || '远程模型暂时不可用，已切换为本地应急指引。')}</div>`;
-                                    aiMsgDiv.innerHTML = fullContent ? marked.parse(fullContent) + warningHtml : warningHtml;
-                                    reasoningDiv.style.borderLeftColor = "#f59e0b";
-                                }
-                                chatBox.scrollTop = chatBox.scrollHeight;
-                            } catch (e) { }
+                        // Auto-send OCR text for analysis
+                        if (data.text.length > 20) {
+                            document.getElementById('chat-input').value =
+                                `基于以上文件内容，请帮我分析维权路径`;
+                            sendMessage();
                         }
                     }
-                }
-
-                if (!fullContent) throw new Error("后端没有返回回答内容");
-                chatHistory.push({ "role": "user", "content": rawInput || finalPrompt });
-                chatHistory.push({ "role": "assistant", "content": fullContent });
-
-                // --- 核心修改 2: 调用真实的证据提取逻辑 ---
-                await updateRealEvidence(`${finalPrompt}\n${fullContent}`);
-                maxUnlockedStep = Math.max(maxUnlockedStep, 3);
-                updateProgress(2, { unlock: false });
-
-            } catch (err) {
-                console.error("Fetch Error:", err);
-                aiMsgDiv.innerText = `❌ ${err.message || '连接后端失败。'}`;
-            } finally {
-                isGenerating = false;
-                sendBtn.style.opacity = '1';
-                inputWrapper.classList.remove('glow-generating');
-            }
-        }
-
-        function escapeHtml(text) {
-            return String(text).replace(/[&<>"']/g, ch => ({
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#39;'
-            }[ch]));
-        }
-
-        function formatMoney(value) {
-            return `¥ ${Number(value).toLocaleString('zh-CN')}`;
-        }
-
-        function parseSimpleChineseNumber(text) {
-            const digits = { '零': 0, '一': 1, '二': 2, '两': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9 };
-            if (!text) return 0;
-            if (/^\d+$/.test(text)) return Number(text);
-            if (text === '十') return 10;
-            if (text.includes('十')) {
-                const [left, right] = text.split('十');
-                return (left ? digits[left] : 1) * 10 + (right ? digits[right] : 0);
-            }
-            return digits[text] || 0;
-        }
-
-        function parseChineseAmountNumber(text) {
-            const normalized = String(text || '').replace(/[零〇]/g, '零').replace(/元|块|人民币|整|\s/g, '');
-            const digits = { '零': 0, '一': 1, '二': 2, '两': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9 };
-            const units = { '十': 10, '百': 100, '千': 1000 };
-
-            const shortWan = normalized.match(/^([一二两三四五六七八九十百千]+)万([一二两三四五六七八九])$/);
-            if (shortWan) {
-                return parseChineseAmountNumber(shortWan[1]) * 10000 + digits[shortWan[2]] * 1000;
-            }
-
-            const shortThousand = normalized.match(/^([一二两三四五六七八九])千([一二两三四五六七八九])$/);
-            if (shortThousand) {
-                return digits[shortThousand[1]] * 1000 + digits[shortThousand[2]] * 100;
-            }
-
-            const shortHundred = normalized.match(/^([一二两三四五六七八九])百([一二两三四五六七八九])$/);
-            if (shortHundred) {
-                return digits[shortHundred[1]] * 100 + digits[shortHundred[2]] * 10;
-            }
-
-            const [wanPart, restPart] = normalized.split('万');
-            let total = 0;
-            let sectionText = restPart === undefined ? wanPart : wanPart;
-            if (restPart !== undefined) {
-                total += parseChineseAmountNumber(wanPart) * 10000;
-                sectionText = restPart;
-            }
-
-            let section = 0;
-            let number = 0;
-            for (const ch of sectionText) {
-                if (digits[ch] !== undefined) {
-                    number = digits[ch];
-                } else if (units[ch]) {
-                    section += (number || 1) * units[ch];
-                    number = 0;
-                }
-            }
-            return total + section + number;
-        }
-
-        function extractAmount(text) {
-            const chineseMoney = text.match(/([一二两三四五六七八九十百千万零〇]{2,12})\s*(?:元|块|人民币|整)?/);
-            if (chineseMoney && /万|千|百|十/.test(chineseMoney[1])) {
-                const amount = parseChineseAmountNumber(chineseMoney[1]);
-                if (amount >= 1000) return formatMoney(amount);
-            }
-
-            const digitWan = text.match(/(\d+(?:\.\d+)?)\s*万(?:\s*(\d{1,4}))?/);
-            if (digitWan) {
-                return formatMoney(Number(digitWan[1]) * 10000 + Number(digitWan[2] || 0));
-            }
-
-            const digitYuan = text.match(/(\d{1,3}(?:,\d{3})*|\d+)(?:\.\d{1,2})?\s*[元块]/);
-            if (digitYuan) {
-                return formatMoney(Number(digitYuan[1].replace(/,/g, '')));
-            }
-
-            return "待补充";
-        }
-
-        function normalizeDebtorCandidate(candidate) {
-            if (!candidate) return "";
-
-            let value = String(candidate)
-                .replace(/[“”"『』《》]/g, "")
-                .replace(/^(?:您说的|所谓的|这个|那个|该|欠薪主体|用工主体|用人单位|被申请人|被告|雇主|老板)\s*(?:是|为)?\s*/u, "")
-                .replace(/(?:全称|完整名称|身份信息|统一社会信用代码|联系方式|电话|地址|盖章|签字|签名|是什么|是否|需要|请|吗|呢|？|\?).*$/u, "")
-                .replace(/[，。；、,\n\r].*$/u, "")
-                .trim();
-
-            const orgMatch = value.match(/[\u4e00-\u9fa5A-Za-z0-9（）()·]{2,40}?(?:公司|项目部|工程部|分包商|劳务队|班组)/u);
-            if (orgMatch) value = orgMatch[0].replace(/^(北京市西城区|北京西城区|西城区)/u, "");
-
-            return value
-                .replace(/^(?:在|到|给|跟|为)/u, "")
-                .replace(/(?:那个|这个)?(?:工地|项目|现场)(?:干活|干木工|务工|上班|做工)?.*$/u, "")
-                .replace(/(?:干活|干木工|务工|上班|做工).*$/u, "")
-                .trim();
-        }
-
-        function isUsefulDebtorCandidate(candidate) {
-            if (!candidate || candidate.length < 2 || candidate.length > 40) return false;
-            if (/^(?:公司|单位|雇主|老板|被告|被申请人|项目|工地|包工头|劳动者|申请人)$/u.test(candidate)) return false;
-            if (/(?:某|XX|xxx|未知|待补充|不清楚|全称|姓名|身份|信息|电话|地址|证据|欠条|工资|金额|劳动合同|工牌|给我|帮我|写|生成|模板|起诉状|文书|咋办|怎么|需要|建议|您|我们|平台|系统|案情|那个)/iu.test(candidate)) return false;
-            return /(?:公司|项目部|工程部|分包商|劳务队|班组)$|^[\u4e00-\u9fa5A-Za-z0-9·]{1,8}(?:老板|包工头)$/u.test(candidate);
-        }
-
-        function extractDebtor(text) {
-            const candidates = [];
-            const patterns = [
-                /(?:在|到|给|跟|为|受雇于|入职|就职于)\s*[“"]?([\u4e00-\u9fa5A-Za-z0-9（）()·]{2,40}?(?:公司|项目部|工程部|分包商|劳务队|班组))[”"]?(?=那个|这个|的|工地|项目|干|做|上班|务工|施工|$)/gu,
-                /(?:欠薪主体|用工主体|用人单位|被申请人|被告|雇主|劳务公司)\s*[:：]\s*[“"]?([^，。；\n\r]{2,50})/gu,
-                /[“"]([\u4e00-\u9fa5A-Za-z0-9（）()·]{2,40}?(?:公司|项目部|工程部|分包商|劳务队|班组))[”"]/gu,
-                /([\u4e00-\u9fa5A-Za-z0-9（）()·]{2,40}?(?:公司|项目部|工程部|分包商|劳务队|班组))/gu
-            ];
-
-            for (const pattern of patterns) {
-                for (const match of text.matchAll(pattern)) {
-                    const candidate = normalizeDebtorCandidate(match[1]);
-                    if (isUsefulDebtorCandidate(candidate)) candidates.push(candidate);
-                }
-                if (candidates.length) break;
-            }
-
-            for (const match of text.matchAll(/([一-龥]{1,3})(老板|包工头|班组长)/gu)) {
-                const name = match[1];
-                if (!['我', '他', '她', '您', '你', '的', '这', '那', '个'].includes(name)) {
-                    const candidate = `${name}${match[2]}`;
-                    if (isUsefulDebtorCandidate(candidate)) return candidate;
+                } catch (e) {
+                    appendMessage('ai', `文件上传失败：${e.message}`);
                 }
             }
 
-            return candidates[0] || "待补充";
+            input.value = '';
         }
 
-        function normalizeProjectSiteCandidate(value) {
-            return String(value || "")
-                .replace(/[“”"『』《》]/g, "")
-                .split(/[，。；、,\n\r]/)[0]
-                .replace(/^(在|到|位于|项目名称|工程名称|施工地点|工地位置|您那个|我那个|那个|这个|该)\s*/g, "")
-                .replace(/(干活|干木工|务工|上班|做工|施工|完工|离场).*$/g, "")
-                .replace(/(那个|这个)(工地|项目|工程|现场)$/g, "$2")
-                .replace(/([一-龥A-Za-z0-9·]{2,30})公司(那个|这个)?(工地|项目|工程|现场)$/g, "$1$3")
-                .replace(/公司(的)?(工地|项目|工程|现场)$/g, "$2")
-                .trim();
-        }
+        // ==================== Document Export ====================
+        function generateDoc(type) {
+            const templates = {
+                complaint: `# 民事起诉状
 
-        function isUsefulProjectSite(value) {
-            const site = String(value || "");
-            if (!site || site === "待补充" || site.length < 3 || site.length > 40) return false;
-            if (/(给我|帮我|写|生成|模板|起诉状|文书|咋办|怎么|需要|建议|您|我们|平台|系统|案情|这个|那个)/.test(site)) return false;
-            return /(工地|项目|工程|现场)$/.test(site);
-        }
+**原告：** [债权人姓名/名称]，[身份证号/统一社会信用代码]，住址/住所地：[地址]，联系电话：[电话]。
 
-        function classifyClientTime(text, start, end) {
-            const before = text.slice(Math.max(0, start - 18), start);
-            const after = text.slice(end, end + 24);
-            const nearby = `${before}${text.slice(start, end)}${after}`.trim();
-            if (/(干到|做到|一直到|到)$/.test(before) || /(完工|离场|结束|停工|老板跑了|失联|结算)/.test(after)) {
-                return { title: '工程完工或停止务工', detail: nearby, priority: 2 };
-            }
-            if (/(从|自|开始|入场|进场|上班|务工|干|做)/.test(nearby)) {
-                return { title: '开始务工', detail: nearby, priority: 1 };
-            }
-            return { title: '案情时间节点', detail: nearby, priority: 0 };
-        }
+**被告一：** [债务人公司全称]，住所地：[注册地址]，统一社会信用代码：[代码]。
+法定代表人：[姓名]，联系电话：[电话]。
 
-        function resolveClientYear(prefix, month, text) {
-            const currentYear = new Date().getFullYear();
-            if (prefix === '去年') return currentYear - 1;
-            if (prefix === '明年') return currentYear + 1;
-            if (prefix === '今年') return currentYear;
-            if (month > new Date().getMonth() + 3 && /去年/.test(text) && /今年/.test(text)) return currentYear - 1;
-            return currentYear;
-        }
+**被告二：** [未实缴股东姓名]，[身份证号]，住址：[地址]。
 
-        function buildClientCaseProfile(text) {
-            const amount = extractAmount(text);
-            const company = extractDebtor(text);
-            const siteMatch = text.match(/(?:在|到)\s*([^，。；\n\r]{2,40}?(?:工地|项目|工程|现场))/);
-            const siteCandidate = siteMatch ? normalizeProjectSiteCandidate(siteMatch[1]) : '待补充';
-            const projectSite = isUsefulProjectSite(siteCandidate) ? siteCandidate : '待补充';
-            const hasContract = /合同|劳动合同|协议/.test(text);
-            const evidenceItems = [];
-            if (/欠条|借条/.test(text)) evidenceItems.push('欠条');
-            if (/结算单|工资单|工资表|工资条/.test(text)) evidenceItems.push('工资结算材料');
-            if (/微信|聊天记录|短信|施工群/.test(text)) evidenceItems.push('聊天记录');
-            if (/转账|银行流水|付款|收款/.test(text)) evidenceItems.push('转账记录');
-            if (/录音|录像|视频/.test(text)) evidenceItems.push('录音录像');
-            if (/考勤|工牌|工地照片|劳动合同|协议/.test(text)) evidenceItems.push('劳动或用工证明');
-            if (/工友|证人|证明/.test(text)) evidenceItems.push('证人证言');
+## 诉讼请求
 
-            const timeline = [];
-            const dated = new Map();
-            for (const match of text.matchAll(/(?<![年\d])(去年|今年|明年)?\s*(\d{1,2})\s*月(?:份)?/g)) {
-                const prefix = match[1];
-                const month = Number(match[2]);
-                if (month >= 1 && month <= 12) {
-                    const year = resolveClientYear(prefix, month, text);
-                    const node = classifyClientTime(text, match.index, match.index + match[0].length);
-                    if (!node.priority) continue;
-                    const key = `${year}-${month}`;
-                    const existing = dated.get(key);
-                    if (existing && existing.priority >= node.priority) continue;
-                    dated.set(key, {
-                        date: `${year}年${month}月`,
-                        title: node.title,
-                        detail: node.detail,
-                        priority: node.priority,
-                        sort: year * 100 + month
-                    });
-                }
-            }
-            [...dated.values()].sort((a, b) => a.sort - b.sort).forEach(item => {
-                timeline.push({ date: item.date, title: item.title, detail: item.detail });
-            });
-            if (/欠条|结算单|工资单/.test(text)) timeline.push({ date: '当前', title: '已持有书面证据', detail: '案情中提到欠条、结算单或工资单等书面材料。' });
-            if (/跑了|失联|联系不上|拖欠|不给|没给|差我/.test(text)) timeline.push({ date: '当前', title: '发生欠薪争议', detail: '案情中提到欠薪、失联或拒付工资。' });
+1. 判令被告一立即向原告偿还债务本金人民币 [金额] 元及逾期利息（以 [金额] 元为基数，按 [利率] 自 [日期] 起计算至实际清偿之日止）；
+2. 判令被告二在其未出资范围内对被告一的上述债务承担补充赔偿责任；
+3. 判令二被告承担本案全部诉讼费用。
 
-            const amountYuan = amount === '待补充' ? null : Number(String(amount).replace(/[^\d]/g, ''));
-            const hasSiteOrCompany = projectSite !== '待补充' || company !== '待补充';
-            const hotlineCount = hasSiteOrCompany ? 5 : 0;
-            const streetCount = hasSiteOrCompany ? 2 : 0;
-            const procuratorateCount = amountYuan ? 1 : 0;
-            const today = new Date();
-            const dateAgo = (days) => new Date(today.getTime() - days * 86400000).toISOString().slice(0, 10);
-            const sourceClues = [
-                {
-                    source: 'self_report',
-                    source_label: '农民工自主填报',
-                    created_at: dateAgo(0),
-                    project_site: projectSite,
-                    debtor_subject: company,
-                    related_count: 1,
-                    status: '平台已登记',
-                    summary: '劳动者已自主填报案情、联系方式和现有证据，纳入标准化线索池。'
-                }
-            ];
-            if (hotlineCount) sourceClues.push({
-                source: 'hotline_12345',
-                source_label: '12345政务服务热线',
-                created_at: dateAgo(3),
-                project_site: projectSite,
-                debtor_subject: company,
-                related_count: hotlineCount,
-                status: '已派单至属地',
-                summary: `近七天同工地劳动和社会保障类诉求 ${hotlineCount} 起，关键词集中在欠薪、结算争议和施工班组失联。`
-            });
-            if (streetCount) sourceClues.push({
-                source: 'street_center',
-                source_label: '街道综治中心',
-                created_at: dateAgo(1),
-                project_site: projectSite,
-                debtor_subject: company,
-                related_count: streetCount,
-                status: '综治中心登记核验',
-                summary: `属地街道已形成同类劳资纠纷登记 ${streetCount} 起，建议同步核查项目用工台账。`
-            });
-            if (procuratorateCount) sourceClues.push({
-                source: 'procuratorate',
-                source_label: '检察业务数据',
-                created_at: dateAgo(0),
-                project_site: projectSite,
-                debtor_subject: company,
-                related_count: procuratorateCount,
-                status: '待类案研判',
-                summary: '检察业务侧可将该线索并入农民工薪酬领域监督线索，评估是否需要支持起诉或制发治理建议。'
-            });
-            const sourceCounts = sourceClues.reduce((acc, clue) => {
-                acc[clue.source] = (acc[clue.source] || 0) + Number(clue.related_count || 0);
-                return acc;
-            }, {});
-            const totalClues = Object.values(sourceCounts).reduce((sum, count) => sum + count, 0);
-            const riskLevel = totalClues >= 8 ? '高风险' : (totalClues >= 4 ? '中风险' : '关注');
-            const dataTimeline = sourceClues.filter(clue => clue.source !== 'self_report').map(clue => ({
-                date: clue.created_at,
-                title: clue.source_label,
-                detail: `${clue.status}：${clue.summary}`,
-                source: clue.source,
-                related_count: clue.related_count
-            }));
-            const evidenceStatus = hasContract || evidenceItems.length >= 2 ? '证据较充分，可进入文书生成与预审' : (evidenceItems.length ? '已有初步证据，建议补强关键材料' : '证据不足，需补充');
-            const trackingPlan = {
-                current_status: evidenceItems.length ? '待补充关键材料' : '线索登记中',
-                expected_response: '登记后 1 个工作日内反馈',
-                next_step: evidenceItems.length ? '按缺失材料清单补齐后复核。' : '先补充主体、金额和基础证据。',
-                handler: '民事检察部门 / 法律援助联络员',
-                anxiety_note: '系统已登记线索；请保留证据原件和截图，不需要重复讲述案情。',
-                steps: [
-                    { name: '线索登记', status: 'done', detail: '已记录咨询内容和联系方式。' },
-                    { name: '材料初审', status: 'active', detail: evidenceItems.length ? '已有初步证据，等待补强材料。' : '等待补充基础证据。' },
-                    { name: '补强证据', status: 'pending', detail: '补充主体、金额、时间和证据材料。' },
-                    { name: '支持起诉审查', status: 'pending', detail: '审查是否符合支持起诉条件。' },
-                ]
+## 事实与理由
+
+[根据实际案情填写，包括债务形成过程、公司不能清偿的事实、股东未实缴出资的情况等]
+
+依据《中华人民共和国公司法》第五十四条、《全国法院民商事审判工作会议纪要》（九民纪要）第6条之规定，特向贵院提起诉讼，请求依法支持原告诉讼请求。
+
+此致
+[管辖法院名称]
+
+具状人：
+日期：2026年  月  日`,
+
+                support: `# 支持起诉申请书
+
+**申请人：** [债权人姓名/名称]
+
+**申请事项：**
+请求检察机关对申请人与[债务人公司]及[股东]之间的股东出资纠纷一案支持起诉。
+
+## 事实与理由
+
+[说明案件基本情况、申请人维权困难的原因、申请支持起诉的必要性]
+
+依据《中华人民共和国民事诉讼法》第十六条之规定，特向贵院提出申请。
+
+此致
+[检察机关名称]
+
+申请人：
+日期：2026年  月  日`,
+
+                evidence_list: `# 证据清单
+
+| 序号 | 证据名称 | 证明目的 | 状态 |
+|------|----------|----------|------|
+| 1 | 债权凭证（合同/欠条/判决书） | 证明债权债务关系存在 | |
+| 2 | 公司工商登记信息 | 证明股东认缴/实缴出资情况 | |
+| 3 | 公司财务报告/审计报告 | 证明公司不能清偿到期债务 | |
+| 4 | 催收记录 | 证明已向公司主张权利 | |
+| 5 | 股东出资情况查询结果 | 证明股东存在未实缴出资 | |
+| 6 | 公司银行流水 | 证明公司财产状况/抽逃出资 | |
+
+*根据案件实际情况勾选已有证据，标注缺失证据。*`,
+
+                preservation: `# 财产保全申请书
+
+**申请人：** [债权人姓名/名称]
+
+**被申请人一：** [债务人公司]
+
+**被申请人二：** [未实缴股东]
+
+## 申请事项
+
+请求贵院依法冻结/查封/扣押被申请人名下价值人民币 [金额] 元的财产。
+
+## 事实与理由
+
+[说明申请财产保全的紧迫性和必要性，包括债务人有转移财产风险等情况]
+
+申请人愿提供相应担保。依据《中华人民共和国民事诉讼法》第一百零三条之规定，特向贵院提出申请。
+
+此致
+[管辖法院名称]
+
+申请人：
+日期：2026年  月  日`,
             };
-            return {
-                worker_name: currentUser.name,
-                phone: currentUser.phone,
-                debtor_subject: company,
-                amount_yuan: amountYuan,
-                amount_display: amount,
-                work_period: timeline.filter(item => /^\d{4}年/.test(item.date)).slice(0, 2).map(item => item.date).join(' 至 ') || '待补充',
-                project_site: projectSite,
-                evidence_items: evidenceItems,
-                evidence_status: evidenceStatus,
-                missing_items: [],
-                timeline,
-                source_clues: sourceClues,
-                data_timeline: dataTimeline,
-                risk_alert: {
-                    level: riskLevel,
-                    related_clue_count: totalClues,
-                    project_site: projectSite,
-                    debtor_subject: company,
-                    source_counts: sourceCounts,
-                    recommended_action: totalClues >= 4 ? '建议将同工地线索纳入风险预警，推动属地街道、人社劳动监察与民事检察联动核验。' : '建议保留线索并随新增投诉自动更新风险等级。'
-                },
-                data_fusion_summary: {
-                    total_clues: totalClues,
-                    source_counts: sourceCounts
-                },
-                tracking_plan: trackingPlan,
-                confidence: 0.5
-            };
+
+            docHtmlContent = templates[type] || '';
+            const preview = document.getElementById('doc-preview');
+            if (preview) preview.innerHTML = marked.parse(docHtmlContent);
+            const exportBtn = document.getElementById('export-btn');
+            if (exportBtn) exportBtn.disabled = !docHtmlContent;
         }
 
-        function renderCaseTimeline(profile) {
-            const list = document.getElementById('case-timeline-list');
-            if (!list) return;
-            const timeline = mergedTimeline(profile);
-            if (!timeline.length) {
-                list.innerHTML = `<li class="text-zinc-500">暂无明确时间节点。</li>`;
-                return;
-            }
-            list.innerHTML = timeline.slice(0, 6).map(item => `
-                <li class="relative pl-4 border-l border-amber-500/30">
-                    <span class="absolute -left-[5px] top-1.5 w-2 h-2 rounded-full bg-amber-500"></span>
-                    <p class="text-amber-400 font-bold">${escapeHtml(item.date || "时间待补充")}</p>
-                    <p class="text-zinc-300">${escapeHtml(item.title || "案情节点")}</p>
-                </li>
-            `).join("");
-        }
-
-        function renderCaseProfile(profile) {
-            const list = document.getElementById('evidence-list');
-            if (!list || !profile) return;
-
-            const amount = profile.amount_display || "待补充";
-            const company = profile.debtor_subject || "待补充";
-            const evidenceStatus = profile.evidence_status || "证据不足，需补充";
-            const evidenceItems = profile.evidence_items || [];
-            const evidenceDot = evidenceItems.length ? 'bg-amber-500 shadow-[0_0_8px_#f59e0b]' : 'bg-red-500 animate-pulse shadow-[0_0_8px_#ef4444]';
-            const companyDot = company === "待补充" ? 'bg-red-500 animate-pulse shadow-[0_0_8px_#ef4444]' : 'bg-amber-500 shadow-[0_0_8px_#f59e0b]';
-            const amountDot = amount === "待补充" ? 'bg-red-500 animate-pulse shadow-[0_0_8px_#ef4444]' : 'bg-amber-500 shadow-[0_0_8px_#f59e0b]';
-            lastCaseProfile = profile;
-            lastEvidenceSnapshot = { subject: company, amount, status: evidenceStatus };
-
-            list.innerHTML = `
-                <li class="flex items-center gap-2 text-zinc-300 animate-in fade-in duration-500">
-                    <span class="w-2 h-2 rounded-full ${companyDot}"></span>
-                    欠薪主体：${escapeHtml(company)}
-                </li>
-                <li class="flex items-center gap-2 text-zinc-300 animate-in fade-in duration-700">
-                    <span class="w-2 h-2 rounded-full ${amountDot}"></span>
-                    欠薪金额：<span class="text-amber-500 font-bold">${amount}</span>
-                </li>
-                <li class="flex items-center gap-2 text-zinc-500 animate-in fade-in duration-1000">
-                    <span class="w-2 h-2 rounded-full ${evidenceDot}"></span> 
-                    证据链：${evidenceStatus}
-                </li>
-                <li class="flex items-center gap-2 text-zinc-500 animate-in fade-in duration-1000">
-                    <span class="w-2 h-2 rounded-full ${evidenceDot}"></span>
-                    证据材料：${escapeHtml(evidenceItems.join('、') || '待补充')}
-                </li>
-            `;
-            renderDataFusionPanel(profile);
-            renderCaseTimeline(profile);
-            renderTrackingCard(profile, lastTrackingRequestId);
-            const selectedDoc = document.querySelector('input[name=doc_type]:checked');
-            if (selectedDoc) updateDocGuideCard(selectedDoc.value);
-        }
-
-        async function updateRealEvidence(caseText) {
-            const fallbackProfile = buildClientCaseProfile(caseText);
-            renderCaseProfile(fallbackProfile);
-
+        async function exportDocx() {
+            if (!docHtmlContent) return;
             try {
-                const response = await apiFetch('/api/case-extract', {
+                const resp = await fetch(`${API_BASE}/api/export-docx`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        text: caseText,
-                        user_name: currentUser.name,
-                        phone: currentUser.phone
-                    })
+                    body: JSON.stringify({ html_content: docHtmlContent, filename: "债优盾法律文书" }),
                 });
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.detail || `HTTP ${response.status}`);
-                if (data.case) renderCaseProfile(data.case);
-            } catch (error) {
-                console.warn("结构化案情抽取暂用前端兜底:", error);
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const blob = await resp.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = '债优盾法律文书.docx';
+                a.click();
+                URL.revokeObjectURL(url);
+            } catch (e) {
+                alert(`导出失败：${e.message}`);
             }
         }
 
-        // 初始化
-        window.onload = () => {
-            initProgressNavigation();
-            switchView('view-login');
-        };
+        // ==================== Admin ====================
+        async function refreshAdmin() {
+            try {
+                const resp = await fetch(`${API_BASE}/api/admin/events?password=admin888`);
+                const data = await resp.json();
+                const events = data.events || [];
+
+                document.getElementById('stat-total').textContent = data.total || events.length;
+                document.getElementById('stat-scored').textContent = events.filter(e => e.type === 'chat')
+                    .length;
+                document.getElementById('stat-files').textContent = events.filter(e => e.type === 'file_upload')
+                    .length;
+                document.getElementById('stat-docs').textContent = events.filter(e => e.type === 'doc_export')
+                    .length;
+
+                const tbody = document.getElementById('admin-events');
+                if (tbody) {
+                    tbody.innerHTML = events.slice(-20).reverse().map(e => `
+                        <tr class="border-b border-white/5 hover:bg-white/5">
+                            <td class="px-3 py-2 text-xs text-slate-500">${(e.timestamp || '').substring(11, 19)}</td>
+                            <td class="px-3 py-2"><span class="tag ${e.type === 'chat' ? 'tag-legal' : 'tag-finance'}">${e.type || ''}</span></td>
+                            <td class="px-3 py-2 text-xs">${(e.data?.scenario || '-')}</td>
+                            <td class="px-3 py-2 text-xs text-slate-400 truncate max-w-[200px]">${escapeHtml((e.data?.query || e.data?.filename || JSON.stringify(e.data || {}).substring(0, 60)))}</td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (e) {
+                console.error('Admin refresh failed:', e);
+            }
+        }
+
+        // ==================== Utilities ====================
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function autoResize(el) {
+            el.style.height = 'auto';
+            el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+        }
+
+        // ==================== Init ====================
+        marked.setOptions({ breaks: true, gfm: true });
+
+        // Set initial view
+        switchView('landing');
+
+        // Handle ?scenario=N URL param
+        const urlScenario = new URLSearchParams(window.location.search).get('scenario');
+        if (urlScenario && SCENARIOS[urlScenario]) {
+            selectScenario(urlScenario);
+        }
+
+        console.log('🛡️ Aegis 债优盾 — 中小债权人维权智能平台');
+        console.log(`   API: ${API_BASE}`);
+        console.log('   就绪。');
     </script>
 </body>
 

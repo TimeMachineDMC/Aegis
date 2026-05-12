@@ -1,4 +1,5 @@
 import os
+import shutil
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -23,6 +24,7 @@ def project_path_from_env(name: str, default: Path) -> Path:
         path = PROJECT_ROOT / path
     return path.resolve()
 
+
 from langchain_community.document_loaders import TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -32,28 +34,28 @@ from tqdm import tqdm
 DATA_PATH = project_path_from_env("LEGAL_DATA_PATH", PROJECT_ROOT / "Data")
 DB_SAVE_PATH = project_path_from_env("CHROMA_DB_PATH", PROJECT_ROOT / "Model" / "chroma_db")
 
+
 def run_embedding():
-    # 如果已存在旧库且你想彻底更新，取消下面这行的注释
-    # if os.path.exists(DB_SAVE_PATH): shutil.rmtree(DB_SAVE_PATH)
+    if DB_SAVE_PATH.exists() and any(DB_SAVE_PATH.iterdir()):
+        print(f"检测到已有向量库: {DB_SAVE_PATH}")
+        print("如需重建，请手动删除该目录后重新运行。")
 
     documents = []
-    print(f"1. 启动全维度扫描：正在索引 {DATA_PATH} 下的 2024-2026 最新法律库...")
+    print(f"1. 启动全维度扫描：正在索引 {DATA_PATH} 下的法律知识库...")
 
     if not DATA_PATH.exists():
-        raise FileNotFoundError(f"法律原文目录不存在：{DATA_PATH}。请设置 LEGAL_DATA_PATH 或创建 Data 目录。")
-    
+        raise FileNotFoundError(f"法律原文目录不存在：{DATA_PATH}。请创建 Data 目录并放入 .txt 法律文档。")
+
     for root, dirs, files in os.walk(DATA_PATH):
-        # 排除无文件的目录
-        if not files: continue
-        
-        # 计算相对路径，例如 "2025至今新法条\司法解释"
+        if not files:
+            continue
+
         rel_path = os.path.relpath(root, DATA_PATH)
-        
+
         for filename in files:
             if filename.endswith(".txt"):
                 file_path = os.path.join(root, filename)
                 try:
-                    # 优先 utf-8，失败则 gbk
                     loader = TextLoader(file_path, encoding='utf-8')
                     docs = loader.load()
                 except UnicodeDecodeError:
@@ -63,16 +65,17 @@ def run_embedding():
                     print(f"跳过损坏文件 {filename}: {e}")
                     continue
 
+                category_path = rel_path if rel_path != "." else "根目录"
                 for d in docs:
                     d.metadata["source"] = filename
-                    d.metadata["category_path"] = rel_path # 注入路径信息
+                    d.metadata["category_path"] = category_path
                 documents.extend(docs)
-                
+
     print(f"成功加载 {len(documents)} 份法律/案例原始文书。")
     if not documents:
-        raise ValueError(f"未在 {DATA_PATH} 下找到 .txt 法律文档。")
+        raise ValueError(f"未在 {DATA_PATH} 下找到 .txt 法律文档。请放入法条、案例等文本文件。")
 
-    print("2. 执行语义切块 (Chunk Size: 800)...")
+    print("2. 执行语义切块 (Chunk Size: 800, Overlap: 150)...")
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=150)
     split_docs = text_splitter.split_documents(documents)
     print(f"切块完成，共生成 {len(split_docs)} 个逻辑片段。")
@@ -80,16 +83,18 @@ def run_embedding():
     print("3. 初始化 BGE-M3 嵌入模型...")
     embeddings = HuggingFaceEmbeddings(model_name="BAAI/bge-m3")
 
-    print("4. 构建持久化 ChromaDB (V2)...")
+    print("4. 构建持久化 ChromaDB...")
     DB_SAVE_PATH.parent.mkdir(parents=True, exist_ok=True)
     vectordb = Chroma(persist_directory=str(DB_SAVE_PATH), embedding_function=embeddings)
-    
-    batch_size = 100 
+
+    batch_size = 100
     for i in tqdm(range(0, len(split_docs), batch_size), desc="向量化进度"):
-        batch_docs = split_docs[i : i + batch_size]
+        batch_docs = split_docs[i: i + batch_size]
         vectordb.add_documents(documents=batch_docs)
-        
-    print(f"\n🎉 升级完毕！2025-2026 法律知识库已就绪，存储于: {DB_SAVE_PATH}")
+
+    print(f"\n法律知识库已就绪，存储于: {DB_SAVE_PATH}")
+    print(f"涵盖类别：法条、司法解释、法律案例 等")
+
 
 if __name__ == "__main__":
     run_embedding()
