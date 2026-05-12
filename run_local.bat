@@ -43,7 +43,7 @@ if not exist ".venv" (
 
 call .venv\Scripts\activate.bat
 python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
+python -m pip install -r Code\\requirements.txt
 
 if exist "Model\chroma_db" if not exist ".runtime\chroma_db" (
     mkdir .runtime

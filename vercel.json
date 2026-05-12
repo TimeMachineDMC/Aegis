@@ -1,5 +1,9 @@
 {
+  "buildCommand": "",
+  "outputDirectory": ".",
+  "cleanUrls": true,
   "rewrites": [
-    { "source": "/((?!Code/Web).*)", "destination": "/Code/Web/$1" }
+    { "source": "/", "destination": "/Code/Web/index.html" },
+    { "source": "/((?!Code/Web|api).*)", "destination": "/Code/Web/$1" }
   ]
 }

@@ -56,8 +56,8 @@ fi
 source .venv/bin/activate
 python -m pip install --upgrade pip
 
-if [ ! -f ".venv/.aegis_requirements_installed" ] || [ "requirements.txt" -nt ".venv/.aegis_requirements_installed" ]; then
-  python -m pip install -r requirements.txt
+if [ ! -f ".venv/.aegis_requirements_installed" ] || [ "Code/requirements.txt" -nt ".venv/.aegis_requirements_installed" ]; then
+  python -m pip install -r Code/requirements.txt
   touch .venv/.aegis_requirements_installed
 fi
 
