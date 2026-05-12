@@ -693,14 +693,18 @@
                     <div class="glass-card p-4">
                         <h3 class="text-xs font-bold uppercase tracking-widest mb-3" style="color:var(--gold-dim);">文书类型</h3>
                         <div class="space-y-1">
-                            <label class="radio-label"><input type="radio" name="doc_type" value="complaint" checked
-                                    onchange="switchTemplate(this.value)">民事起诉状（股东出资纠纷）</label>
-                            <label class="radio-label"><input type="radio" name="doc_type" value="support"
-                                    onchange="switchTemplate(this.value)">检察支持起诉申请书</label>
-                            <label class="radio-label"><input type="radio" name="doc_type" value="evidence_list"
-                                    onchange="switchTemplate(this.value)">证据清单</label>
+                            <label class="radio-label"><input type="radio" name="doc_type" value="complaint_acceleration" checked
+                                    onchange="switchTemplate(this.value)">民事起诉状（加速到期）</label>
+                            <label class="radio-label"><input type="radio" name="doc_type" value="complaint_expired"
+                                    onchange="switchTemplate(this.value)">民事起诉状（期限届满未出资）</label>
+                            <label class="radio-label"><input type="radio" name="doc_type" value="add_enforcement"
+                                    onchange="switchTemplate(this.value)">申请追加被执行人</label>
                             <label class="radio-label"><input type="radio" name="doc_type" value="preservation"
                                     onchange="switchTemplate(this.value)">财产保全申请书</label>
+                            <label class="radio-label"><input type="radio" name="doc_type" value="prelitigation_preservation"
+                                    onchange="switchTemplate(this.value)">诉前财产保全申请书</label>
+                            <label class="radio-label"><input type="radio" name="doc_type" value="evidence_list"
+                                    onchange="switchTemplate(this.value)">证据清单</label>
                         </div>
                     </div>
                     <div class="glass-card p-4">
@@ -730,7 +734,7 @@
                     <div class="doc-paper p-10 overflow-y-auto" style="max-height:75vh;">
                         <div id="editable-doc" contenteditable="true"
                             class="focus:outline-none text-[15px] leading-loose font-serif"
-                            style="color:#1a1a1a;min-height:55vh;"></div>
+                            style="color:#1a1a1a;min-height:65vh;"></div>
                     </div>
                 </div>
             </div>
@@ -903,52 +907,219 @@
 
         // ===== DOCUMENT TEMPLATES =====
         const docTemplates = {
-            complaint: `<h1>民 事 起 诉 状</h1>
-<p><strong>原告：</strong><span class="highlight-name">[债权人姓名/名称]</span>，[身份证号/统一社会信用代码]，住址：[地址]，联系电话：[电话]。</p>
-<p><strong>被告一：</strong><span class="highlight-name">[债务人公司全称]</span>，住所地：[注册地址]，统一社会信用代码：[代码]，法定代表人：[姓名]。</p>
-<p><strong>被告二：</strong><span class="highlight-name">[未实缴股东姓名]</span>，[身份证号]，住址：[地址]。</p>
+            complaint_acceleration: `<h1>股东出资加速到期民事起诉状</h1>
+
+<p><strong>原告</strong></p>
+<p class="indent">名称/姓名：<span class="highlight-name">[债权人名称]</span></p>
+<p class="indent">统一社会信用代码 / 身份证号：<span class="highlight-name">[证件号码]</span></p>
+<p class="indent">地址：<span class="highlight-name">[详细地址]</span></p>
+<p class="indent">法定代表人 / 负责人：<span class="highlight-name">[姓名]</span></p>
+<p class="indent">联系电话：<span class="highlight-name">[电话]</span></p>
+
+<p style="margin-top:16px;"><strong>被告（未实缴出资股东）</strong></p>
+<p class="indent">姓名：<span class="highlight-name">[股东姓名]</span></p>
+<p class="indent">身份证号：<span class="highlight-name">[身份证号码]</span></p>
+<p class="indent">住所地：<span class="highlight-name">[地址]</span></p>
+<p class="indent">联系电话：<span class="highlight-name">[电话]</span></p>
+
+<p class="section-title">一、案由</p>
+<p class="indent">股东出资加速到期纠纷。</p>
+
+<p class="section-title">二、诉讼请求</p>
+<p class="indent">（一）判令被告立即向 <span class="highlight-name">[债务人公司名称]</span> 缴纳认缴出资款人民币（大写）<span class="highlight-amount">[认缴出资额]</span> 元（¥<span class="highlight-amount">[金额]</span>），并支付自 <span class="highlight-name">[日期]</span> 起至实际支付日止的利息（按 LPR 计算）；</p>
+<p class="indent">（二）判令被告承担本案诉讼费用、保全费用等全部费用。</p>
+
+<p class="section-title">三、事实与理由</p>
+<p class="section-title">（一）基本情况</p>
+<p class="indent">1. <span class="highlight-name">[公司名称]</span>（统一社会信用代码：<span class="highlight-name">[代码]</span>）于 <span class="highlight-name">[日期]</span> 成立，注册资本人民币 <span class="highlight-amount">[注册资本]</span> 元，被告作为股东认缴出资 <span class="highlight-amount">[认缴出资额]</span> 元，出资期限至 <span class="highlight-name">[出资期限日期]</span>（详见《公司章程》及工商登记信息）。</p>
+<p class="indent">2. 截至起诉时，被告未履行出资义务，实缴金额为 0 元（或仅缴付 <span class="highlight-amount">[已缴付金额]</span> 元）。</p>
+
+<p class="section-title">（二）出资加速到期事由</p>
+<p class="indent">根据《公司法司法解释三》第 13 条、《企业破产法》第 35 条（或《全国法院民商事审判工作会议纪要》第 6 条），因存在以下情形之一，被告出资义务应加速到期（请根据实际情况选择）：</p>
+<p class="indent"><strong>□ 公司不能清偿到期债务：</strong></p>
+<p class="indent">公司已无力偿还对原告的债务（详见《民事判决书》<span class="highlight-name">[文书号]</span> /《执行裁定书》<span class="highlight-name">[文书号]</span>），且经强制执行仍无法清偿；公司现有财产明显不足以清偿债务（提供资产负债表等证据）；</p>
+<p class="indent"><strong>□ 公司进入破产程序：</strong><span class="highlight-name">[管辖法院]</span> 已裁定受理公司破产申请（裁定书编号：<span class="highlight-name">[裁定书编号]</span>）；</p>
+<p class="indent"><strong>□ 股东恶意延长出资期限：</strong>被告在公司债务产生后，通过修改章程恶意延长出资期限（详见 <span class="highlight-name">[日期]</span> 《股东会决议》）。</p>
+
+<p class="section-title">（三）法律责任</p>
+<p class="indent">1. 被告作为股东，未履行出资义务的行为损害公司偿债能力，直接影响原告债权实现；</p>
+<p class="indent">2. 原告作为债权人，有权要求被告在未出资范围内对公司债务承担补充赔偿责任（如涉及）。</p>
+
+<p class="section-title">四、证据及来源</p>
+<p class="indent">（一）公司工商登记档案（证明股东认缴情况）；</p>
+<p class="indent">（二）《公司章程》及出资期限证明；</p>
+<p class="indent">（三）公司不能清偿债务的证据（判决书、执行终本裁定、审计报告等）；</p>
+<p class="indent">（四）原告债权凭证（合同、欠条、生效法律文书等）；</p>
+<p class="indent">（五）其他：<span class="highlight-name">[其他证据]</span>。</p>
+
+<p class="section-title">五、管辖法院</p>
+<p class="indent">根据《民事诉讼法》第 26 条，本案由 <span class="highlight-name">[公司住所地]</span> 人民法院管辖。</p>
+
+<div class="signature-block">
+<p>此致</p>
+<p><strong><span class="highlight-name">[公司住所地]</span> 人民法院</strong></p>
+<p style="margin-top:48px;">具状人（签字 / 盖章）：______________</p>
+<p style="margin-top:16px;">20____年 ____月 ____日</p>
+</div>`,
+
+            complaint_expired: `<h1>民事起诉状</h1>
+<p style="margin-bottom:16px;">（股东未履行或者未全面履行出资义务）</p>
+
+<p><strong>原告：</strong><span class="highlight-name">[原告公司名称 / 原告个人姓名]</span></p>
+<p class="indent">统一社会信用代码 / 身份证号：<span class="highlight-name">[具体代码 / 身份证号码]</span></p>
+<p class="indent">住所地：<span class="highlight-name">[详细地址]</span></p>
+<p class="indent">法定代表人：<span class="highlight-name">[法定代表人姓名]</span>（如有），职务：<span class="highlight-name">[具体职务]</span></p>
+<p class="indent">联系电话：<span class="highlight-name">[电话号码]</span></p>
+
+<p style="margin-top:12px;"><strong>被告一：</strong><span class="highlight-name">[股东一姓名 / 名称]</span></p>
+<p class="indent">身份证号 / 统一社会信用代码：<span class="highlight-name">[具体号码]</span></p>
+<p class="indent">住所地：<span class="highlight-name">[详细地址]</span></p>
+<p class="indent">联系电话：<span class="highlight-name">[电话号码]</span></p>
+
+<p style="margin-top:8px;"><strong>被告二：</strong><span class="highlight-name">[股东二姓名 / 名称]</span>……（如有其他被告，依次列出）</p>
+
 <p class="section-title">诉讼请求</p>
-<p class="indent">1. 判令被告一立即向原告偿还债务本金人民币 <span class="highlight-amount">[金额]</span> 元及逾期利息（以 <span class="highlight-amount">[金额]</span> 元为基数，按 [利率] 自 [日期] 起计算至实际清偿之日止）；</p>
-<p class="indent">2. 判令被告二在其未出资范围内对被告一的上述债务承担补充赔偿责任；</p>
-<p class="indent">3. 判令二被告承担本案全部诉讼费用。</p>
+<p class="indent">1. 请求判令被告一、被告二……（各被告）在未出资本息范围内对 <span class="highlight-name">[公司名称]</span> 所欠原告的债务 <span class="highlight-amount">[具体债务金额]</span> 元承担补充赔偿责任。</p>
+<p class="indent">2. 请求判令被告承担本案的全部诉讼费用。</p>
+
+<p class="section-title">事实和理由</p>
+<p class="indent"><span class="highlight-name">[公司名称]</span> 与原告于 <span class="highlight-name">[具体日期]</span> 因 <span class="highlight-name">[合同名称 / 纠纷事由]</span> 产生债务关系。经 <span class="highlight-name">[法院名称]</span> 作出的 <span class="highlight-name">[判决书文号]</span> 判决，<span class="highlight-name">[公司名称]</span> 应向原告支付 <span class="highlight-amount">[具体债务金额]</span> 元。判决生效后，原告向贵院申请强制执行，但在执行过程中，发现 <span class="highlight-name">[公司名称]</span> 无足够财产可供执行，本案于 <span class="highlight-name">[终本日期]</span> 终结本次执行。</p>
+
+<p class="indent">经原告调查发现，被告一、被告二…… 作为 <span class="highlight-name">[公司名称]</span> 的股东，存在未实缴出资的情况。根据《最高人民法院关于适用&lt;中华人民共和国公司法&gt;若干问题的规定（三）》第十三条规定："股东未履行或者未全面履行出资义务，公司或者其他股东请求其向公司依法全面履行出资义务的，人民法院应予支持。公司债权人请求未履行或者未全面履行出资义务的股东在未出资本息范围内对公司债务不能清偿的部分承担补充赔偿责任的，人民法院应予支持……"；第十八条规定："有限责任公司的股东未履行或者未全面履行出资义务即转让股权，受让人对此知道或者应当知道，公司请求该股东履行出资义务、受让人对此承担连带责任的，人民法院应予支持；公司债权人依照本规定第十三条第二款向该股东提起诉讼，同时请求前述受让人对此承担连带责任的，人民法院应予支持"。</p>
+
+<p class="indent">同时，在法院穷尽执行措施后，<span class="highlight-name">[公司名称]</span> 仍无法向原告清偿到期债务，已具备破产原因，在未申请破产的情况下，符合加速出资的条件。各被告应在未出资的范围内对公司的债务承担补充清偿责任。</p>
+
+<p class="indent">综上所述，为维护原告的合法权益，特向贵院提起诉讼，请求依法判决。</p>
+
+<div class="signature-block">
+<p>此致</p>
+<p><strong><span class="highlight-name">[具体法院名称]</span></strong></p>
+<p style="margin-top:24px;">附：本起诉状副本 <span class="highlight-name">[X]</span> 份</p>
+<p style="margin-top:48px;">起诉人（签名 / 盖章）：______________</p>
+<p style="margin-top:16px;"><span class="highlight-name">[起诉日期]</span></p>
+</div>`,
+
+            add_enforcement: `<h1>追加公司股东为被执行人申请书</h1>
+
+<p><strong>申请人（申请执行人）：</strong></p>
+<p class="indent">姓名 / 名称：<span class="highlight-name">[申请人姓名 / 名称]</span></p>
+<p class="indent">证件类型及号码：<span class="highlight-name">[证件号码]</span></p>
+<p class="indent">地址：<span class="highlight-name">[地址]</span></p>
+<p class="indent">联系电话：<span class="highlight-name">[电话]</span></p>
+
+<p style="margin-top:12px;"><strong>被申请人（原被执行人）：</strong></p>
+<p class="indent">公司名称：<span class="highlight-name">[公司名称]</span></p>
+<p class="indent">统一社会信用代码：<span class="highlight-name">[代码]</span></p>
+<p class="indent">地址：<span class="highlight-name">[地址]</span></p>
+
+<p style="margin-top:12px;"><strong>被追加人（股东）：</strong></p>
+<p class="indent">姓名 / 名称：<span class="highlight-name">[股东姓名 / 名称]</span></p>
+<p class="indent">证件类型及号码：<span class="highlight-name">[证件号码]</span></p>
+<p class="indent">地址：<span class="highlight-name">[地址]</span></p>
+<p class="indent">联系电话：<span class="highlight-name">[电话]</span></p>
+<p style="color:var(--text3);font-size:13px;">（可并列追加多名股东）</p>
+
+<p class="section-title">请求事项</p>
+<p class="indent">1. 请求依法追加被追加人 <span class="highlight-name">[股东姓名 / 名称]</span> 为（<span class="highlight-name">[年份]</span>）<span class="highlight-name">[法院简称]</span> 执 <span class="highlight-name">[案号]</span> 号执行案件的被执行人。</p>
+<p class="indent">2. 请求裁定被追加人 <span class="highlight-name">[股东姓名 / 名称]</span> 在其<span style="color:#dc2626;"><strong>【请根据实际情况选择：未出资 / 抽逃出资 / 滥用公司独立人格】</strong></span>的范围内，对原被执行人 <span class="highlight-name">[公司名称]</span> 所欠申请人的债务（<span class="highlight-name">[年份]</span>）<span class="highlight-name">[法院简称]</span> 民初 <span class="highlight-name">[案号]</span> 号民事判决书确定的义务承担清偿责任。</p>
+
 <p class="section-title">事实与理由</p>
-<p class="indent">[根据实际案情填写：债务形成过程、公司不能清偿的事实、股东未实缴出资的具体情况、原告已采取的措施等]</p>
-<p class="indent">依据《中华人民共和国公司法》第五十四条、《全国法院民商事审判工作会议纪要》（九民纪要）第6条之规定，特向贵院提起诉讼，请求依法支持原告诉讼请求。</p>
-<div class="signature-block"><p>此致</p><p><strong>[管辖法院名称]</strong></p><p style="margin-top:48px;">具状人：______________</p><p style="margin-top:16px;">2026年   月   日</p></div>`,
-            support: `<h1>检察支持起诉申请书</h1>
-<p><strong>申请人：</strong><span class="highlight-name">[债权人姓名/名称]</span>，[身份证号/统一社会信用代码]，住址：[地址]，联系电话：[电话]。</p>
-<p><strong>被申请人一：</strong><span class="highlight-name">[债务人公司全称]</span>，住所地：[注册地址]。</p>
-<p><strong>被申请人二：</strong><span class="highlight-name">[未实缴股东姓名]</span>，[身份证号]，住址：[地址]。</p>
-<p class="section-title">申请事项</p>
-<p class="indent">请求检察机关对申请人与[债务人公司]及[股东]之间的股东出资纠纷一案支持起诉。</p>
-<p class="section-title">事实与理由</p>
-<p class="indent">[说明案件基本情况，包括债权形成过程、公司不能清偿的事实、股东未实缴出资的情况，以及申请人维权困难的原因]</p>
-<p class="indent">依据《中华人民共和国民事诉讼法》第十六条之规定，特向贵院提出申请，恳请检察机关支持起诉。</p>
-<p style="margin-top:24px;"><strong>附：相关证据材料</strong></p>
-<p class="indent">1. 申请人身份证明；2. 债权凭证；3. 公司工商登记信息；4. 公司不能清偿的证明；5. 其他相关材料。</p>
-<div class="signature-block"><p>此致</p><p><strong>[检察机关名称]</strong></p><p style="margin-top:48px;">申请人（签名/捺印）：______________</p><p style="margin-top:16px;">2026年   月   日</p></div>`,
-            evidence_list: `<h1>证 据 清 单</h1><p style="margin-bottom:24px;">案由：股东出资纠纷</p>
+<p class="indent">申请人与被申请人 <span class="highlight-name">[公司名称]</span> 因 <span class="highlight-name">[案由，如：买卖合同纠纷]</span> 一案，业经 <span class="highlight-name">[法院名称]</span> 作出的（<span class="highlight-name">[年份]</span>）<span class="highlight-name">[法院简称]</span> 民初 <span class="highlight-name">[案号]</span> 号民事判决书（或调解书、仲裁裁决书等）审理终结，该法律文书已发生法律效力。因被申请人未履行上述文书确定的义务，申请人依法向贵院申请强制执行，贵院已以（<span class="highlight-name">[年份]</span>）<span class="highlight-name">[法院简称]</span> 执 <span class="highlight-name">[案号]</span> 号立案执行。</p>
+
+<p class="indent">在执行过程中，贵院查明被申请人 <span class="highlight-name">[公司名称]</span> 已无财产可供执行，其作为公司法人，已丧失偿债能力。经申请人调查核实，发现被追加人 <span class="highlight-name">[股东姓名 / 名称]</span> 作为该公司的股东，存在以下应当被追加为被执行人的法定情形：</p>
+
+<p class="section-title">理由一：股东未缴纳或未足额缴纳出资</p>
+<p class="indent">被申请人 <span class="highlight-name">[公司名称]</span> 的注册资本为 <span class="highlight-amount">[金额]</span> 元，根据公司章程及工商登记信息，被追加人 <span class="highlight-name">[股东姓名 / 名称]</span> 认缴的出资额为 <span class="highlight-amount">[金额]</span> 元，认缴出资期限为 <span class="highlight-name">[日期]</span>。</p>
+
+<p class="indent">截至本申请书提交之日，该认缴期限<span style="color:#dc2626;"><strong>【已届满 / 虽未届满但存在法定加速到期情形】</strong></span>。</p>
+
+<p class="indent" style="color:var(--text3);font-size:13px;">（若认缴期已届满）：该股东的认缴期限早已届满，但其并未向公司实际缴纳任何出资 / 仅缴纳了 <span class="highlight-amount">[金额]</span> 元，尚有 <span class="highlight-amount">[金额]</span> 元未缴纳。</p>
+<p class="indent" style="color:var(--text3);font-size:13px;">（若认缴期未届满，但符合加速到期情形）：虽然认缴期未至，但作为被执行人的公司，已具备破产原因但不申请破产，且其财产不足以清偿生效法律文书确定的债务。根据法律规定，股东的出资义务应当加速到期。</p>
+
+<p class="indent"><strong>法律依据：</strong>《最高人民法院关于民事执行中变更、追加当事人若干问题的规定》第十七条。</p>
+
+<p class="section-title">理由二：股东抽逃出资</p>
+<p class="indent">被追加人 <span class="highlight-name">[股东姓名 / 名称]</span> 在完成 <span class="highlight-amount">[金额]</span> 元的出资后，存在抽逃出资的行为。具体事实为：（请具体描述抽逃行为，例如：在公司验资完成后，于 <span class="highlight-name">[日期]</span> 将 <span class="highlight-amount">[金额]</span> 元资金以<span style="color:#dc2626;">【虚假交易、虚构债务等方式】</span>转移至<span style="color:#dc2626;">【关联方 / 个人账户】</span>，且无法提供合理解释和证据证明该资金转出的合法性、合理性）。</p>
+<p class="indent"><strong>法律依据：</strong>《最高人民法院关于民事执行中变更、追加当事人若干问题的规定》第十八条。</p>
+
+<p class="section-title">理由三：股东滥用公司法人独立地位和股东有限责任（法人人格否认）</p>
+<p class="indent">被追加人 <span class="highlight-name">[股东姓名 / 名称]</span> 作为公司的（控股股东 / 实际控制人），滥用公司独立法人地位，导致公司财产与其个人财产高度混同，无法区分。具体表现如下：</p>
+<p class="indent"><strong>财务混同：</strong>公司账户与股东个人账户（或关联公司账户）之间存在大量、频繁的非经营性资金往来，资金用途不明。</p>
+<p class="indent"><strong>业务混同：</strong>公司业务与股东个人业务混同，交易主体不清，收益归属无法区分。</p>
+<p class="indent"><strong>人员混同：</strong>公司高管与股东家族人员高度重合，公司缺乏独立意志。</p>
+<p class="indent"><strong>场所混同：</strong>公司办公场所与股东个人住所或其它关联企业场所无法区分。</p>
+<p class="indent"><strong>法律依据：</strong>《中华人民共和国公司法》第二十三条第三款；《全国法院民商事审判工作会议纪要》（《九民纪要》）第 10 条至第 12 条。</p>
+
+<p class="section-title">总结</p>
+<p class="indent">综上所述，被追加人 <span class="highlight-name">[股东姓名 / 名称]</span> 的行为完全符合法律规定的追加为被执行人的条件。为维护申请人的合法权益，防止被执行人利用公司有限责任制度逃避债务，根据相关法律规定，特向贵院提出本申请，恳请贵院依法审查并裁定追加被追加人为本案被执行人。</p>
+
+<div class="signature-block">
+<p>此致</p>
+<p><strong><span class="highlight-name">[具体法院名称]</span></strong></p>
+<p style="margin-top:48px;">申请人（签名 / 盖章）：______________</p>
+<p style="margin-top:16px;">20____年 ____月 ____日</p>
+</div>`,
+
+            evidence_list: `<h1>证 据 清 单</h1>
+<p style="margin-bottom:24px;">案由：股东出资纠纷</p>
 <table style="width:100%;border-collapse:collapse;margin-top:16px;" border="1" cellpadding="10" cellspacing="0">
-<tr style="background:#f5f5f5;"><th style="width:8%;">序号</th><th style="width:30%;">证据名称</th><th style="width:42%;">证明目的</th><th style="width:20%;">状态</th></tr>
-<tr><td style="text-align:center;">1</td><td>债权凭证（合同/欠条/判决书）</td><td>证明债权债务关系存在</td><td style="text-align:center;">□ 已有 / □ 缺失</td></tr>
-<tr><td style="text-align:center;">2</td><td>公司工商登记信息</td><td>证明股东认缴/实缴出资情况</td><td style="text-align:center;">□ 已有 / □ 缺失</td></tr>
-<tr><td style="text-align:center;">3</td><td>公司财务报告/审计报告</td><td>证明公司不能清偿到期债务</td><td style="text-align:center;">□ 已有 / □ 缺失</td></tr>
-<tr><td style="text-align:center;">4</td><td>催收记录</td><td>证明已向公司主张权利</td><td style="text-align:center;">□ 已有 / □ 缺失</td></tr>
-<tr><td style="text-align:center;">5</td><td>股东出资情况证明</td><td>证明股东存在未实缴出资</td><td style="text-align:center;">□ 已有 / □ 缺失</td></tr>
-<tr><td style="text-align:center;">6</td><td>公司/股东银行流水</td><td>证明公司财产状况/抽逃出资</td><td style="text-align:center;">□ 已有 / □ 缺失</td></tr>
-<tr><td style="text-align:center;">7</td><td>公司减资/股权转让变更记录</td><td>证明逃避出资义务的行为</td><td style="text-align:center;">□ 已有 / □ 缺失</td></tr>
-</table><p style="margin-top:32px;"><strong>说明：</strong>请根据案件实际情况在"状态"栏勾选已有证据或标注缺失，缺失证据请尽快补充。</p>
-<div class="signature-block"><p style="margin-top:48px;">提交人：______________</p><p style="margin-top:16px;">2026年   月   日</p></div>`,
+<tr style="background:#f5f5f5;"><th style="width:8%;">序号</th><th style="width:27%;">证据名称</th><th style="width:20%;">证据来源</th><th style="width:30%;">证明目的</th><th style="width:15%;">状态</th></tr>
+<tr><td style="text-align:center;">1</td><td>债权凭证（合同 / 欠条 / 判决书 / 调解书）</td><td>原告自有</td><td>证明债权债务关系存在及具体金额</td><td style="text-align:center;">□ 已有 / □ 缺失</td></tr>
+<tr><td style="text-align:center;">2</td><td>公司工商登记档案（含章程、股东名册）</td><td>国家企业信用信息公示系统 / 市场监督管理局</td><td>证明股东身份、认缴出资额、出资期限</td><td style="text-align:center;">□ 已有 / □ 缺失</td></tr>
+<tr><td style="text-align:center;">3</td><td>公司章程及出资期限证明</td><td>工商档案 / 公司内部存档</td><td>证明各股东认缴及实缴出资情况</td><td style="text-align:center;">□ 已有 / □ 缺失</td></tr>
+<tr><td style="text-align:center;">4</td><td>公司不能清偿债务的证明</td><td>执行法院</td><td>证明公司无可供执行的财产，已终结本次执行</td><td style="text-align:center;">□ 已有 / □ 缺失</td></tr>
+<tr><td style="text-align:center;">5</td><td>执行终结本次执行裁定书</td><td>执行法院</td><td>证明已穷尽执行措施，公司无财产清偿</td><td style="text-align:center;">□ 已有 / □ 缺失</td></tr>
+<tr><td style="text-align:center;">6</td><td>公司财务报告 / 审计报告 / 资产负债表</td><td>公司年报公示系统 / 自行调查</td><td>证明公司资产负债状况、偿债能力不足</td><td style="text-align:center;">□ 已有 / □ 缺失</td></tr>
+<tr><td style="text-align:center;">7</td><td>股东出资银行流水 / 验资报告</td><td>银行查询 / 公司存档</td><td>证明股东实际出资情况（或未出资 / 抽逃出资）</td><td style="text-align:center;">□ 已有 / □ 缺失</td></tr>
+<tr><td style="text-align:center;">8</td><td>公司减资 / 股权转让变更记录</td><td>市场监督管理局</td><td>证明是否存在逃避出资义务的变更行为</td><td style="text-align:center;">□ 已有 / □ 缺失</td></tr>
+<tr><td style="text-align:center;">9</td><td>催收记录（函件 / 邮件 / 微信）</td><td>原告自有</td><td>证明已向公司及股东主张权利</td><td style="text-align:center;">□ 已有 / □ 缺失</td></tr>
+</table>
+<p style="margin-top:24px;color:var(--text3);font-size:13px;"><strong>说明：</strong>请根据案件实际情况在"状态"栏勾选已有证据或标注缺失。缺失证据请尽快补充收集，序号 1-6 为起诉必须的基本证据。</p>
+<div class="signature-block"><p style="margin-top:48px;">提交人：______________</p><p style="margin-top:16px;">20____年 ____月 ____日</p></div>`,
+
             preservation: `<h1>财产保全申请书</h1>
-<p><strong>申请人：</strong><span class="highlight-name">[债权人姓名/名称]</span>，[身份证号/统一社会信用代码]，住址：[地址]，联系电话：[电话]。</p>
-<p><strong>被申请人一：</strong><span class="highlight-name">[债务人公司全称]</span>，住所地：[注册地址]。</p>
-<p><strong>被申请人二：</strong><span class="highlight-name">[未实缴股东姓名]</span>，[身份证号]，住址：[地址]。</p>
+
+<p><strong>申请人：</strong><span class="highlight-name">[申请人姓名]</span>，男 / 女，<span class="highlight-name">[出生日期]</span>，<span class="highlight-name">[民族]</span> 族，……（写明工作单位和职务或者职业），住 <span class="highlight-name">[地址]</span>。联系方式：<span class="highlight-name">[电话]</span>。</p>
+<p style="margin-left:3em;color:var(--text3);font-size:13px;">法定代理人 / 指定代理人：<span class="highlight-name">[姓名]</span>，……。</p>
+<p style="margin-left:3em;color:var(--text3);font-size:13px;">委托诉讼代理人：<span class="highlight-name">[姓名]</span>，……。</p>
+<p><strong>被申请人：</strong><span class="highlight-name">[被申请人姓名 / 名称]</span>，……。</p>
+<p style="color:var(--text3);font-size:13px;">（以上写明当事人和其他诉讼参加人的姓名或者名称等基本信息）</p>
+
+<p class="section-title">请求事项</p>
+<p class="indent">查封 / 扣押 / 冻结被申请人 <span class="highlight-name">[被申请人姓名 / 名称]</span> 的……（写明保全财产的名称、性质、数量、数额、所在地等），期限为 <span class="highlight-name">[X]</span> 年 / 月 / 日（写明保全的期限）。</p>
+
+<p class="section-title">事实和理由</p>
+<p class="indent">（<span class="highlight-name">[年份]</span>）<span class="highlight-name">[法院简称]</span> ……号 <span class="highlight-name">[当事人]</span> 和 <span class="highlight-name">[案由]</span> 一案，……（写明申请诉讼财产保全的事实和理由）。</p>
+<p class="indent">申请人提供……（写明担保财产的名称、性质、数量、数额、所在地等）作为担保。</p>
+
+<div class="signature-block">
+<p>此致</p>
+<p><strong><span class="highlight-name">[具体法院名称]</span></strong></p>
+<p style="margin-top:48px;">申请人（签名或者盖章）：______________</p>
+<p style="margin-top:16px;">20____年 ____月 ____日</p>
+</div>`,
+
+            prelitigation_preservation: `<h1>诉前财产保全申请书</h1>
+<p style="margin-bottom:16px;color:var(--text3);font-size:13px;">（诉前财产保全用）</p>
+
+<p><strong>申请人：</strong><span class="highlight-name">[申请人姓名]</span>，男 / 女，<span class="highlight-name">[民族]</span> 族，<span class="highlight-name">[出生日期]</span> 出生，住 <span class="highlight-name">[户籍所在地或者经常居住地]</span>，公民身份号码 <span class="highlight-name">[身份证号码]</span>，联系电话 <span class="highlight-name">[电话号码]</span>。</p>
+<p><strong>被申请人：</strong><span class="highlight-name">[被申请人姓名]</span>，男 / 女，<span class="highlight-name">[民族]</span> 族，<span class="highlight-name">[出生日期]</span> 出生，住 <span class="highlight-name">[户籍所在地或者经常居住地]</span>，公民身份号码 <span class="highlight-name">[身份证号码]</span>，联系电话 <span class="highlight-name">[电话号码]</span>。</p>
+
 <p class="section-title">申请事项</p>
-<p class="indent">请求贵院依法冻结/查封/扣押被申请人名下价值人民币 <span class="highlight-amount">[金额]</span> 元的财产。</p>
-<p class="section-title">事实与理由</p>
-<p class="indent">[说明申请财产保全的紧迫性和必要性：包括公司存在转移财产的风险、股东可能处置个人财产等情况]</p>
-<p class="indent">申请人愿提供相应担保。依据《中华人民共和国民事诉讼法》第一百零三条之规定，特向贵院提出申请。</p>
-<div class="signature-block"><p>此致</p><p><strong>[管辖法院名称]</strong></p><p style="margin-top:48px;">申请人：______________</p><p style="margin-top:16px;">2026年   月   日</p></div>`,
+<p class="indent">一、查封被申请人 <span class="highlight-name">[被申请人姓名]</span> 名下坐落于 <span class="highlight-name">[具体地址]</span> 房产。</p>
+<p class="indent">二、冻结被申请人 <span class="highlight-name">[被申请人姓名]</span> 开设在 <span class="highlight-name">[银行名称]</span> 银行账户。</p>
+<p class="indent">三、扣押被申请人 <span class="highlight-name">[被申请人姓名]</span> 名下的 <span class="highlight-name">[具体财产描述]</span> 财产。</p>
+<p class="indent">四、以上第一至第三项保全财产金额，以人民币 <span class="highlight-amount">[保全金额]</span> 元为限。</p>
+
+<p class="section-title">事实和理由</p>
+<p class="indent">申请人与被申请人因 <span class="highlight-name">[纠纷事由]</span> 产生纠纷，现因情况紧急（此处需详细写明情况紧急的情形），不立即申请保全将会使申请人合法权益受到难以弥补的损害，现特向法院申请在 <span class="highlight-amount">[保全金额]</span> 元保全金额内对被申请人名下财产进行保全，以保证将来判决得以全面地、顺利地执行。</p>
+
+<div class="signature-block">
+<p>此致</p>
+<p><strong><span class="highlight-name">[有管辖权的人民法院名称]</span></strong></p>
+<p style="margin-top:48px;">申请人：（申请人手写签名）______________</p>
+<p style="margin-top:16px;">20____年 ____月 ____日</p>
+</div>`,
         };
 
         function buildDocGuide(type) {
@@ -957,20 +1128,24 @@
             const a = p.debt_amount || '待补充';
             const g = p.missing_evidence || [];
             const purposes = {
-                complaint: '提交给人民法院，用于起诉债务人公司和未实缴股东，要求股东在未出资范围内承担补充赔偿责任。',
-                support: '提交给人民检察院，申请检察机关对您的案件支持起诉，降低个人维权难度。',
-                evidence_list: '整理并列出案件涉及的全部证据，明确已有证据和缺失证据，为诉讼做准备。',
-                preservation: '提交给人民法院，申请冻结或查封对方财产，防止对方转移资产导致判决无法执行。',
+                complaint_acceleration: '提交给人民法院，针对认缴期限未届满但公司已不能清偿债务的股东，请求其出资义务加速到期，在未出资范围内承担补充赔偿责任。',
+                complaint_expired: '提交给人民法院，针对认缴期限已经届满但仍未实缴出资的股东，请求其在未出资本息范围内对公司债务承担补充赔偿责任。',
+                add_enforcement: '在已经获得生效判决并进入执行程序后，向执行法院申请将未出资/抽逃出资/滥用公司独立人格的股东追加为被执行人。',
+                evidence_list: '整理并列出案件涉及的全部证据，明确已有证据和缺失证据，为诉讼或执行做准备。',
+                preservation: '在诉讼过程中，申请人民法院查封、扣押、冻结被申请人财产，以防止对方转移资产导致判决无法执行。',
+                prelitigation_preservation: '在起诉前，因情况紧急，向法院申请对被申请人财产采取保全措施，防止对方在诉讼前转移财产。',
             };
             const checks = {
-                complaint: '原告/被告身份信息、债务金额、利息计算方式、管辖法院是否正确。',
-                support: '申请人信息、案件基本事实、申请支持起诉的理由是否充分。',
-                evidence_list: '证据名称是否准确、证明目的是否清楚、缺失证据是否已被识别。',
-                preservation: '保全金额是否合理、担保方式是否可行、是否有财产线索。',
+                complaint_acceleration: '原告信息、被告股东信息、认缴出资额与期限、公司不能清偿债务的证明、加速到期的法定情形选择、管辖法院是否正确。',
+                complaint_expired: '原告信息、被告股东信息、债务金额与利息计算、公司不能清偿的证明（终本裁定等）、法律条文引用、管辖法院是否正确。',
+                add_enforcement: '执行案号是否准确、追加理由（未出资/抽逃出资/法人人格否认）是否有证据支持、法律依据是否匹配所选理由、原被执行人公司信息是否准确。',
+                evidence_list: '证据名称是否准确、来源是否明确、证明目的是否清楚、缺失证据是否已被识别并标注。',
+                preservation: '保全财产线索是否明确、保全金额是否合理（不超过争议标的）、担保方式是否可行、是否写明保全期限。',
+                prelitigation_preservation: '情况紧急的说明是否充分、财产线索是否明确、保全金额是否合理、管辖法院是否正确、是否有担保。',
             };
             const gt = g.length ? g.slice(0, 3).map(x => `<li>${escapeHtml(x)}</li>`).join('') :
                 '<li>目前无明显缺口，但仍需核对原件、签名、日期和联系方式。</li>';
-            return `<p><strong style="color:#e5e7eb;">用途：</strong>${purposes[type]||'用于维权。'}</p><p><strong style="color:#e5e7eb;">已识别关键信息：</strong>债务人 <strong>${escapeHtml(d)}</strong>，金额 <strong>${escapeHtml(a)}</strong>。</p><p><strong style="color:#e5e7eb;">签字前重点核对：</strong>${checks[type]||'主体信息、金额、日期。'}</p><p><strong style="color:#e5e7eb;">还建议补充：</strong></p><ol style="padding-left:1.2em;list-style:decimal;">${gt}</ol><p><strong style="color:#e5e7eb;">下一步：</strong>核对内容无误后导出，签字/盖章，按法院或检察院要求提交。</p>`;
+            return `<p><strong style="color:#e5e7eb;">用途：</strong>${purposes[type]||'用于维权。'}</p><p><strong style="color:#e5e7eb;">已识别关键信息：</strong>债务人 <strong>${escapeHtml(d)}</strong>，金额 <strong>${escapeHtml(a)}</strong>。</p><p><strong style="color:#e5e7eb;">签字前重点核对：</strong>${checks[type]||'主体信息、金额、日期。'}</p><p><strong style="color:#e5e7eb;">还建议补充：</strong></p><ol style="padding-left:1.2em;list-style:decimal;">${gt}</ol><p><strong style="color:#e5e7eb;">下一步：</strong>核对内容无误后导出，签字/盖章，按法院要求提交。</p>`;
         }
 
         // ===== STATE =====
