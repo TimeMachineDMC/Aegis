@@ -4,39 +4,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aegis 债优盾 | 中小债权人维权智能平台</title>
+    <title>Aegis 债优盾 · 中小债权人维权智能平台</title>
     <link rel="icon" type="image/svg+xml"
-        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%230f172a%22/><text y=%2268%22 x=%2250%22 text-anchor=%22middle%22 font-size=%2250%22>🛡</text></svg>">
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22%230b1121%22/><path d=%22M50 18L70 28v20c0 16-8.5 31-20 38.5C38.5 79 30 64 30 48V28L50 18z%22 fill=%22none%22 stroke=%22%23c9a84c%22 stroke-width=%224.5%22 stroke-linejoin=%22round%22/></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css/github-markdown-dark.css">
 
     <style>
         :root {
-            --bg-dark: #0f172a;
-            --accent: #38bdf8;
-            --accent2: #818cf8;
-            --glass: rgba(30, 41, 59, 0.85);
-            --card: rgba(30, 41, 59, 0.6);
+            --bg: #0b1121;
+            --surface: #111827;
+            --elevated: #1a2332;
+            --border: rgba(255, 255, 255, 0.06);
+            --border-gold: rgba(201, 168, 76, 0.25);
+            --text: #f1f0eb;
+            --text2: #9ca3af;
+            --text3: #6b7280;
+            --gold: #c9a84c;
+            --gold-light: #e2c87f;
+            --gold-dim: #8b7536;
+        }
+
+        * {
+            box-sizing: border-box;
         }
 
         body {
-            background-color: var(--bg-dark);
-            color: #e2e8f0;
-            background-image: radial-gradient(circle at 50% -10%, #1e3a5f, transparent 60%),
-                radial-gradient(circle at 80% 60%, #1e1b4b, transparent 50%);
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', 'Noto Serif SC', serif;
             min-height: 100vh;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            letter-spacing: 0.01em;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 50% at 50% -10%, rgba(201, 168, 76, 0.04), transparent),
+                radial-gradient(ellipse 40% 40% at 85% 80%, rgba(30, 64, 175, 0.05), transparent);
+            pointer-events: none;
+            z-index: 0;
         }
 
         .view-section {
-            animation: fadeSlide 0.35s ease-out;
+            animation: fadeSlide .45s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            z-index: 1;
         }
 
         @keyframes fadeSlide {
             from {
                 opacity: 0;
-                transform: translateY(12px);
+                transform: translateY(14px);
             }
             to {
                 opacity: 1;
@@ -44,441 +67,956 @@
             }
         }
 
+        /* ====== Glass surfaces ====== */
         .glass {
-            background: var(--glass);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(24px) saturate(120%);
+            -webkit-backdrop-filter: blur(24px) saturate(120%);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+        }
+
+        .glass-card {
+            background: rgba(26, 35, 50, 0.65);
+            backdrop-filter: blur(20px) saturate(120%);
+            -webkit-backdrop-filter: blur(20px) saturate(120%);
+            border: 1px solid var(--border);
             border-radius: 16px;
         }
 
-        .card {
-            background: var(--card);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 14px;
-            transition: all 0.2s ease;
+        /* ====== Scenario Cards ====== */
+        .scenario-card {
+            background: var(--elevated);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
         }
 
-        .card:hover {
-            border-color: rgba(56, 189, 248, 0.4);
+        .scenario-card:hover {
+            border-color: var(--border-gold);
             transform: translateY(-2px);
-            box-shadow: 0 8px 32px rgba(56, 189, 248, 0.1);
+            box-shadow: 0 8px 32px rgba(201, 168, 76, 0.06);
         }
 
-        .card-main {
-            border: 1px solid rgba(56, 189, 248, 0.3);
-            background: rgba(14, 165, 233, 0.08);
+        .scenario-card.primary {
+            border-color: rgba(201, 168, 76, 0.2);
+            background: linear-gradient(135deg, rgba(201, 168, 76, 0.05), var(--elevated));
         }
 
-        .chat-container {
-            height: calc(100vh - 210px);
+        .scenario-card.primary:hover {
+            border-color: rgba(201, 168, 76, 0.4);
+            box-shadow: 0 8px 36px rgba(201, 168, 76, 0.1);
+        }
+
+        /* ====== Nav ====== */
+        .nav-bar {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px) saturate(150%);
+            -webkit-backdrop-filter: blur(20px) saturate(150%);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .nav-item {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text2);
+            cursor: pointer;
+            padding: 7px 15px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .nav-item:hover {
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .nav-item.active {
+            color: var(--gold-light);
+            background: rgba(201, 168, 76, 0.08);
+        }
+
+        /* ====== Buttons ====== */
+        .btn-gold {
+            background: linear-gradient(135deg, #c9a84c, #a8883a);
+            color: #0b1121;
+            border: none;
+            padding: 9px 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.25s;
+            letter-spacing: 0.02em;
+        }
+
+        .btn-gold:hover {
+            background: linear-gradient(135deg, #d4b35a, #b8943f);
+            box-shadow: 0 4px 20px rgba(201, 168, 76, 0.25);
+            transform: translateY(-1px);
+        }
+
+        .btn-gold:active {
+            transform: scale(0.97);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text2);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 9px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .btn-ghost:hover {
+            color: var(--text);
+            border-color: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        /* ====== Tags ====== */
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 11px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .tag-gold {
+            background: rgba(201, 168, 76, 0.12);
+            color: var(--gold-light);
+            border: 1px solid rgba(201, 168, 76, 0.2);
+        }
+
+        .tag-slate {
+            background: rgba(148, 163, 184, 0.1);
+            color: #94a3b8;
+            border: 1px solid rgba(148, 163, 184, 0.12);
+        }
+
+        .tag-green {
+            background: rgba(52, 211, 153, 0.1);
+            color: #4ade80;
+            border: 1px solid rgba(52, 211, 153, 0.12);
+        }
+
+        .tag-red {
+            background: rgba(248, 113, 113, 0.1);
+            color: #f87171;
+            border: 1px solid rgba(248, 113, 113, 0.12);
+        }
+
+        /* ====== Chat ====== */
+        .chat-scroll {
+            height: calc(100vh - 200px);
             overflow-y: auto;
-            padding-bottom: 100px;
+            padding-bottom: 120px;
             scroll-behavior: smooth;
         }
 
         .markdown-body {
             background: transparent !important;
             font-size: 15px !important;
-            line-height: 1.85;
-            color: #cbd5e1 !important;
+            line-height: 1.9 !important;
+            color: #d1d5db !important;
+            font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Noto Serif SC', serif !important;
         }
 
         .markdown-body h2 {
-            color: var(--accent) !important;
-            border-bottom: 1px solid rgba(56, 189, 248, 0.2) !important;
+            color: var(--gold-light) !important;
+            border-bottom: 1px solid rgba(201, 168, 76, 0.15) !important;
             padding-bottom: 6px;
+            margin-top: 24px !important;
+            font-weight: 600;
         }
 
         .markdown-body strong {
-            color: #fbbf24;
-            font-weight: 700;
-        }
-
-        .markdown-body table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 14px 0;
-            font-size: 13px;
-        }
-
-        .markdown-body th,
-        .markdown-body td {
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 8px 12px;
-            text-align: left;
+            color: var(--gold);
+            font-weight: 600;
         }
 
         .markdown-body th {
-            background: rgba(56, 189, 248, 0.1);
-            color: var(--accent);
+            background: rgba(201, 168, 76, 0.06) !important;
+            color: var(--gold-light) !important;
         }
 
+        .markdown-body td,
+        .markdown-body th {
+            border-color: rgba(255, 255, 255, 0.06) !important;
+        }
+
+        .markdown-body code {
+            color: #e2c87f;
+            background: rgba(201, 168, 76, 0.08);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        /* ====== Input ====== */
+        .input-bar {
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .input-bar:focus-within {
+            border-color: rgba(201, 168, 76, 0.3);
+            box-shadow: 0 0 0 4px rgba(201, 168, 76, 0.04);
+        }
+
+        /* ====== Scrollbar ====== */
         ::-webkit-scrollbar {
-            width: 6px;
+            width: 5px;
         }
         ::-webkit-scrollbar-track {
             background: transparent;
         }
         ::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
         }
 
-        .pulse-dot {
-            width: 10px;
-            height: 10px;
-            background: #22c55e;
-            border-radius: 50%;
-            display: inline-block;
-            animation: pulse 2s infinite;
+        /* ====== Divider ====== */
+        .hr-gold {
+            height: 1px;
+            border: none;
+            background: linear-gradient(90deg, transparent, rgba(201, 168, 76, 0.2), transparent);
         }
 
-        @keyframes pulse {
-            0%,
-            100% {
-                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
-            }
-            50% {
-                box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
-            }
-        }
-
+        /* ====== Score Ring ====== */
         .score-ring {
-            width: 72px;
-            height: 72px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
-            font-weight: 800;
-            border: 4px solid;
+            font-size: 17px;
+            font-weight: 700;
+            border: 3px solid;
+            transition: all 0.5s ease;
+            font-variant-numeric: tabular-nums;
         }
 
-        .btn-primary {
-            background: linear-gradient(135deg, #0ea5e9, #6366f1);
-            color: white;
-            border: none;
-            padding: 10px 24px;
-            border-radius: 10px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
+        /* ====== Status Dot ====== */
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #34d399;
+            box-shadow: 0 0 8px rgba(52, 211, 153, 0.4);
         }
 
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 16px rgba(56, 189, 248, 0.3);
+        /* ====== Document Editor ====== */
+        .doc-paper {
+            background: #fdfdfc;
+            color: #1a1a1a;
+            box-shadow: 0 2px 40px rgba(0, 0, 0, 0.3);
+            border-radius: 3px;
+            min-height: 60vh;
         }
 
-        .tag {
+        .doc-paper h1 {
+            font-size: 22px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 32px;
+            letter-spacing: 0.1em;
+        }
+
+        .doc-paper p {
+            font-size: 15px;
+            line-height: 2;
+            margin-bottom: 6px;
+        }
+
+        .doc-paper .indent {
+            text-indent: 2em;
+        }
+
+        .doc-paper .highlight-name {
+            color: #1d4ed8;
+            background: #eff6ff;
+            padding: 0 3px;
+        }
+
+        .doc-paper .highlight-amount {
+            color: #dc2626;
+            font-weight: 700;
+            text-decoration: underline;
+        }
+
+        .doc-paper .section-title {
+            font-weight: 700;
+            font-size: 17px;
+            margin-top: 28px;
+            margin-bottom: 12px;
+            border-bottom: 2px solid #333;
             display: inline-block;
-            padding: 3px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
+            padding-bottom: 2px;
         }
 
-        .tag-legal {
-            background: rgba(99, 102, 241, 0.2);
-            color: #a5b4fc;
+        .doc-paper .signature-block {
+            margin-top: 48px;
+            text-align: right;
+            padding-right: 48px;
         }
 
-        .tag-finance {
-            background: rgba(34, 197, 94, 0.2);
-            color: #4ade80;
+        .radio-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+            font-size: 13px;
+            color: var(--text2);
+        }
+
+        .radio-label:hover {
+            background: rgba(255, 255, 255, 0.03);
+            border-color: var(--border);
+        }
+
+        .radio-label:has(input:checked) {
+            background: rgba(201, 168, 76, 0.08);
+            border-color: rgba(201, 168, 76, 0.25);
+            color: var(--gold-light);
+        }
+
+        .radio-label input {
+            accent-color: var(--gold);
+        }
+
+        /* ====== Hero Shield ====== */
+        .hero-shield {
+            font-size: 56px;
+            filter: drop-shadow(0 4px 24px rgba(201, 168, 76, 0.2));
+            line-height: 1;
+        }
+
+        @keyframes shieldPulse {
+            0%,
+            100% {
+                filter: drop-shadow(0 4px 24px rgba(201, 168, 76, 0.2));
+            }
+            50% {
+                filter: drop-shadow(0 4px 40px rgba(201, 168, 76, 0.4));
+            }
+        }
+
+        .shield-glow {
+            animation: shieldPulse 3s ease-in-out infinite;
         }
     </style>
 </head>
 
 <body class="min-h-screen">
-    <!-- ==================== Navigation Bar ==================== -->
-    <nav class="glass sticky top-0 z-50 px-6 py-3 mx-4 mt-3 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-            <span class="text-2xl">🛡️</span>
-            <div>
-                <h1 class="text-lg font-bold text-white">Aegis 债优盾</h1>
-                <p class="text-xs text-slate-400">中小债权人维权智能平台</p>
+
+    <!-- ==================== NAVIGATION ==================== -->
+    <nav class="nav-bar">
+        <div class="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+            <div class="flex items-center gap-2.5 select-none">
+                <span class="text-xl shield-glow">🛡</span>
+                <span class="text-sm font-semibold tracking-wide text-white">Aegis <span
+                        style="color:var(--gold);">债优盾</span></span>
             </div>
-        </div>
-        <div class="flex items-center gap-2" id="nav-buttons">
-            <button onclick="switchView('landing')" id="nav-landing"
-                class="px-3 py-1.5 text-sm rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition">首页</button>
-            <button onclick="switchView('chat')" id="nav-chat"
-                class="px-3 py-1.5 text-sm rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition">智能对话</button>
-            <button onclick="switchView('doc')" id="nav-doc"
-                class="px-3 py-1.5 text-sm rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition">文书导出</button>
-            <button onclick="switchView('admin')" id="nav-admin"
-                class="px-3 py-1.5 text-sm rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition">管理看板</button>
+            <div class="flex items-center gap-1">
+                <span class="nav-item active" id="nav-landing" onclick="switchView('landing')">首页</span>
+                <span class="nav-item" id="nav-chat" onclick="switchView('chat')">智能分析</span>
+                <span class="nav-item" id="nav-doc" onclick="switchView('doc')">文书工作台</span>
+                <span class="nav-item" id="nav-admin" onclick="switchView('admin')">管理看板</span>
+            </div>
         </div>
     </nav>
 
-    <!-- ==================== Landing: Scenario Selection ==================== -->
-    <div id="view-landing" class="view-section max-w-5xl mx-auto px-6 pt-12 pb-20">
-        <div class="text-center mb-10">
-            <h2 class="text-3xl font-bold text-white mb-3">选择您的维权场景</h2>
-            <p class="text-slate-400 text-lg">系统将根据您的场景，提供针对性的证据分析、法律研判和行动指引</p>
-        </div>
+    <!-- ==================== VIEW: LANDING ==================== -->
+    <main id="view-landing" class="view-section">
+        <div class="max-w-4xl mx-auto px-6 pt-16 pb-32 text-center">
+            <p class="hero-shield mb-5 select-none">🛡</p>
+            <h1 class="text-3xl font-bold tracking-tight text-white mb-3">
+                Aegis <span style="color:var(--gold);">债优盾</span>
+            </h1>
+            <p class="text-base leading-relaxed max-w-xl mx-auto mb-4" style="color:var(--text2);">
+                中小债权人维权智能平台
+            </p>
+            <p class="text-sm max-w-lg mx-auto" style="color:var(--text3);">
+                帮助债权人追究<strong style="color:var(--gold-light);font-weight:600;">股东责任</strong>，
+                特别是通过<strong style="color:var(--gold-light);font-weight:600;">股东出资义务加速到期</strong>追讨公司债务
+            </p>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="scenario-grid">
-            <!-- Scenarios injected by JS -->
-        </div>
+            <hr class="hr-gold my-12">
 
-        <div class="mt-8 text-center">
-            <button onclick="quickStart()"
-                class="btn-primary px-8 py-3 text-lg">
-                直接开始咨询（AI 自动判断场景）
+            <h2 class="text-xs font-semibold uppercase tracking-widest mb-8" style="color:var(--text3);">
+                选择维权场景
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-left mb-10" id="scenario-grid">
+                <!-- JS 注入 -->
+            </div>
+
+            <button onclick="quickStart()" class="btn-ghost px-8 py-3">
+                不确定场景？直接开始，AI 自动判断
             </button>
         </div>
-    </div>
+    </main>
 
-    <!-- ==================== Chat View ==================== -->
-    <div id="view-chat" class="view-section relative" style="display:none;">
-        <!-- Scenario Badge -->
-        <div class="max-w-4xl mx-auto px-6 pt-4 flex items-center gap-3 flex-wrap">
-            <span id="chat-scenario-badge"
-                class="tag tag-legal text-sm px-4 py-1.5">未选择场景</span>
-            <button onclick="switchView('landing')"
-                class="text-xs text-slate-400 hover:text-white underline">切换场景</button>
-            <span class="text-xs text-slate-500 ml-auto" id="chat-model-indicator">DeepSeek-V4</span>
+    <!-- ==================== VIEW: CHAT ==================== -->
+    <main id="view-chat" class="view-section" style="display:none;">
+        <div class="max-w-3xl mx-auto px-6 pt-4 pb-2 flex items-center gap-3 flex-wrap">
+            <span id="chat-scenario-badge" class="tag tag-slate">通用法律咨询</span>
+            <button onclick="switchView('landing')" class="text-xs underline underline-offset-4 hover:text-white transition"
+                style="color:var(--text3);">切换场景</button>
+            <span class="text-xs ml-auto" style="color:var(--text3);">DeepSeek-V4</span>
         </div>
 
-        <!-- Chat Area -->
-        <div class="max-w-4xl mx-auto px-6">
-            <div class="chat-container glass p-6 mt-3" id="chat-messages">
-                <div class="text-center text-slate-500 py-16" id="chat-empty">
-                    <p class="text-5xl mb-4">🛡️</p>
-                    <p class="text-lg font-semibold text-white mb-2">债优盾 AI 法律顾问已就绪</p>
-                    <p class="text-sm">请描述您遇到的债务问题，或上传相关材料</p>
-                    <p class="text-xs text-slate-600 mt-2">支持图片（OCR 识别）、PDF、Word、TXT</p>
+        <div class="max-w-3xl mx-auto px-6">
+            <div class="chat-scroll" id="chat-messages">
+                <div class="py-24 text-center" id="chat-empty" style="color:var(--text3);">
+                    <p class="text-5xl mb-5 select-none">🛡</p>
+                    <p class="text-base font-medium mb-2" style="color:var(--text2);">Aegis 债优盾 · AI 法律顾问</p>
+                    <p class="text-sm">请描述您遇到的债务问题</p>
                 </div>
             </div>
         </div>
 
-        <!-- Input Bar -->
-        <div class="fixed bottom-0 left-0 right-0 z-40 pb-4 pt-2"
-            style="background: linear-gradient(transparent, var(--bg-dark) 30%);">
-            <div class="max-w-4xl mx-auto px-6">
-                <div class="glass p-3 flex items-end gap-3">
-                    <!-- File Upload -->
-                    <label class="cursor-pointer p-2.5 rounded-lg hover:bg-white/5 transition text-slate-400 hover:text-white"
-                        title="上传文件">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+        <!-- Input -->
+        <div class="fixed bottom-0 left-0 right-0 z-40 pb-5 pt-3"
+            style="background:linear-gradient(transparent, var(--bg) 35%);">
+            <div class="max-w-3xl mx-auto px-6">
+                <div class="input-bar flex items-end gap-2 px-4 py-2.5">
+                    <label class="cursor-pointer p-2 rounded-lg hover:bg-white/5 transition flex-shrink-0"
+                        style="color:var(--text3);" title="上传文件">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
                                 d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                         </svg>
                         <input type="file" id="file-input" accept="image/*,.pdf,.docx,.doc,.txt"
                             onchange="handleFileUpload(this)" class="hidden" multiple>
                     </label>
-
-                    <!-- Voice Button (Fake - fills preset text) -->
-                    <button onclick="fakeVoiceInput()"
-                        class="p-2.5 rounded-lg hover:bg-white/5 transition text-slate-400 hover:text-white"
-                        title="语音输入">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    <button onclick="fakeVoiceInput()" class="p-2 rounded-lg hover:bg-white/5 transition flex-shrink-0"
+                        style="color:var(--text3);" title="语音输入">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
                                 d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                         </svg>
                     </button>
-
-                    <!-- Text Input -->
                     <textarea id="chat-input" rows="1"
-                        class="flex-1 bg-transparent border-none outline-none resize-none text-white placeholder-slate-500 py-2 text-sm"
-                        placeholder="描述您的债务问题..."
-                        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"
-                        oninput="autoResize(this)"></textarea>
-
-                    <!-- Send Button -->
-                    <button onclick="sendMessage()"
-                        class="btn-primary px-5 py-2.5 flex-shrink-0 disabled:opacity-40" id="send-btn">
+                        class="flex-1 bg-transparent border-none outline-none resize-none text-sm py-2 px-1"
+                        style="color:var(--text);" placeholder="描述您的债务问题…"
+                        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
+                    <button onclick="sendMessage()" class="btn-gold px-4 py-2 flex-shrink-0 disabled:opacity-30"
+                        id="send-btn" disabled>
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                d="M5 12h14M12 5l7 7-7 7" />
                         </svg>
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Evidence Panel (Right Sidebar on Desktop) -->
+        <!-- Evidence Side Panel -->
         <div id="evidence-panel"
-            class="fixed right-4 top-24 w-72 glass p-4 hidden lg:block text-xs overflow-y-auto"
-            style="max-height: calc(100vh - 140px);">
-            <h3 class="text-sm font-bold text-white mb-3 flex items-center gap-2">
-                <span class="pulse-dot"></span> 案件画像
+            class="fixed right-6 top-20 w-60 glass-card p-5 hidden xl:block text-xs overflow-y-auto"
+            style="max-height:calc(100vh - 150px);">
+            <h3 class="text-sm font-semibold mb-3 text-white flex items-center gap-2">
+                <span class="status-dot"></span> 案件画像
             </h3>
-            <div id="evidence-content" class="space-y-2 text-slate-400">
-                <p class="text-slate-500">发送第一条消息后自动生成</p>
+            <div id="evidence-content" class="space-y-2" style="color:var(--text2);">
+                <p style="color:var(--text3);">发送消息后生成</p>
             </div>
-            <div class="mt-4 pt-3 border-t border-white/10" id="score-display">
-                <p class="text-xs text-slate-500 mb-1">加速到期可行性</p>
-                <div class="flex items-center gap-3">
-                    <div class="score-ring border-slate-600 text-slate-500" id="score-ring">--</div>
-                    <p class="text-xs text-slate-500">等待分析</p>
+            <hr class="hr-gold my-4">
+            <p class="text-xs mb-2" style="color:var(--text3);">加速到期可行性</p>
+            <div class="flex items-center gap-3">
+                <div class="score-ring" id="score-ring" style="border-color:#374151;color:var(--text3);">--</div>
+                <span class="text-xs" style="color:var(--text3);">等待分析</span>
+            </div>
+        </div>
+    </main>
+
+    <!-- ==================== VIEW: DOCUMENT WORKBENCH ==================== -->
+    <main id="view-doc" class="view-section" style="display:none;">
+        <div class="max-w-6xl mx-auto px-6 pt-8 pb-24">
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">📑 法律文书工作台</h2>
+                    <p class="text-xs mt-1" style="color:var(--text3);">根据 AI 提取的案件信息，切换并预览、编辑文书模板</p>
+                </div>
+                <div class="flex gap-2.5">
+                    <button onclick="switchView('chat')" class="btn-ghost text-xs">← 返回分析</button>
+                    <button onclick="exportDocx()" class="btn-gold text-xs">导出 Word</button>
+                </div>
+            </div>
+
+            <!-- Layout: Sidebar + Editor -->
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-5">
+                <!-- Sidebar -->
+                <div class="col-span-1 space-y-4">
+                    <!-- Document Type Selector -->
+                    <div class="glass-card p-4">
+                        <h3 class="text-xs font-bold uppercase tracking-widest mb-3" style="color:var(--gold-dim);">文书类型</h3>
+                        <div class="space-y-1">
+                            <label class="radio-label">
+                                <input type="radio" name="doc_type" value="complaint" checked onchange="switchTemplate(this.value)">
+                                民事起诉状（股东出资纠纷）
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="doc_type" value="support" onchange="switchTemplate(this.value)">
+                                检察支持起诉申请书
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="doc_type" value="evidence_list" onchange="switchTemplate(this.value)">
+                                证据清单
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="doc_type" value="preservation" onchange="switchTemplate(this.value)">
+                                财产保全申请书
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Variables Panel -->
+                    <div class="glass-card p-4">
+                        <h3 class="text-xs font-bold uppercase tracking-widest mb-3" style="color:var(--text3);">AI 提取变量</h3>
+                        <div class="space-y-3 text-xs">
+                            <div>
+                                <span class="block mb-1" style="color:var(--text3);">债权人 / 原告</span>
+                                <span class="tag tag-gold" id="var-creditor">待提取</span>
+                            </div>
+                            <div>
+                                <span class="block mb-1" style="color:var(--text3);">债务人公司</span>
+                                <span class="tag tag-slate" id="var-debtor">待提取</span>
+                            </div>
+                            <div>
+                                <span class="block mb-1" style="color:var(--text3);">未实缴股东</span>
+                                <span class="tag tag-slate" id="var-shareholder">待提取</span>
+                            </div>
+                            <div>
+                                <span class="block mb-1" style="color:var(--text3);">涉案金额</span>
+                                <span class="tag tag-red" id="var-amount">待提取</span>
+                            </div>
+                            <div>
+                                <span class="block mb-1" style="color:var(--text3);">认缴出资额</span>
+                                <span class="tag tag-slate" id="var-capital">待提取</span>
+                            </div>
+                        </div>
+                        <button onclick="refreshTemplate()" class="btn-ghost w-full mt-5 text-xs py-2">
+                            🔄 重新渲染
+                        </button>
+                    </div>
+
+                    <!-- Guide Card -->
+                    <div class="glass-card p-4">
+                        <h3 class="text-xs font-bold uppercase tracking-widest mb-3" style="color:var(--gold-dim);">白话说明</h3>
+                        <div id="doc-guide-card" class="text-xs leading-relaxed space-y-2" style="color:var(--text2);">
+                            <p>生成文书后，这里会同步解释材料的用途、需要核对的内容和下一步提交方式。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Editor -->
+                <div class="col-span-1 lg:col-span-3">
+                    <div class="doc-paper p-10 overflow-y-auto" style="max-height:75vh;" id="doc-editor-wrapper">
+                        <div class="absolute top-3 right-3 text-xs font-bold px-3 py-1.5 rounded-md opacity-0 hover:opacity-100 transition-opacity pointer-events-none shadow-sm border"
+                            style="color:#92400e;background:#fef3c7;border-color:#fcd34d;z-index:10;">
+                            ✏️ 点击任意文字即可编辑
+                        </div>
+                        <div id="editable-doc" contenteditable="true"
+                            class="focus:outline-none text-[15px] leading-loose font-serif"
+                            style="color:#1a1a1a;min-height:55vh;">
+                            <!-- Template rendered by JS -->
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    </main>
 
-    <!-- ==================== Document Export View ==================== -->
-    <div id="view-doc" class="view-section max-w-4xl mx-auto px-6 pt-8 pb-20" style="display:none;">
-        <h2 class="text-2xl font-bold text-white mb-6">法律文书导出</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-            <button onclick="generateDoc('complaint')" class="card p-6 text-left">
-                <h3 class="font-bold text-white mb-2">📝 民事起诉状</h3>
-                <p class="text-sm text-slate-400">股东出资纠纷 / 债权人代位权纠纷</p>
-            </button>
-            <button onclick="generateDoc('support')" class="card p-6 text-left">
-                <h3 class="font-bold text-white mb-2">📋 支持起诉申请书</h3>
-                <p class="text-sm text-slate-400">向检察机关申请支持起诉</p>
-            </button>
-            <button onclick="generateDoc('evidence_list')" class="card p-6 text-left">
-                <h3 class="font-bold text-white mb-2">📎 证据清单</h3>
-                <p class="text-sm text-slate-400">整理并列出已有证据和缺失证据</p>
-            </button>
-            <button onclick="generateDoc('preservation')" class="card p-6 text-left">
-                <h3 class="font-bold text-white mb-2">🔒 财产保全申请书</h3>
-                <p class="text-sm text-slate-400">诉前/诉中财产保全申请</p>
-            </button>
-        </div>
-        <div class="glass p-6" id="doc-preview">
-            <p class="text-slate-500 text-center py-8">选择上方文书类型，自动生成预览</p>
-        </div>
-        <div class="mt-4 text-right">
-            <button onclick="exportDocx()" class="btn-primary px-6 py-2.5" id="export-btn" disabled>
-                导出 DOCX 文件
-            </button>
-        </div>
-    </div>
+    <!-- ==================== VIEW: ADMIN ==================== -->
+    <main id="view-admin" class="view-section" style="display:none;">
+        <div class="max-w-5xl mx-auto px-6 pt-12 pb-24">
+            <div class="flex items-center justify-between mb-10">
+                <div>
+                    <h2 class="text-xl font-bold text-white mb-1">管理看板</h2>
+                    <p class="text-xs" style="color:var(--text3);">平台事件与案件概览</p>
+                </div>
+                <div class="flex items-center gap-2"><span class="status-dot"></span><span class="text-xs"
+                        style="color:var(--text3);">运行中</span></div>
+            </div>
 
-    <!-- ==================== Admin Dashboard ==================== -->
-    <div id="view-admin" class="view-section max-w-6xl mx-auto px-6 pt-8 pb-20" style="display:none;">
-        <div class="flex items-center justify-between mb-6">
-            <h2 class="text-2xl font-bold text-white">管理看板</h2>
-            <div class="flex items-center gap-2">
-                <span class="pulse-dot"></span>
-                <span class="text-xs text-slate-400">系统运行中</span>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10" id="admin-stats">
+                <div class="glass-card p-5 text-center">
+                    <p class="text-2xl font-bold text-white" id="stat-total">--</p>
+                    <p class="text-xs mt-1" style="color:var(--text3);">总咨询</p>
+                </div>
+                <div class="glass-card p-5 text-center">
+                    <p class="text-2xl font-bold" style="color:#4ade80;" id="stat-scored">--</p>
+                    <p class="text-xs mt-1" style="color:var(--text3);">已完成评分</p>
+                </div>
+                <div class="glass-card p-5 text-center">
+                    <p class="text-2xl font-bold" style="color:#fbbf24;" id="stat-files">--</p>
+                    <p class="text-xs mt-1" style="color:var(--text3);">文件上传</p>
+                </div>
+                <div class="glass-card p-5 text-center">
+                    <p class="text-2xl font-bold" style="color:#818cf8;" id="stat-docs">--</p>
+                    <p class="text-xs mt-1" style="color:var(--text3);">文书导出</p>
+                </div>
+            </div>
+
+            <div class="glass-card p-6 overflow-x-auto">
+                <h3 class="font-semibold text-white mb-4 text-sm">事件日志</h3>
+                <table class="w-full text-xs">
+                    <thead>
+                        <tr class="border-b text-left" style="border-color:var(--border);color:var(--text3);">
+                            <th class="py-2.5 px-3 font-medium">时间</th>
+                            <th class="py-2.5 px-3 font-medium">类型</th>
+                            <th class="py-2.5 px-3 font-medium">场景</th>
+                            <th class="py-2.5 px-3 font-medium">摘要</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-events" style="color:var(--text2);"></tbody>
+                </table>
+                <button onclick="refreshAdmin()" class="btn-ghost text-xs mt-4 py-1.5 px-4">刷新</button>
             </div>
         </div>
+    </main>
 
-        <!-- Stats -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" id="admin-stats">
-            <div class="card p-4 text-center">
-                <p class="text-2xl font-bold text-white" id="stat-total">--</p>
-                <p class="text-xs text-slate-400">总咨询次数</p>
-            </div>
-            <div class="card p-4 text-center">
-                <p class="text-2xl font-bold text-green-400" id="stat-scored">--</p>
-                <p class="text-xs text-slate-400">已完成评分</p>
-            </div>
-            <div class="card p-4 text-center">
-                <p class="text-2xl font-bold text-amber-400" id="stat-files">--</p>
-                <p class="text-xs text-slate-400">文件上传</p>
-            </div>
-            <div class="card p-4 text-center">
-                <p class="text-2xl font-bold text-blue-400" id="stat-docs">--</p>
-                <p class="text-xs text-slate-400">文书导出</p>
-            </div>
-        </div>
-
-        <!-- Events Table -->
-        <div class="glass p-4 overflow-x-auto">
-            <h3 class="font-bold text-white mb-4">平台事件日志</h3>
-            <table class="w-full text-sm">
-                <thead>
-                    <tr class="text-slate-400 text-left border-b border-white/10">
-                        <th class="px-3 py-2">时间</th>
-                        <th class="px-3 py-2">类型</th>
-                        <th class="px-3 py-2">场景</th>
-                        <th class="px-3 py-2">摘要</th>
-                    </tr>
-                </thead>
-                <tbody id="admin-events" class="text-slate-300"></tbody>
-            </table>
-            <div class="mt-4 flex gap-4">
-                <button onclick="refreshAdmin()" class="text-xs text-slate-400 hover:text-white underline">刷新</button>
-            </div>
-        </div>
-    </div>
-
+    <!-- ==================== SCRIPTS ==================== -->
     <script>
-        // ==================== Configuration ====================
+        // ===== CONFIG =====
         const API_BASE = (() => {
-            const params = new URLSearchParams(window.location.search);
-            const apiParam = params.get('api');
-            if (apiParam) return apiParam;
-            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                return `http://127.0.0.1:8000`;
-            }
-            if (window.AEGIS_CONFIG && window.AEGIS_CONFIG.publicApiBase) {
-                return window.AEGIS_CONFIG.publicApiBase;
-            }
+            const p = new URLSearchParams(window.location.search);
+            const api = p.get('api');
+            if (api) return api;
+            if (['localhost', '127.0.0.1'].includes(window.location.hostname)) return 'http://127.0.0.1:8000';
+            if (window.AEGIS_CONFIG?.publicApiBase) return window.AEGIS_CONFIG.publicApiBase;
             return window.location.origin;
         })();
 
+        // ===== SCENARIO DATA =====
         const SCENARIOS = {
-            "1": { title: "公司欠钱不还，想追未实缴股东", desc: "公司作为债务人无法清偿到期债务，追究未足额缴纳出资的股东责任", icon: "🏛️",
-                main: true },
-            "2": { title: "公司不能清偿，判断能否主张出资加速到期", desc: "公司已具备破产原因但不申请破产，主张股东出资期限加速到期", icon: "⚖️", main: true },
-            "3": { title: "债务发生后，公司延长了股东出资期限", desc: "公司对债权人负有债务后，通过决议延长股东出资期限逃避债务", icon: "📅" },
-            "4": { title: "怀疑股东出资后又把钱转走", desc: "股东验资后通过虚构交易等方式将出资款项转出（抽逃出资）", icon: "💸" },
-            "5": { title: "公司减资后导致债权无法清偿", desc: "公司未依法通知债权人即减资，损害债权人利益", icon: "📉" },
-            "6": { title: "股东转让股权后无人履行出资义务", desc: "未届出资期限的股东转让股权给无履行能力的主体", icon: "🔄" },
-            "7": { title: "不确定属于哪种情况", desc: "系统将引导梳理案情，自动匹配最合适的维权路径", icon: "🤔" },
+            "1": {
+                title: "公司欠钱不还，想追未实缴股东",
+                desc: "债务人无法清偿到期债务，追究未足额出资股东的补充赔偿责任",
+                icon: "🏛",
+                primary: true,
+                welcome: `您选择了 **场景一：追未实缴股东**。这是债权人维权中最常见的路径之一。
+
+根据 **《公司法》第54条**，如果公司不能清偿到期债务，已到期债权的债权人有权要求已认缴出资但未届出资期限的股东提前缴纳出资。
+
+在开始分析前，请尽量准备以下信息：
+
+- **债权凭证**：合同、欠条、判决书等证明债权存在的文件
+- **公司信息**：债务人公司的准确全称
+- **工商信息**：可在企查查、天眼查查询股东的认缴/实缴出资情况
+
+**请描述您的具体情况**：金额、时间、已有证据、公司回应等。`
+            },
+            "2": {
+                title: "判断能否主张股东出资加速到期",
+                desc: "公司已具备破产原因但不申请破产，主张股东出资期限加速到期",
+                icon: "⚖",
+                primary: true,
+                welcome: `您选择了 **场景二：出资加速到期判断**。这是最需要严格法律构成要件审查的路径。
+
+根据 **《公司法》第54条** 和 **九民纪要第6条**，核心判断标准：
+
+1. 公司已具备破产原因（资不抵债或明显缺乏清偿能力）
+2. 但公司不申请破产
+3. 股东出资期限尚未届满
+
+**请告诉我**：债务金额和发生时间、公司经营状况、您是否已经催收过、有没有公司的财务报表或审计报告。`
+            },
+            "3": {
+                title: "债务发生后公司延长了股东出资期限",
+                desc: "公司对债权人负有债务后，通过决议延长出资期限以逃避债务",
+                icon: "📅",
+                primary: false,
+                welcome: `您选择了 **场景三：债务发生后延长出资期限**。
+
+九民纪要第6条第(2)项明确规定：公司债务产生后，通过股东会决议延长股东出资期限的，债权人可以主张加速到期。
+
+**请告诉我**：债务产生的时间、公司变更出资期限的记录（可在工商档案中查到）、变更前后的具体日期。`
+            },
+            "4": {
+                title: "怀疑股东出资后又把钱转走",
+                desc: "股东验资后将出资款项通过虚构交易等方式转出",
+                icon: "💸",
+                primary: false,
+                welcome: `您选择了 **场景四：抽逃出资**。
+
+根据 **公司法解释三第12条**，抽逃出资的常见形式包括：虚构债权债务转出资金、通过关联交易转出、制作虚假财务报表等。
+
+**请告诉我**：您掌握的资金转出线索（银行流水、转账记录等）、股东出资的时间和金额、资金转出的大致时间和去向。`
+            },
+            "5": {
+                title: "公司减资后导致债权无法清偿",
+                desc: "公司未依法通知债权人即减资，损害债权人利益",
+                icon: "📉",
+                primary: false,
+                welcome: `您选择了 **场景五：公司减资损害债权**。
+
+根据 **《公司法》第177条**，公司减资时必须通知债权人并公告，否则减资行为对债权人不发生效力。
+
+**请告诉我**：您的债权形成时间、公司减资的时间和公告方式、您是否收到过减资通知。`
+            },
+            "6": {
+                title: "股东转让股权后无人履行出资义务",
+                desc: "未届出资期限的股东将股权转让给无履行能力的主体",
+                icon: "🔄",
+                primary: false,
+                welcome: `您选择了 **场景六：股权转让逃避出资**。
+
+根据 **《公司法》第88条**，未届出资期限的股东转让股权后，受让人承担出资义务；受让人不能履行的，转让人承担补充责任。
+
+**请告诉我**：股权转让时间、转让人和受让人的身份信息、转让时出资期限的状态、受让方是否明显无履行能力。`
+            },
+            "7": {
+                title: "不确定属于哪种情况，需要系统判断",
+                desc: "系统将通过对话引导梳理案情，自动匹配最合适的维权路径",
+                icon: "🤔",
+                primary: false,
+                welcome: `没关系，我来帮您梳理。
+
+请尽可能详细地描述您的情况：
+- 您和对方公司之间的关系（供货、借款、服务等）
+- 债务金额和发生时间
+- 您已经做过哪些尝试
+- 您目前掌握的公司和股东信息
+
+我会根据您的描述自动判断最匹配的维权场景。`
+            },
         };
 
+        // ===== DOCUMENT TEMPLATES =====
+        const docTemplates = {
+            complaint: `
+                <h1>民 事 起 诉 状</h1>
+                <p><strong>原告：</strong><span class="highlight-name">[债权人姓名/名称]</span>，[身份证号/统一社会信用代码]，住址：[地址]，联系电话：[电话]。</p>
+                <p><strong>被告一：</strong><span class="highlight-name">[债务人公司全称]</span>，住所地：[注册地址]，统一社会信用代码：[代码]，法定代表人：[姓名]。</p>
+                <p><strong>被告二：</strong><span class="highlight-name">[未实缴股东姓名]</span>，[身份证号]，住址：[地址]。</p>
+
+                <p class="section-title">诉讼请求</p>
+                <p class="indent">1. 判令被告一立即向原告偿还债务本金人民币 <span class="highlight-amount">[金额]</span> 元及逾期利息（以 <span class="highlight-amount">[金额]</span> 元为基数，按 [利率] 自 [日期] 起计算至实际清偿之日止）；</p>
+                <p class="indent">2. 判令被告二在其未出资范围内对被告一的上述债务承担补充赔偿责任；</p>
+                <p class="indent">3. 判令二被告承担本案全部诉讼费用。</p>
+
+                <p class="section-title">事实与理由</p>
+                <p class="indent">[根据实际案情填写：债务形成过程、公司不能清偿的事实、股东未实缴出资的具体情况、原告已采取的措施等]</p>
+                <p class="indent">依据《中华人民共和国公司法》第五十四条、《全国法院民商事审判工作会议纪要》（九民纪要）第6条之规定，特向贵院提起诉讼，请求依法支持原告诉讼请求。</p>
+
+                <div class="signature-block">
+                    <p>此致</p>
+                    <p><strong>[管辖法院名称]</strong></p>
+                    <p style="margin-top:48px;">具状人：______________</p>
+                    <p style="margin-top:16px;">2026年   月   日</p>
+                </div>
+            `,
+            support: `
+                <h1>检察支持起诉申请书</h1>
+                <p><strong>申请人：</strong><span class="highlight-name">[债权人姓名/名称]</span>，[身份证号/统一社会信用代码]，住址：[地址]，联系电话：[电话]。</p>
+                <p><strong>被申请人一：</strong><span class="highlight-name">[债务人公司全称]</span>，住所地：[注册地址]。</p>
+                <p><strong>被申请人二：</strong><span class="highlight-name">[未实缴股东姓名]</span>，[身份证号]，住址：[地址]。</p>
+
+                <p class="section-title">申请事项</p>
+                <p class="indent">请求检察机关对申请人与[债务人公司]及[股东]之间的股东出资纠纷一案支持起诉。</p>
+
+                <p class="section-title">事实与理由</p>
+                <p class="indent">[说明案件基本情况，包括债权形成过程、公司不能清偿的事实、股东未实缴出资的情况，以及申请人维权困难的原因]</p>
+                <p class="indent">依据《中华人民共和国民事诉讼法》第十六条之规定，特向贵院提出申请，恳请检察机关支持起诉。</p>
+
+                <p style="margin-top:24px;"><strong>附：相关证据材料</strong></p>
+                <p class="indent">1. 申请人身份证明；</p>
+                <p class="indent">2. 债权凭证；</p>
+                <p class="indent">3. 公司工商登记信息；</p>
+                <p class="indent">4. 公司不能清偿的证明；</p>
+                <p class="indent">5. 其他相关材料。</p>
+
+                <div class="signature-block">
+                    <p>此致</p>
+                    <p><strong>[检察机关名称]</strong></p>
+                    <p style="margin-top:48px;">申请人（签名/捺印）：______________</p>
+                    <p style="margin-top:16px;">2026年   月   日</p>
+                </div>
+            `,
+            evidence_list: `
+                <h1>证 据 清 单</h1>
+                <p style="margin-bottom:24px;">案由：股东出资纠纷</p>
+
+                <table style="width:100%;border-collapse:collapse;margin-top:16px;" border="1" cellpadding="10" cellspacing="0">
+                    <tr style="background:#f5f5f5;">
+                        <th style="width:8%;">序号</th>
+                        <th style="width:30%;">证据名称</th>
+                        <th style="width:42%;">证明目的</th>
+                        <th style="width:20%;">状态</th>
+                    </tr>
+                    <tr>
+                        <td style="text-align:center;">1</td>
+                        <td>债权凭证（合同/欠条/判决书）</td>
+                        <td>证明债权债务关系存在</td>
+                        <td style="text-align:center;">□ 已有 / □ 缺失</td>
+                    </tr>
+                    <tr>
+                        <td style="text-align:center;">2</td>
+                        <td>公司工商登记信息</td>
+                        <td>证明股东认缴/实缴出资情况</td>
+                        <td style="text-align:center;">□ 已有 / □ 缺失</td>
+                    </tr>
+                    <tr>
+                        <td style="text-align:center;">3</td>
+                        <td>公司财务报告/审计报告</td>
+                        <td>证明公司不能清偿到期债务</td>
+                        <td style="text-align:center;">□ 已有 / □ 缺失</td>
+                    </tr>
+                    <tr>
+                        <td style="text-align:center;">4</td>
+                        <td>催收记录（函件/聊天记录/录音）</td>
+                        <td>证明已向公司主张权利</td>
+                        <td style="text-align:center;">□ 已有 / □ 缺失</td>
+                    </tr>
+                    <tr>
+                        <td style="text-align:center;">5</td>
+                        <td>股东出资情况证明</td>
+                        <td>证明股东存在未实缴出资</td>
+                        <td style="text-align:center;">□ 已有 / □ 缺失</td>
+                    </tr>
+                    <tr>
+                        <td style="text-align:center;">6</td>
+                        <td>公司/股东银行流水</td>
+                        <td>证明公司财产状况/抽逃出资</td>
+                        <td style="text-align:center;">□ 已有 / □ 缺失</td>
+                    </tr>
+                    <tr>
+                        <td style="text-align:center;">7</td>
+                        <td>公司减资/股权转让变更记录</td>
+                        <td>证明逃避出资义务的行为</td>
+                        <td style="text-align:center;">□ 已有 / □ 缺失</td>
+                    </tr>
+                </table>
+
+                <p style="margin-top:32px;"><strong>说明：</strong>请根据案件实际情况在"状态"栏勾选已有证据或标注缺失，缺失证据请尽快补充。</p>
+
+                <div class="signature-block">
+                    <p style="margin-top:48px;">提交人：______________</p>
+                    <p style="margin-top:16px;">2026年   月   日</p>
+                </div>
+            `,
+            preservation: `
+                <h1>财产保全申请书</h1>
+                <p><strong>申请人：</strong><span class="highlight-name">[债权人姓名/名称]</span>，[身份证号/统一社会信用代码]，住址：[地址]，联系电话：[电话]。</p>
+                <p><strong>被申请人一：</strong><span class="highlight-name">[债务人公司全称]</span>，住所地：[注册地址]。</p>
+                <p><strong>被申请人二：</strong><span class="highlight-name">[未实缴股东姓名]</span>，[身份证号]，住址：[地址]。</p>
+
+                <p class="section-title">申请事项</p>
+                <p class="indent">请求贵院依法冻结/查封/扣押被申请人名下价值人民币 <span class="highlight-amount">[金额]</span> 元的财产。</p>
+
+                <p class="section-title">事实与理由</p>
+                <p class="indent">[说明申请财产保全的紧迫性和必要性：包括公司存在转移财产的风险、股东可能处置个人财产等情况]</p>
+                <p class="indent">申请人愿提供相应担保。依据《中华人民共和国民事诉讼法》第一百零三条之规定，特向贵院提出申请。</p>
+
+                <div class="signature-block">
+                    <p>此致</p>
+                    <p><strong>[管辖法院名称]</strong></p>
+                    <p style="margin-top:48px;">申请人：______________</p>
+                    <p style="margin-top:16px;">2026年   月   日</p>
+                </div>
+            `,
+        };
+
+        // Guide card content for each doc type
+        function buildDocGuide(type) {
+            const profile = lastCaseProfile || {};
+            const debtor = profile.debtor_company || '待补充';
+            const amount = profile.debt_amount || '待补充';
+            const gaps = profile.missing_evidence || [];
+
+            const purposes = {
+                complaint: '提交给人民法院，用于起诉债务人公司和未实缴股东，要求股东在未出资范围内承担补充赔偿责任。',
+                support: '提交给人民检察院，申请检察机关对您的案件支持起诉，降低个人维权难度。',
+                evidence_list: '整理并列出案件涉及的全部证据，明确已有证据和缺失证据，为诉讼做准备。',
+                preservation: '提交给人民法院，申请冻结或查封对方财产，防止对方转移资产导致判决无法执行。',
+            };
+
+            const checkItems = {
+                complaint: '原告/被告身份信息、债务金额、利息计算方式、管辖法院是否正确。',
+                support: '申请人信息、案件基本事实、申请支持起诉的理由是否充分。',
+                evidence_list: '证据名称是否准确、证明目的是否清楚、缺失证据是否已被识别。',
+                preservation: '保全金额是否合理、担保方式是否可行、是否有财产线索。',
+            };
+
+            const gapText = gaps.length
+                ? gaps.slice(0, 3).map(g => `<li>${escapeHtml(g)}</li>`).join('')
+                : '<li>目前无明显缺口，但仍需核对原件、签名、日期和联系方式。</li>';
+
+            return `
+                <p><strong style="color:#e5e7eb;">用途：</strong>${purposes[type] || '用于维权。'}</p>
+                <p><strong style="color:#e5e7eb;">已识别关键信息：</strong>债务人 <strong>${escapeHtml(debtor)}</strong>，金额 <strong>${escapeHtml(amount)}</strong>。</p>
+                <p><strong style="color:#e5e7eb;">签字前重点核对：</strong>${checkItems[type] || '主体信息、金额、日期。'}</p>
+                <p><strong style="color:#e5e7eb;">还建议补充：</strong></p>
+                <ol style="padding-left:1.2em;list-style:decimal;">${gapText}</ol>
+                <p><strong style="color:#e5e7eb;">下一步：</strong>核对内容无误后导出，签字/盖章，按法院或检察院要求提交。</p>
+            `;
+        }
+
+        // ===== STATE =====
         let currentScenario = "unknown";
         let chatHistory = [];
         let currentSources = [];
-        let docHtmlContent = "";
+        let lastCaseProfile = null;
 
-        // ==================== View Switching ====================
+        // ===== VIEW SWITCHING =====
         function switchView(view) {
-            const ids = ['view-landing', 'view-chat', 'view-doc', 'view-admin'];
-            ids.forEach(id => {
+            ['view-landing', 'view-chat', 'view-doc', 'view-admin'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.style.display = 'none';
             });
+            const map = { landing: 'view-landing', chat: 'view-chat', doc: 'view-doc', admin: 'view-admin' };
+            const target = document.getElementById(map[view] || 'view-landing');
+            if (target) target.style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'instant' });
 
-            const viewMap = {
-                'landing': 'view-landing',
-                'chat': 'view-chat',
-                'doc': 'view-doc',
-                'admin': 'view-admin',
-            };
-
-            const target = viewMap[view] || 'view-landing';
-            const el = document.getElementById(target);
-            if (el) el.style.display = 'block';
-            window.scrollTo(0, 0);
-
-            // Update nav
-            document.querySelectorAll('#nav-buttons button').forEach(b => {
-                b.classList.remove('text-white', 'bg-white/10');
-            });
-            const navBtn = document.getElementById(`nav-${view}`);
-            if (navBtn) navBtn.classList.add('text-white', 'bg-white/10');
+            document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+            const nav = document.getElementById(`nav-${view}`);
+            if (nav) nav.classList.add('active');
 
             if (view === 'landing') renderScenarios();
             if (view === 'admin') refreshAdmin();
+            if (view === 'doc') initDocView();
         }
 
-        // ==================== Scenario Cards ====================
+        // ===== LANDING =====
         function renderScenarios() {
             const grid = document.getElementById('scenario-grid');
             if (!grid) return;
-
             grid.innerHTML = Object.entries(SCENARIOS).map(([id, s]) => `
-                <div class="card ${s.main ? 'card-main' : ''} p-5 cursor-pointer" onclick="selectScenario('${id}')">
+                <div class="scenario-card ${s.primary ? 'primary' : ''}" onclick="selectScenario('${id}')">
                     <div class="flex items-start gap-4">
-                        <span class="text-3xl">${s.icon}</span>
-                        <div class="flex-1">
+                        <span class="text-2xl flex-shrink-0">${s.icon}</span>
+                        <div>
                             <div class="flex items-center gap-2 mb-1">
-                                <h3 class="font-bold text-white text-sm">${s.title}</h3>
-                                ${s.main ? '<span class="tag tag-legal text-xs">主线</span>' : ''}
+                                <h3 class="font-semibold text-white text-sm">${s.title}</h3>
+                                ${s.primary ? '<span class="tag tag-gold" style="font-size:10px;">主线</span>' : ''}
                             </div>
-                            <p class="text-xs text-slate-400">${s.desc}</p>
+                            <p class="text-xs" style="color:var(--text3);">${s.desc}</p>
                         </div>
                     </div>
                 </div>
@@ -491,58 +1029,49 @@
             updateScenarioBadge(scenarioId);
             switchView('chat');
 
-            // Add system context message
             const chatEl = document.getElementById('chat-messages');
             const emptyEl = document.getElementById('chat-empty');
             if (emptyEl) emptyEl.style.display = 'none';
+            chatEl.innerHTML = '';
+            chatHistory = [];
 
-            const div = document.createElement('div');
-            div.className = 'mb-4 text-center';
-            div.innerHTML =
-                `<span class="tag tag-legal text-sm px-4 py-1.5">已选择：${s.icon} ${s.title}</span>`;
-            chatEl.appendChild(div);
-
-            // Auto-send a starter query
-            const starters = {
-                "1": "我想追讨公司欠我的债务，但公司说没钱，我想追究未实缴股东的责任",
-                "2": "请帮我判断我的情况能不能主张股东出资加速到期",
-                "3": "债务发生后，公司延长了股东的出资期限，我该怎么办",
-                "4": "我怀疑公司股东出资后又把钱转走了，怎么证明",
-                "5": "公司减资后我的债权无法清偿，请问有什么办法",
-                "6": "股东把股权转让给了一个没钱的人，我还能追他吗",
-                "7": "我不确定我的情况属于哪种类型，请帮我初步判断一下",
-            };
-
-            setTimeout(() => {
-                document.getElementById('chat-input').value = starters[scenarioId] || "";
-                sendMessage();
-            }, 300);
+            // AI 发欢迎语
+            appendMessage('ai', s.welcome);
+            chatHistory.push({ role: "assistant", content: s.welcome });
+            document.getElementById('chat-input').focus();
+            updateSendBtn();
         }
 
         function quickStart() {
             currentScenario = "7";
             updateScenarioBadge("7");
             switchView('chat');
-            setTimeout(() => {
-                document.getElementById('chat-input').value = "请帮我分析我的债权情况";
-                sendMessage();
-            }, 300);
+            const chatEl = document.getElementById('chat-messages');
+            const emptyEl = document.getElementById('chat-empty');
+            if (emptyEl) emptyEl.style.display = 'none';
+            chatEl.innerHTML = '';
+            chatHistory = [];
+            const welcome = SCENARIOS["7"].welcome;
+            appendMessage('ai', welcome);
+            chatHistory.push({ role: "assistant", content: welcome });
+            document.getElementById('chat-input').focus();
+            updateSendBtn();
         }
 
-        function updateScenarioBadge(scenarioId) {
+        function updateScenarioBadge(id) {
             const badge = document.getElementById('chat-scenario-badge');
             if (!badge) return;
-            const s = SCENARIOS[scenarioId];
+            const s = SCENARIOS[id];
             if (s) {
-                badge.textContent = `${s.icon} 场景${scenarioId}：${s.title}`;
-                badge.className = s.main ? 'tag tag-legal text-sm px-4 py-1.5' :
-                    'tag tag-finance text-sm px-4 py-1.5';
+                badge.textContent = `${s.icon} 场景${id}`;
+                badge.className = s.primary ? 'tag tag-gold' : 'tag tag-slate';
             } else {
                 badge.textContent = '通用法律咨询';
+                badge.className = 'tag tag-slate';
             }
         }
 
-        // ==================== Voice Input (Fake) ====================
+        // ===== VOICE (FAKE) =====
         function fakeVoiceInput() {
             const input = document.getElementById('chat-input');
             const presets = [
@@ -551,19 +1080,23 @@
                 "我有公司的工商信息，想让你帮我看看股东出资情况是否正常。",
                 "债务人公司正在减资，我的债权会不会受影响？",
             ];
-            const preset = presets[Math.floor(Math.random() * presets.length)];
-            input.value = preset;
-            input.style.height = 'auto';
-            input.style.height = input.scrollHeight + 'px';
+            input.value = presets[Math.floor(Math.random() * presets.length)];
             input.focus();
-
-            // Brief highlight animation
-            input.style.transition = 'all 0.15s';
-            input.style.borderColor = '#38bdf8';
-            setTimeout(() => { input.style.borderColor = ''; }, 500);
+            updateSendBtn();
         }
 
-        // ==================== Chat ====================
+        function updateSendBtn() {
+            const btn = document.getElementById('send-btn');
+            const input = document.getElementById('chat-input');
+            if (btn) btn.disabled = !input.value.trim();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const input = document.getElementById('chat-input');
+            if (input) input.addEventListener('input', updateSendBtn);
+        });
+
+        // ===== CHAT =====
         async function sendMessage() {
             const input = document.getElementById('chat-input');
             const query = input.value.trim();
@@ -572,26 +1105,24 @@
             const emptyEl = document.getElementById('chat-empty');
             if (emptyEl) emptyEl.style.display = 'none';
 
-            // Render user message
             appendMessage('user', query);
             input.value = '';
-            input.style.height = 'auto';
+            updateSendBtn();
             chatHistory.push({ role: "user", content: query });
 
-            // Render AI placeholder
             const aiDiv = appendMessage('ai', '');
             const contentDiv = aiDiv.querySelector('.ai-content');
             const reasoningDiv = aiDiv.querySelector('.ai-reasoning');
 
             const sendBtn = document.getElementById('send-btn');
-            sendBtn.disabled = true;
+            if (sendBtn) sendBtn.disabled = true;
 
             try {
                 const response = await fetch(`${API_BASE}/api/chat`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        query: query,
+                        query,
                         stream: true,
                         history: chatHistory.slice(0, -1),
                         scenario: currentScenario,
@@ -616,266 +1147,183 @@
                         if (!line.startsWith('data: ')) continue;
                         const jsonStr = line.slice(6);
                         if (jsonStr === '[DONE]') continue;
-
                         try {
                             const data = JSON.parse(jsonStr);
                             if (data.type === 'meta') {
                                 if (data.sources) currentSources = data.sources;
+                                if (data.case_profile) lastCaseProfile = data.case_profile;
                                 updateEvidencePanel(data);
                             } else if (data.type === 'reasoning') {
                                 fullReasoning += data.content;
-                                if (reasoningDiv) reasoningDiv.innerHTML = marked.parse(
-                                    '<details><summary>思考过程</summary>' + data.content + '</details>');
+                                if (reasoningDiv && fullReasoning.length < 2000) {
+                                    reasoningDiv.innerHTML =
+                                        `<details class="cursor-pointer"><summary class="text-xs" style="color:var(--text3);">思考过程</summary><p class="text-xs mt-1" style="color:var(--text3);">${escapeHtml(fullReasoning)}</p></details>`;
+                                }
                             } else if (data.type === 'chunk') {
                                 fullContent += data.content;
                                 if (contentDiv) contentDiv.innerHTML = marked.parse(fullContent);
                                 scrollChat();
                                 updateScoreFromContent(fullContent);
                             }
-                        } catch (e) { /* skip partial JSON */ }
+                        } catch (e) { /* partial JSON */ }
                     }
                 }
-
                 chatHistory.push({ role: "assistant", content: fullContent });
-
             } catch (e) {
                 if (contentDiv) contentDiv.innerHTML =
-                    `<p class="text-red-400">网络错误：${e.message}。请检查后端是否运行在 ${API_BASE}</p>`;
+                    `<p style="color:#f87171;">网络错误：${escapeHtml(e.message)}</p><p class="text-xs mt-2" style="color:var(--text3);">请确认后端运行在 ${API_BASE}</p>`;
             }
 
-            sendBtn.disabled = false;
+            if (sendBtn) sendBtn.disabled = false;
             scrollChat();
         }
 
         function appendMessage(role, text) {
             const container = document.getElementById('chat-messages');
             const div = document.createElement('div');
-            div.className = 'mb-5';
-
+            div.className = 'mb-8';
             if (role === 'user') {
                 div.innerHTML = `
                     <div class="flex justify-end">
-                        <div class="max-w-[85%] glass px-4 py-2.5 rounded-2xl rounded-br-md">
-                            <p class="text-sm text-white whitespace-pre-wrap">${escapeHtml(text)}</p>
+                        <div class="max-w-[85%] px-5 py-3 rounded-2xl rounded-br-md" style="background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.12);">
+                            <p class="text-sm text-white leading-relaxed whitespace-pre-wrap">${escapeHtml(text)}</p>
                         </div>
                     </div>`;
             } else {
                 div.innerHTML = `
-                    <div class="flex gap-3">
-                        <span class="text-xl flex-shrink-0 mt-1">🛡️</span>
+                    <div class="flex gap-4">
+                        <span class="text-2xl flex-shrink-0 select-none" style="margin-top:2px;">🛡</span>
                         <div class="flex-1 min-w-0">
-                            <p class="text-xs text-slate-500 mb-1">Justitia · AI 法律顾问</p>
-                            <div class="ai-reasoning text-xs text-slate-500"></div>
+                            <p class="text-xs mb-2 font-medium" style="color:var(--gold-dim);">Justitia · AI 法律顾问</p>
+                            <div class="ai-reasoning"></div>
                             <div class="ai-content markdown-body"></div>
                         </div>
                     </div>`;
                 if (text) {
-                    const contentDiv = div.querySelector('.ai-content');
-                    if (contentDiv) contentDiv.innerHTML = marked.parse(text);
+                    const cd = div.querySelector('.ai-content');
+                    if (cd) cd.innerHTML = marked.parse(text);
                 }
             }
-
             container.appendChild(div);
             scrollChat();
             return div;
         }
 
         function scrollChat() {
-            const container = document.getElementById('chat-messages');
-            if (container) {
-                container.scrollTop = container.scrollHeight;
-            }
+            const el = document.getElementById('chat-messages');
+            if (el) el.scrollTop = el.scrollHeight;
         }
 
-        // ==================== Evidence Panel ====================
+        // ===== EVIDENCE PANEL =====
         function updateEvidencePanel(meta) {
             const panel = document.getElementById('evidence-content');
             if (!panel) return;
-
             let html = '';
-            if (meta.sources && meta.sources.length > 0) {
-                html += '<p class="text-white font-semibold mb-1">法律参考：</p>';
+            if (meta.sources?.length) {
+                html += '<p class="font-semibold text-white mb-2 text-xs">法律参考</p>';
                 meta.sources.slice(0, 3).forEach(s => {
                     html +=
-                        `<p class="text-xs mb-1"><span class="tag tag-legal">${escapeHtml(s.filename)}</span></p>`;
+                        `<p class="text-xs mb-1.5"><span class="tag tag-slate" style="font-size:10px;">${escapeHtml(s.filename)}</span></p>`;
                 });
             }
-            if (meta.finance && meta.finance.sql) {
-                html += '<p class="text-white font-semibold mt-3 mb-1">财务查询：</p>';
+            if (meta.finance?.sql) {
+                html += '<p class="font-semibold text-white mt-4 mb-2 text-xs">财务查询</p>';
                 html +=
-                    `<p class="text-xs font-mono text-green-400 break-all">${escapeHtml(meta.finance.sql.substring(0, 100))}</p>`;
+                    `<p class="text-xs font-mono break-all" style="color:#4ade80;">${escapeHtml(meta.finance.sql.substring(0, 100))}</p>`;
             }
-            if (!html) html = '<p class="text-slate-500">等待更多信息...</p>';
+            if (!html) html = '<p style="color:var(--text3);">等待更多信息…</p>';
             panel.innerHTML = html;
         }
 
         function updateScoreFromContent(content) {
-            const scoreMatch = content.match(/可行性评分[：:]\s*(\d{1,3})\s*分?/);
-            if (scoreMatch) {
-                const score = parseInt(scoreMatch[1]);
-                updateScoreRing(score);
-            }
+            const m = content.match(/可行性评分[：:]\s*(\d{1,3})\s*分?/);
+            if (m) updateScoreRing(parseInt(m[1]));
         }
 
         function updateScoreRing(score) {
             const ring = document.getElementById('score-ring');
             if (!ring) return;
             ring.textContent = score;
-            ring.style.borderColor = score >= 70 ? '#22c55e' : score >= 40 ? '#f59e0b' : '#ef4444';
-            ring.style.color = score >= 70 ? '#22c55e' : score >= 40 ? '#f59e0b' : '#ef4444';
+            const c = score >= 70 ? '#4ade80' : score >= 40 ? '#fbbf24' : '#f87171';
+            ring.style.borderColor = c;
+            ring.style.color = c;
         }
 
-        // ==================== File Upload ====================
+        // ===== FILE UPLOAD =====
         async function handleFileUpload(input) {
             const files = input.files;
             if (!files.length) return;
-
             const emptyEl = document.getElementById('chat-empty');
             if (emptyEl) emptyEl.style.display = 'none';
-
             for (const file of files) {
-                appendMessage('user', `📎 上传文件：${file.name}`);
-
+                appendMessage('user', `📎 ${file.name}`);
                 const formData = new FormData();
                 formData.append('file', file);
-
                 try {
-                    const resp = await fetch(`${API_BASE}/api/upload`, {
-                        method: 'POST',
-                        body: formData,
-                    });
+                    const resp = await fetch(`${API_BASE}/api/upload`, { method: 'POST', body: formData });
                     const data = await resp.json();
-
                     if (data.text) {
-                        const preview = data.text.length > 500 ? data.text.substring(0, 500) + '...' : data.text;
-                        const aiDiv = appendMessage('ai', '');
-                        const contentDiv = aiDiv.querySelector('.ai-content');
-                        if (contentDiv) contentDiv.innerHTML = marked.parse(
-                            `**文件识别结果** (${data.engine || 'OCR'})\n\n\`\`\`\n${preview}\n\`\`\`\n\n已自动提取以上文本。您可以基于这些内容向我提问。`
-                        );
-
+                        const preview = data.text.length > 400 ? data.text.substring(0, 400) + '...' : data
+                            .text;
+                        appendMessage('ai',
+                            `**文件识别结果** (${data.engine || 'OCR'})\n\n\`\`\`\n${preview}\n\`\`\`\n\n已提取文本，您可以基于这些内容继续提问。`
+                            );
                         chatHistory.push({ role: "user", content: `[上传文件: ${file.name}]` });
-                        chatHistory.push({
-                            role: "assistant",
-                            content: `文件识别结果：\n${data.text}`
-                        });
-
-                        // Auto-send OCR text for analysis
-                        if (data.text.length > 20) {
-                            document.getElementById('chat-input').value =
-                                `基于以上文件内容，请帮我分析维权路径`;
-                            sendMessage();
-                        }
+                        chatHistory.push({ role: "assistant", content: `文件识别结果：\n${data.text}` });
                     }
                 } catch (e) {
-                    appendMessage('ai', `文件上传失败：${e.message}`);
+                    appendMessage('ai', `文件上传失败：${escapeHtml(e.message)}`);
                 }
             }
-
             input.value = '';
         }
 
-        // ==================== Document Export ====================
-        function generateDoc(type) {
-            const templates = {
-                complaint: `# 民事起诉状
+        // ===== DOCUMENT WORKBENCH =====
+        function initDocView() {
+            const checked = document.querySelector('input[name=doc_type]:checked');
+            if (checked) switchTemplate(checked.value);
+        }
 
-**原告：** [债权人姓名/名称]，[身份证号/统一社会信用代码]，住址/住所地：[地址]，联系电话：[电话]。
+        function switchTemplate(type) {
+            const editor = document.getElementById('editable-doc');
+            if (!editor || !docTemplates[type]) return;
 
-**被告一：** [债务人公司全称]，住所地：[注册地址]，统一社会信用代码：[代码]。
-法定代表人：[姓名]，联系电话：[电话]。
+            // Update variables display
+            const profile = lastCaseProfile || {};
+            document.getElementById('var-creditor').textContent = profile.creditor_name || '待提取';
+            document.getElementById('var-debtor').textContent = profile.debtor_company || '待提取';
+            document.getElementById('var-shareholder').textContent = profile.shareholder_info || '待提取';
+            document.getElementById('var-amount').textContent = profile.debt_amount || '待提取';
+            document.getElementById('var-capital').textContent = profile.subscription_capital || '待提取';
 
-**被告二：** [未实缴股东姓名]，[身份证号]，住址：[地址]。
+            // Update guide card
+            const guide = document.getElementById('doc-guide-card');
+            if (guide) guide.innerHTML = buildDocGuide(type);
 
-## 诉讼请求
+            // Render template with fade
+            editor.style.opacity = '0';
+            editor.style.transition = 'opacity 0.15s';
+            setTimeout(() => {
+                editor.innerHTML = docTemplates[type];
+                editor.style.opacity = '1';
+            }, 150);
+        }
 
-1. 判令被告一立即向原告偿还债务本金人民币 [金额] 元及逾期利息（以 [金额] 元为基数，按 [利率] 自 [日期] 起计算至实际清偿之日止）；
-2. 判令被告二在其未出资范围内对被告一的上述债务承担补充赔偿责任；
-3. 判令二被告承担本案全部诉讼费用。
-
-## 事实与理由
-
-[根据实际案情填写，包括债务形成过程、公司不能清偿的事实、股东未实缴出资的情况等]
-
-依据《中华人民共和国公司法》第五十四条、《全国法院民商事审判工作会议纪要》（九民纪要）第6条之规定，特向贵院提起诉讼，请求依法支持原告诉讼请求。
-
-此致
-[管辖法院名称]
-
-具状人：
-日期：2026年  月  日`,
-
-                support: `# 支持起诉申请书
-
-**申请人：** [债权人姓名/名称]
-
-**申请事项：**
-请求检察机关对申请人与[债务人公司]及[股东]之间的股东出资纠纷一案支持起诉。
-
-## 事实与理由
-
-[说明案件基本情况、申请人维权困难的原因、申请支持起诉的必要性]
-
-依据《中华人民共和国民事诉讼法》第十六条之规定，特向贵院提出申请。
-
-此致
-[检察机关名称]
-
-申请人：
-日期：2026年  月  日`,
-
-                evidence_list: `# 证据清单
-
-| 序号 | 证据名称 | 证明目的 | 状态 |
-|------|----------|----------|------|
-| 1 | 债权凭证（合同/欠条/判决书） | 证明债权债务关系存在 | |
-| 2 | 公司工商登记信息 | 证明股东认缴/实缴出资情况 | |
-| 3 | 公司财务报告/审计报告 | 证明公司不能清偿到期债务 | |
-| 4 | 催收记录 | 证明已向公司主张权利 | |
-| 5 | 股东出资情况查询结果 | 证明股东存在未实缴出资 | |
-| 6 | 公司银行流水 | 证明公司财产状况/抽逃出资 | |
-
-*根据案件实际情况勾选已有证据，标注缺失证据。*`,
-
-                preservation: `# 财产保全申请书
-
-**申请人：** [债权人姓名/名称]
-
-**被申请人一：** [债务人公司]
-
-**被申请人二：** [未实缴股东]
-
-## 申请事项
-
-请求贵院依法冻结/查封/扣押被申请人名下价值人民币 [金额] 元的财产。
-
-## 事实与理由
-
-[说明申请财产保全的紧迫性和必要性，包括债务人有转移财产风险等情况]
-
-申请人愿提供相应担保。依据《中华人民共和国民事诉讼法》第一百零三条之规定，特向贵院提出申请。
-
-此致
-[管辖法院名称]
-
-申请人：
-日期：2026年  月  日`,
-            };
-
-            docHtmlContent = templates[type] || '';
-            const preview = document.getElementById('doc-preview');
-            if (preview) preview.innerHTML = marked.parse(docHtmlContent);
-            const exportBtn = document.getElementById('export-btn');
-            if (exportBtn) exportBtn.disabled = !docHtmlContent;
+        function refreshTemplate() {
+            const checked = document.querySelector('input[name=doc_type]:checked');
+            if (checked) switchTemplate(checked.value);
         }
 
         async function exportDocx() {
-            if (!docHtmlContent) return;
+            const editor = document.getElementById('editable-doc');
+            const html = editor.innerHTML.trim();
+            if (!html) { alert('文书内容为空，无法导出。'); return; }
+
             try {
                 const resp = await fetch(`${API_BASE}/api/export-docx`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ html_content: docHtmlContent, filename: "债优盾法律文书" }),
+                    body: JSON.stringify({ html_content: html, filename: "债优盾法律文书" }),
                 });
                 if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
                 const blob = await resp.blob();
@@ -886,68 +1334,61 @@
                 a.click();
                 URL.revokeObjectURL(url);
             } catch (e) {
-                alert(`导出失败：${e.message}`);
+                // Fallback: download as .doc
+                const wordHtml =
+                    `<!doctype html><html><head><meta charset="utf-8"><title>债优盾法律文书</title></head><body>${html}</body></html>`;
+                const blob = new Blob([wordHtml], { type: 'application/msword;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = '债优盾法律文书.doc';
+                a.click();
+                URL.revokeObjectURL(url);
+                console.warn('DOCX export failed, fallback to .doc:', e);
             }
         }
 
-        // ==================== Admin ====================
+        // ===== ADMIN =====
         async function refreshAdmin() {
             try {
                 const resp = await fetch(`${API_BASE}/api/admin/events?password=admin888`);
                 const data = await resp.json();
                 const events = data.events || [];
-
                 document.getElementById('stat-total').textContent = data.total || events.length;
-                document.getElementById('stat-scored').textContent = events.filter(e => e.type === 'chat')
-                    .length;
+                document.getElementById('stat-scored').textContent = events.filter(e => e.type === 'chat').length;
                 document.getElementById('stat-files').textContent = events.filter(e => e.type === 'file_upload')
                     .length;
                 document.getElementById('stat-docs').textContent = events.filter(e => e.type === 'doc_export')
                     .length;
-
                 const tbody = document.getElementById('admin-events');
                 if (tbody) {
                     tbody.innerHTML = events.slice(-20).reverse().map(e => `
-                        <tr class="border-b border-white/5 hover:bg-white/5">
-                            <td class="px-3 py-2 text-xs text-slate-500">${(e.timestamp || '').substring(11, 19)}</td>
-                            <td class="px-3 py-2"><span class="tag ${e.type === 'chat' ? 'tag-legal' : 'tag-finance'}">${e.type || ''}</span></td>
-                            <td class="px-3 py-2 text-xs">${(e.data?.scenario || '-')}</td>
-                            <td class="px-3 py-2 text-xs text-slate-400 truncate max-w-[200px]">${escapeHtml((e.data?.query || e.data?.filename || JSON.stringify(e.data || {}).substring(0, 60)))}</td>
+                        <tr class="border-b hover:bg-white/[0.02]" style="border-color:var(--border);">
+                            <td class="py-2.5 px-3" style="color:var(--text3);">${(e.timestamp || '').substring(11, 19)}</td>
+                            <td class="py-2.5 px-3"><span class="tag ${e.type==='chat'?'tag-gold':'tag-green'}">${e.type||''}</span></td>
+                            <td class="py-2.5 px-3">${e.data?.scenario||'-'}</td>
+                            <td class="py-2.5 px-3 truncate max-w-[240px]" style="color:var(--text2);">${escapeHtml((e.data?.query || e.data?.filename || JSON.stringify(e.data||{}).substring(0,60)))}</td>
                         </tr>
                     `).join('');
                 }
-            } catch (e) {
-                console.error('Admin refresh failed:', e);
-            }
+            } catch (e) { console.error(e); }
         }
 
-        // ==================== Utilities ====================
-        function escapeHtml(str) {
-            const div = document.createElement('div');
-            div.textContent = str;
-            return div.innerHTML;
+        // ===== UTILS =====
+        function escapeHtml(s) {
+            const d = document.createElement('div');
+            d.textContent = s;
+            return d.innerHTML;
         }
 
-        function autoResize(el) {
-            el.style.height = 'auto';
-            el.style.height = Math.min(el.scrollHeight, 200) + 'px';
-        }
-
-        // ==================== Init ====================
+        // ===== INIT =====
         marked.setOptions({ breaks: true, gfm: true });
-
-        // Set initial view
         switchView('landing');
-
-        // Handle ?scenario=N URL param
         const urlScenario = new URLSearchParams(window.location.search).get('scenario');
-        if (urlScenario && SCENARIOS[urlScenario]) {
-            selectScenario(urlScenario);
-        }
+        if (urlScenario && SCENARIOS[urlScenario]) selectScenario(urlScenario);
 
-        console.log('🛡️ Aegis 债优盾 — 中小债权人维权智能平台');
+        console.log('🛡 Aegis 债优盾 · 中小债权人维权智能平台');
         console.log(`   API: ${API_BASE}`);
-        console.log('   就绪。');
     </script>
 </body>
 

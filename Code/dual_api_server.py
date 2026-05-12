@@ -668,11 +668,11 @@ async def chat_endpoint(request: ChatRequest):
         )
         answer = response.choices[0].message.content
         save_chat_log(request.query, "", answer, source_items, request.scenario)
-        return {"answer": answer, "sources": source_items}
+        return {"answer": answer, "sources": source_items, "case_profile": case_profile}
 
     # Streaming
     async def generate_stream():
-        meta = {"type": "meta", "sources": source_items}
+        meta = {"type": "meta", "sources": source_items, "case_profile": case_profile}
         if sql_meta:
             meta["finance"] = sql_meta
         yield f"data: {json.dumps(meta, ensure_ascii=False)}\n\n"
