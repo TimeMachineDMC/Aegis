@@ -24,6 +24,9 @@
             --gold: #c9a84c;
             --gold-light: #e2c87f;
             --gold-dim: #8b7536;
+            --green: #34d399;
+            --red: #f87171;
+            --amber: #fbbf24;
         }
 
         * {
@@ -67,7 +70,17 @@
             }
         }
 
-        /* ====== Glass surfaces ====== */
+        @keyframes pulse-dot {
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 currentColor;
+            }
+            50% {
+                box-shadow: 0 0 0 6px transparent;
+            }
+        }
+
+        /* ====== Glass ====== */
         .glass {
             background: rgba(17, 24, 39, 0.7);
             backdrop-filter: blur(24px) saturate(120%);
@@ -82,6 +95,14 @@
             -webkit-backdrop-filter: blur(20px) saturate(120%);
             border: 1px solid var(--border);
             border-radius: 16px;
+        }
+
+        .glass-dark {
+            background: rgba(9, 12, 20, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 14px;
         }
 
         /* ====== Scenario Cards ====== */
@@ -184,6 +205,17 @@
             background: rgba(255, 255, 255, 0.03);
         }
 
+        .btn-panel {
+            width: 100%;
+            text-align: center;
+            font-size: 12px;
+            padding: 9px;
+            border-radius: 9px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
         /* ====== Tags ====== */
         .tag {
             display: inline-flex;
@@ -218,6 +250,38 @@
             border: 1px solid rgba(248, 113, 113, 0.12);
         }
 
+        /* ====== Evidence Dots ====== */
+        .ev-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 3px;
+        }
+
+        .ev-dot.ok {
+            background: var(--green);
+            box-shadow: 0 0 6px rgba(52, 211, 153, 0.5);
+        }
+
+        .ev-dot.partial {
+            background: var(--amber);
+            box-shadow: 0 0 6px rgba(251, 191, 36, 0.4);
+            animation: pulse-dot 2s infinite;
+            color: var(--amber);
+        }
+
+        .ev-dot.missing {
+            background: #ef4444;
+            box-shadow: 0 0 6px rgba(239, 68, 68, 0.4);
+            animation: pulse-dot 2s infinite;
+            color: #ef4444;
+        }
+
+        .ev-dot.none {
+            background: #374151;
+        }
+
         /* ====== Chat ====== */
         .chat-scroll {
             height: calc(100vh - 200px);
@@ -228,7 +292,7 @@
 
         .markdown-body {
             background: transparent !important;
-            font-size: 15px !important;
+            font-size: 14.5px !important;
             line-height: 1.9 !important;
             color: #d1d5db !important;
             font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Noto Serif SC', serif !important;
@@ -260,8 +324,6 @@
         .markdown-body code {
             color: #e2c87f;
             background: rgba(201, 168, 76, 0.08);
-            padding: 2px 6px;
-            border-radius: 4px;
         }
 
         /* ====== Input ====== */
@@ -279,7 +341,6 @@
             box-shadow: 0 0 0 4px rgba(201, 168, 76, 0.04);
         }
 
-        /* ====== Scrollbar ====== */
         ::-webkit-scrollbar {
             width: 5px;
         }
@@ -291,7 +352,6 @@
             border-radius: 10px;
         }
 
-        /* ====== Divider ====== */
         .hr-gold {
             height: 1px;
             border: none;
@@ -300,35 +360,35 @@
 
         /* ====== Score Ring ====== */
         .score-ring {
-            width: 60px;
-            height: 60px;
+            width: 56px;
+            height: 56px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 17px;
+            font-size: 16px;
             font-weight: 700;
             border: 3px solid;
             transition: all 0.5s ease;
             font-variant-numeric: tabular-nums;
         }
 
-        /* ====== Status Dot ====== */
         .status-dot {
             width: 7px;
             height: 7px;
             border-radius: 50%;
-            background: #34d399;
+            background: var(--green);
             box-shadow: 0 0 8px rgba(52, 211, 153, 0.4);
         }
 
-        /* ====== Document Editor ====== */
+        /* ====== Document ====== */
         .doc-paper {
             background: #fdfdfc;
             color: #1a1a1a;
             box-shadow: 0 2px 40px rgba(0, 0, 0, 0.3);
             border-radius: 3px;
             min-height: 60vh;
+            position: relative;
         }
 
         .doc-paper h1 {
@@ -405,7 +465,7 @@
             accent-color: var(--gold);
         }
 
-        /* ====== Hero Shield ====== */
+        /* ====== Landing ====== */
         .hero-shield {
             font-size: 56px;
             filter: drop-shadow(0 4px 24px rgba(201, 168, 76, 0.2));
@@ -424,6 +484,25 @@
 
         .shield-glow {
             animation: shieldPulse 3s ease-in-out infinite;
+        }
+
+        /* Timeline nodes */
+        .tl-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--gold);
+            flex-shrink: 0;
+            margin-top: 3px;
+        }
+
+        .tl-line {
+            width: 2px;
+            background: rgba(201, 168, 76, 0.2);
+            height: 100%;
+            position: absolute;
+            left: 3px;
+            top: 12px;
         }
     </style>
 </head>
@@ -461,38 +540,97 @@
                 帮助债权人追究<strong style="color:var(--gold-light);font-weight:600;">股东责任</strong>，
                 特别是通过<strong style="color:var(--gold-light);font-weight:600;">股东出资义务加速到期</strong>追讨公司债务
             </p>
-
             <hr class="hr-gold my-12">
-
             <h2 class="text-xs font-semibold uppercase tracking-widest mb-8" style="color:var(--text3);">
                 选择维权场景
             </h2>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-left mb-10" id="scenario-grid">
-                <!-- JS 注入 -->
-            </div>
-
-            <button onclick="quickStart()" class="btn-ghost px-8 py-3">
-                不确定场景？直接开始，AI 自动判断
-            </button>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-left mb-10" id="scenario-grid"></div>
+            <button onclick="quickStart()" class="btn-ghost px-8 py-3">不确定场景？直接开始，AI 自动判断</button>
         </div>
     </main>
 
-    <!-- ==================== VIEW: CHAT ==================== -->
+    <!-- ==================== VIEW: CHAT (with Evidence Sidebar) ==================== -->
     <main id="view-chat" class="view-section" style="display:none;">
-        <div class="max-w-3xl mx-auto px-6 pt-4 pb-2 flex items-center gap-3 flex-wrap">
-            <span id="chat-scenario-badge" class="tag tag-slate">通用法律咨询</span>
-            <button onclick="switchView('landing')" class="text-xs underline underline-offset-4 hover:text-white transition"
-                style="color:var(--text3);">切换场景</button>
-            <span class="text-xs ml-auto" style="color:var(--text3);">DeepSeek-V4</span>
-        </div>
+        <div class="max-w-6xl mx-auto flex gap-5 px-6">
+            <!-- === LEFT SIDEBAR: Evidence + Actions === -->
+            <aside class="w-64 flex-shrink-0 hidden lg:block mt-4">
+                <div class="glass-card p-4 sticky" style="top:80px;max-height:calc(100vh - 120px);overflow-y:auto;">
 
-        <div class="max-w-3xl mx-auto px-6">
-            <div class="chat-scroll" id="chat-messages">
-                <div class="py-24 text-center" id="chat-empty" style="color:var(--text3);">
-                    <p class="text-5xl mb-5 select-none">🛡</p>
-                    <p class="text-base font-medium mb-2" style="color:var(--text2);">Aegis 债优盾 · AI 法律顾问</p>
-                    <p class="text-sm">请描述您遇到的债务问题</p>
+                    <!-- Evidence Chain -->
+                    <h3 class="text-xs font-bold uppercase tracking-widest mb-3 pb-2"
+                        style="color:var(--gold-dim);border-bottom:1px solid var(--border);">
+                        📋 证据链状态
+                    </h3>
+                    <ul class="space-y-2.5 text-xs" id="evidence-list">
+                        <li class="flex items-start gap-2" style="color:var(--text3);">
+                            <span class="ev-dot none"></span> 发送案情后自动分析
+                        </li>
+                    </ul>
+
+                    <!-- Next Steps -->
+                    <div class="mt-4 pt-3" style="border-top:1px solid var(--border);">
+                        <h3 class="text-xs font-bold uppercase tracking-widest mb-3" style="color:var(--text3);">
+                            🔔 下一步提示
+                        </h3>
+                        <div class="glass-dark p-3" id="next-steps-panel">
+                            <p class="text-xs" style="color:var(--text3);">发送案情后自动提示该做什么、缺什么材料。</p>
+                        </div>
+                    </div>
+
+                    <!-- Case Timeline -->
+                    <div class="mt-4 pt-3" style="border-top:1px solid var(--border);">
+                        <h3 class="text-xs font-bold uppercase tracking-widest mb-3" style="color:var(--text3);">
+                            ⏱ 案件进度
+                        </h3>
+                        <ol id="case-timeline" class="space-y-3 text-xs" style="color:var(--text3);">
+                            <li>发送案情后自动生成。</li>
+                        </ol>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="mt-5 pt-3 space-y-2" style="border-top:1px solid var(--border);">
+                        <button onclick="requestAIJudgment()"
+                            class="btn-panel bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-transparent hover:border-gold-500/40 transition-colors">
+                            1. 请求 AI 综合研判
+                        </button>
+                        <button onclick="switchView('doc')"
+                            class="btn-panel btn-gold shadow-[0_0_12px_rgba(201,168,76,0.15)]">
+                            2. 确认无误，生成文书 ➔
+                        </button>
+                        <button onclick="showMissingEvidence()"
+                            class="btn-panel text-xs text-zinc-500 hover:text-amber-400 transition-colors">
+                            📎 还缺什么证据？
+                        </button>
+                    </div>
+
+                    <!-- Score -->
+                    <div class="mt-4 pt-3 text-center" style="border-top:1px solid var(--border);">
+                        <p class="text-xs mb-2" style="color:var(--text3);">加速到期可行性</p>
+                        <div class="flex justify-center">
+                            <div class="score-ring" id="score-ring" style="border-color:#374151;color:var(--text3);">--</div>
+                        </div>
+                        <p class="text-xs mt-1" id="score-label" style="color:var(--text3);">等待分析</p>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- === MAIN CHAT AREA === -->
+            <div class="flex-1 min-w-0">
+                <!-- Scenario bar -->
+                <div class="pt-4 pb-2 flex items-center gap-3 flex-wrap">
+                    <span id="chat-scenario-badge" class="tag tag-slate">通用法律咨询</span>
+                    <button onclick="switchView('landing')" class="text-xs underline underline-offset-4 hover:text-white transition"
+                        style="color:var(--text3);">切换场景</button>
+                    <span class="text-xs ml-auto" style="color:var(--text3);">DeepSeek-V4</span>
+                </div>
+
+                <!-- Messages -->
+                <div class="chat-scroll" id="chat-messages">
+                    <div class="py-24 text-center" id="chat-empty" style="color:var(--text3);">
+                        <p class="text-5xl mb-5 select-none">🛡</p>
+                        <p class="text-base font-medium mb-2" style="color:var(--text2);">Aegis 债优盾 · AI 法律顾问</p>
+                        <p class="text-sm">请描述您遇到的债务问题</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -500,54 +638,39 @@
         <!-- Input -->
         <div class="fixed bottom-0 left-0 right-0 z-40 pb-5 pt-3"
             style="background:linear-gradient(transparent, var(--bg) 35%);">
-            <div class="max-w-3xl mx-auto px-6">
-                <div class="input-bar flex items-end gap-2 px-4 py-2.5">
-                    <label class="cursor-pointer p-2 rounded-lg hover:bg-white/5 transition flex-shrink-0"
-                        style="color:var(--text3);" title="上传文件">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-                                d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                        </svg>
-                        <input type="file" id="file-input" accept="image/*,.pdf,.docx,.doc,.txt"
-                            onchange="handleFileUpload(this)" class="hidden" multiple>
-                    </label>
-                    <button onclick="fakeVoiceInput()" class="p-2 rounded-lg hover:bg-white/5 transition flex-shrink-0"
-                        style="color:var(--text3);" title="语音输入">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-                                d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                        </svg>
-                    </button>
-                    <textarea id="chat-input" rows="1"
-                        class="flex-1 bg-transparent border-none outline-none resize-none text-sm py-2 px-1"
-                        style="color:var(--text);" placeholder="描述您的债务问题…"
-                        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
-                    <button onclick="sendMessage()" class="btn-gold px-4 py-2 flex-shrink-0 disabled:opacity-30"
-                        id="send-btn" disabled>
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                d="M5 12h14M12 5l7 7-7 7" />
-                        </svg>
-                    </button>
+            <div class="max-w-6xl mx-auto px-6 flex gap-5">
+                <div class="w-64 flex-shrink-0 hidden lg:block"></div>
+                <div class="flex-1">
+                    <div class="input-bar flex items-end gap-2 px-4 py-2.5">
+                        <label class="cursor-pointer p-2 rounded-lg hover:bg-white/5 transition flex-shrink-0"
+                            style="color:var(--text3);" title="上传文件">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                                    d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                            </svg>
+                            <input type="file" id="file-input" accept="image/*,.pdf,.docx,.doc,.txt"
+                                onchange="handleFileUpload(this)" class="hidden" multiple>
+                        </label>
+                        <button onclick="fakeVoiceInput()" class="p-2 rounded-lg hover:bg-white/5 transition flex-shrink-0"
+                            style="color:var(--text3);" title="语音输入">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                                    d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                            </svg>
+                        </button>
+                        <textarea id="chat-input" rows="1"
+                            class="flex-1 bg-transparent border-none outline-none resize-none text-sm py-2 px-1"
+                            style="color:var(--text);" placeholder="描述您的债务问题…"
+                            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
+                        <button onclick="sendMessage()" class="btn-gold px-4 py-2 flex-shrink-0 disabled:opacity-30"
+                            id="send-btn" disabled>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                    d="M5 12h14M12 5l7 7-7 7" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Evidence Side Panel -->
-        <div id="evidence-panel"
-            class="fixed right-6 top-20 w-60 glass-card p-5 hidden xl:block text-xs overflow-y-auto"
-            style="max-height:calc(100vh - 150px);">
-            <h3 class="text-sm font-semibold mb-3 text-white flex items-center gap-2">
-                <span class="status-dot"></span> 案件画像
-            </h3>
-            <div id="evidence-content" class="space-y-2" style="color:var(--text2);">
-                <p style="color:var(--text3);">发送消息后生成</p>
-            </div>
-            <hr class="hr-gold my-4">
-            <p class="text-xs mb-2" style="color:var(--text3);">加速到期可行性</p>
-            <div class="flex items-center gap-3">
-                <div class="score-ring" id="score-ring" style="border-color:#374151;color:var(--text3);">--</div>
-                <span class="text-xs" style="color:var(--text3);">等待分析</span>
             </div>
         </div>
     </main>
@@ -555,7 +678,6 @@
     <!-- ==================== VIEW: DOCUMENT WORKBENCH ==================== -->
     <main id="view-doc" class="view-section" style="display:none;">
         <div class="max-w-6xl mx-auto px-6 pt-8 pb-24">
-            <!-- Header -->
             <div class="flex items-center justify-between mb-6">
                 <div>
                     <h2 class="text-xl font-bold text-white flex items-center gap-2">📑 法律文书工作台</h2>
@@ -566,65 +688,37 @@
                     <button onclick="exportDocx()" class="btn-gold text-xs">导出 Word</button>
                 </div>
             </div>
-
-            <!-- Layout: Sidebar + Editor -->
             <div class="grid grid-cols-1 lg:grid-cols-4 gap-5">
-                <!-- Sidebar -->
                 <div class="col-span-1 space-y-4">
-                    <!-- Document Type Selector -->
                     <div class="glass-card p-4">
                         <h3 class="text-xs font-bold uppercase tracking-widest mb-3" style="color:var(--gold-dim);">文书类型</h3>
                         <div class="space-y-1">
-                            <label class="radio-label">
-                                <input type="radio" name="doc_type" value="complaint" checked onchange="switchTemplate(this.value)">
-                                民事起诉状（股东出资纠纷）
-                            </label>
-                            <label class="radio-label">
-                                <input type="radio" name="doc_type" value="support" onchange="switchTemplate(this.value)">
-                                检察支持起诉申请书
-                            </label>
-                            <label class="radio-label">
-                                <input type="radio" name="doc_type" value="evidence_list" onchange="switchTemplate(this.value)">
-                                证据清单
-                            </label>
-                            <label class="radio-label">
-                                <input type="radio" name="doc_type" value="preservation" onchange="switchTemplate(this.value)">
-                                财产保全申请书
-                            </label>
+                            <label class="radio-label"><input type="radio" name="doc_type" value="complaint" checked
+                                    onchange="switchTemplate(this.value)">民事起诉状（股东出资纠纷）</label>
+                            <label class="radio-label"><input type="radio" name="doc_type" value="support"
+                                    onchange="switchTemplate(this.value)">检察支持起诉申请书</label>
+                            <label class="radio-label"><input type="radio" name="doc_type" value="evidence_list"
+                                    onchange="switchTemplate(this.value)">证据清单</label>
+                            <label class="radio-label"><input type="radio" name="doc_type" value="preservation"
+                                    onchange="switchTemplate(this.value)">财产保全申请书</label>
                         </div>
                     </div>
-
-                    <!-- Variables Panel -->
                     <div class="glass-card p-4">
                         <h3 class="text-xs font-bold uppercase tracking-widest mb-3" style="color:var(--text3);">AI 提取变量</h3>
                         <div class="space-y-3 text-xs">
-                            <div>
-                                <span class="block mb-1" style="color:var(--text3);">债权人 / 原告</span>
-                                <span class="tag tag-gold" id="var-creditor">待提取</span>
-                            </div>
-                            <div>
-                                <span class="block mb-1" style="color:var(--text3);">债务人公司</span>
-                                <span class="tag tag-slate" id="var-debtor">待提取</span>
-                            </div>
-                            <div>
-                                <span class="block mb-1" style="color:var(--text3);">未实缴股东</span>
-                                <span class="tag tag-slate" id="var-shareholder">待提取</span>
-                            </div>
-                            <div>
-                                <span class="block mb-1" style="color:var(--text3);">涉案金额</span>
-                                <span class="tag tag-red" id="var-amount">待提取</span>
-                            </div>
-                            <div>
-                                <span class="block mb-1" style="color:var(--text3);">认缴出资额</span>
-                                <span class="tag tag-slate" id="var-capital">待提取</span>
-                            </div>
+                            <div><span class="block mb-1" style="color:var(--text3);">债权人 / 原告</span><span class="tag tag-gold"
+                                    id="var-creditor">待提取</span></div>
+                            <div><span class="block mb-1" style="color:var(--text3);">债务人公司</span><span class="tag tag-slate"
+                                    id="var-debtor">待提取</span></div>
+                            <div><span class="block mb-1" style="color:var(--text3);">未实缴股东</span><span class="tag tag-slate"
+                                    id="var-shareholder">待提取</span></div>
+                            <div><span class="block mb-1" style="color:var(--text3);">涉案金额</span><span class="tag tag-red"
+                                    id="var-amount">待提取</span></div>
+                            <div><span class="block mb-1" style="color:var(--text3);">认缴出资额</span><span class="tag tag-slate"
+                                    id="var-capital">待提取</span></div>
                         </div>
-                        <button onclick="refreshTemplate()" class="btn-ghost w-full mt-5 text-xs py-2">
-                            🔄 重新渲染
-                        </button>
+                        <button onclick="refreshTemplate()" class="btn-ghost w-full mt-5 text-xs py-2">🔄 重新渲染</button>
                     </div>
-
-                    <!-- Guide Card -->
                     <div class="glass-card p-4">
                         <h3 class="text-xs font-bold uppercase tracking-widest mb-3" style="color:var(--gold-dim);">白话说明</h3>
                         <div id="doc-guide-card" class="text-xs leading-relaxed space-y-2" style="color:var(--text2);">
@@ -632,19 +726,11 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Editor -->
                 <div class="col-span-1 lg:col-span-3">
-                    <div class="doc-paper p-10 overflow-y-auto" style="max-height:75vh;" id="doc-editor-wrapper">
-                        <div class="absolute top-3 right-3 text-xs font-bold px-3 py-1.5 rounded-md opacity-0 hover:opacity-100 transition-opacity pointer-events-none shadow-sm border"
-                            style="color:#92400e;background:#fef3c7;border-color:#fcd34d;z-index:10;">
-                            ✏️ 点击任意文字即可编辑
-                        </div>
+                    <div class="doc-paper p-10 overflow-y-auto" style="max-height:75vh;">
                         <div id="editable-doc" contenteditable="true"
                             class="focus:outline-none text-[15px] leading-loose font-serif"
-                            style="color:#1a1a1a;min-height:55vh;">
-                            <!-- Template rendered by JS -->
-                        </div>
+                            style="color:#1a1a1a;min-height:55vh;"></div>
                     </div>
                 </div>
             </div>
@@ -662,7 +748,6 @@
                 <div class="flex items-center gap-2"><span class="status-dot"></span><span class="text-xs"
                         style="color:var(--text3);">运行中</span></div>
             </div>
-
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10" id="admin-stats">
                 <div class="glass-card p-5 text-center">
                     <p class="text-2xl font-bold text-white" id="stat-total">--</p>
@@ -681,7 +766,6 @@
                     <p class="text-xs mt-1" style="color:var(--text3);">文书导出</p>
                 </div>
             </div>
-
             <div class="glass-card p-6 overflow-x-auto">
                 <h3 class="font-semibold text-white mb-4 text-sm">事件日志</h3>
                 <table class="w-full text-xs">
@@ -712,13 +796,16 @@
             return window.location.origin;
         })();
 
-        // ===== SCENARIO DATA =====
+        // ===== SCENARIOS =====
         const SCENARIOS = {
             "1": {
                 title: "公司欠钱不还，想追未实缴股东",
                 desc: "债务人无法清偿到期债务，追究未足额出资股东的补充赔偿责任",
                 icon: "🏛",
                 primary: true,
+                evidenceItems: ["债权凭证（合同/欠条/判决书）", "债务人公司工商信息", "股东认缴/实缴出资证明", "催收记录",
+                    "公司不能清偿的证明"
+                ],
                 welcome: `您选择了 **场景一：追未实缴股东**。这是债权人维权中最常见的路径之一。
 
 根据 **《公司法》第54条**，如果公司不能清偿到期债务，已到期债权的债权人有权要求已认缴出资但未届出资期限的股东提前缴纳出资。
@@ -736,6 +823,7 @@
                 desc: "公司已具备破产原因但不申请破产，主张股东出资期限加速到期",
                 icon: "⚖",
                 primary: true,
+                evidenceItems: ["债权凭证", "公司资产负债表/审计报告", "股东出资期限证明", "公司已具备破产原因的证据", "执行终本裁定"],
                 welcome: `您选择了 **场景二：出资加速到期判断**。这是最需要严格法律构成要件审查的路径。
 
 根据 **《公司法》第54条** 和 **九民纪要第6条**，核心判断标准：
@@ -751,6 +839,8 @@
                 desc: "公司对债权人负有债务后，通过决议延长出资期限以逃避债务",
                 icon: "📅",
                 primary: false,
+                evidenceItems: ["债权发生时间证明", "公司延长出资期限的工商变更记录", "债务发生时的公司章程",
+                "股东会关于延长出资期限的决议"],
                 welcome: `您选择了 **场景三：债务发生后延长出资期限**。
 
 九民纪要第6条第(2)项明确规定：公司债务产生后，通过股东会决议延长股东出资期限的，债权人可以主张加速到期。
@@ -762,6 +852,7 @@
                 desc: "股东验资后将出资款项通过虚构交易等方式转出",
                 icon: "💸",
                 primary: false,
+                evidenceItems: ["股东出资验资证明", "资金转出的银行流水", "关联交易合同/凭证", "公司财务账簿/凭证"],
                 welcome: `您选择了 **场景四：抽逃出资**。
 
 根据 **公司法解释三第12条**，抽逃出资的常见形式包括：虚构债权债务转出资金、通过关联交易转出、制作虚假财务报表等。
@@ -773,6 +864,7 @@
                 desc: "公司未依法通知债权人即减资，损害债权人利益",
                 icon: "📉",
                 primary: false,
+                evidenceItems: ["公司减资工商变更记录", "减资公告文件", "未收到减资通知的证明", "债权发生时间证明"],
                 welcome: `您选择了 **场景五：公司减资损害债权**。
 
 根据 **《公司法》第177条**，公司减资时必须通知债权人并公告，否则减资行为对债权人不发生效力。
@@ -784,6 +876,7 @@
                 desc: "未届出资期限的股东将股权转让给无履行能力的主体",
                 icon: "🔄",
                 primary: false,
+                evidenceItems: ["股权转让协议/工商变更", "受让方资信状况证明", "转让时出资期限状态", "公司章程"],
                 welcome: `您选择了 **场景六：股权转让逃避出资**。
 
 根据 **《公司法》第88条**，未届出资期限的股东转让股权后，受让人承担出资义务；受让人不能履行的，转让人承担补充责任。
@@ -795,6 +888,7 @@
                 desc: "系统将通过对话引导梳理案情，自动匹配最合适的维权路径",
                 icon: "🤔",
                 primary: false,
+                evidenceItems: ["请先描述具体案情再判断所需证据"],
                 welcome: `没关系，我来帮您梳理。
 
 请尽可能详细地描述您的情况：
@@ -809,172 +903,74 @@
 
         // ===== DOCUMENT TEMPLATES =====
         const docTemplates = {
-            complaint: `
-                <h1>民 事 起 诉 状</h1>
-                <p><strong>原告：</strong><span class="highlight-name">[债权人姓名/名称]</span>，[身份证号/统一社会信用代码]，住址：[地址]，联系电话：[电话]。</p>
-                <p><strong>被告一：</strong><span class="highlight-name">[债务人公司全称]</span>，住所地：[注册地址]，统一社会信用代码：[代码]，法定代表人：[姓名]。</p>
-                <p><strong>被告二：</strong><span class="highlight-name">[未实缴股东姓名]</span>，[身份证号]，住址：[地址]。</p>
-
-                <p class="section-title">诉讼请求</p>
-                <p class="indent">1. 判令被告一立即向原告偿还债务本金人民币 <span class="highlight-amount">[金额]</span> 元及逾期利息（以 <span class="highlight-amount">[金额]</span> 元为基数，按 [利率] 自 [日期] 起计算至实际清偿之日止）；</p>
-                <p class="indent">2. 判令被告二在其未出资范围内对被告一的上述债务承担补充赔偿责任；</p>
-                <p class="indent">3. 判令二被告承担本案全部诉讼费用。</p>
-
-                <p class="section-title">事实与理由</p>
-                <p class="indent">[根据实际案情填写：债务形成过程、公司不能清偿的事实、股东未实缴出资的具体情况、原告已采取的措施等]</p>
-                <p class="indent">依据《中华人民共和国公司法》第五十四条、《全国法院民商事审判工作会议纪要》（九民纪要）第6条之规定，特向贵院提起诉讼，请求依法支持原告诉讼请求。</p>
-
-                <div class="signature-block">
-                    <p>此致</p>
-                    <p><strong>[管辖法院名称]</strong></p>
-                    <p style="margin-top:48px;">具状人：______________</p>
-                    <p style="margin-top:16px;">2026年   月   日</p>
-                </div>
-            `,
-            support: `
-                <h1>检察支持起诉申请书</h1>
-                <p><strong>申请人：</strong><span class="highlight-name">[债权人姓名/名称]</span>，[身份证号/统一社会信用代码]，住址：[地址]，联系电话：[电话]。</p>
-                <p><strong>被申请人一：</strong><span class="highlight-name">[债务人公司全称]</span>，住所地：[注册地址]。</p>
-                <p><strong>被申请人二：</strong><span class="highlight-name">[未实缴股东姓名]</span>，[身份证号]，住址：[地址]。</p>
-
-                <p class="section-title">申请事项</p>
-                <p class="indent">请求检察机关对申请人与[债务人公司]及[股东]之间的股东出资纠纷一案支持起诉。</p>
-
-                <p class="section-title">事实与理由</p>
-                <p class="indent">[说明案件基本情况，包括债权形成过程、公司不能清偿的事实、股东未实缴出资的情况，以及申请人维权困难的原因]</p>
-                <p class="indent">依据《中华人民共和国民事诉讼法》第十六条之规定，特向贵院提出申请，恳请检察机关支持起诉。</p>
-
-                <p style="margin-top:24px;"><strong>附：相关证据材料</strong></p>
-                <p class="indent">1. 申请人身份证明；</p>
-                <p class="indent">2. 债权凭证；</p>
-                <p class="indent">3. 公司工商登记信息；</p>
-                <p class="indent">4. 公司不能清偿的证明；</p>
-                <p class="indent">5. 其他相关材料。</p>
-
-                <div class="signature-block">
-                    <p>此致</p>
-                    <p><strong>[检察机关名称]</strong></p>
-                    <p style="margin-top:48px;">申请人（签名/捺印）：______________</p>
-                    <p style="margin-top:16px;">2026年   月   日</p>
-                </div>
-            `,
-            evidence_list: `
-                <h1>证 据 清 单</h1>
-                <p style="margin-bottom:24px;">案由：股东出资纠纷</p>
-
-                <table style="width:100%;border-collapse:collapse;margin-top:16px;" border="1" cellpadding="10" cellspacing="0">
-                    <tr style="background:#f5f5f5;">
-                        <th style="width:8%;">序号</th>
-                        <th style="width:30%;">证据名称</th>
-                        <th style="width:42%;">证明目的</th>
-                        <th style="width:20%;">状态</th>
-                    </tr>
-                    <tr>
-                        <td style="text-align:center;">1</td>
-                        <td>债权凭证（合同/欠条/判决书）</td>
-                        <td>证明债权债务关系存在</td>
-                        <td style="text-align:center;">□ 已有 / □ 缺失</td>
-                    </tr>
-                    <tr>
-                        <td style="text-align:center;">2</td>
-                        <td>公司工商登记信息</td>
-                        <td>证明股东认缴/实缴出资情况</td>
-                        <td style="text-align:center;">□ 已有 / □ 缺失</td>
-                    </tr>
-                    <tr>
-                        <td style="text-align:center;">3</td>
-                        <td>公司财务报告/审计报告</td>
-                        <td>证明公司不能清偿到期债务</td>
-                        <td style="text-align:center;">□ 已有 / □ 缺失</td>
-                    </tr>
-                    <tr>
-                        <td style="text-align:center;">4</td>
-                        <td>催收记录（函件/聊天记录/录音）</td>
-                        <td>证明已向公司主张权利</td>
-                        <td style="text-align:center;">□ 已有 / □ 缺失</td>
-                    </tr>
-                    <tr>
-                        <td style="text-align:center;">5</td>
-                        <td>股东出资情况证明</td>
-                        <td>证明股东存在未实缴出资</td>
-                        <td style="text-align:center;">□ 已有 / □ 缺失</td>
-                    </tr>
-                    <tr>
-                        <td style="text-align:center;">6</td>
-                        <td>公司/股东银行流水</td>
-                        <td>证明公司财产状况/抽逃出资</td>
-                        <td style="text-align:center;">□ 已有 / □ 缺失</td>
-                    </tr>
-                    <tr>
-                        <td style="text-align:center;">7</td>
-                        <td>公司减资/股权转让变更记录</td>
-                        <td>证明逃避出资义务的行为</td>
-                        <td style="text-align:center;">□ 已有 / □ 缺失</td>
-                    </tr>
-                </table>
-
-                <p style="margin-top:32px;"><strong>说明：</strong>请根据案件实际情况在"状态"栏勾选已有证据或标注缺失，缺失证据请尽快补充。</p>
-
-                <div class="signature-block">
-                    <p style="margin-top:48px;">提交人：______________</p>
-                    <p style="margin-top:16px;">2026年   月   日</p>
-                </div>
-            `,
-            preservation: `
-                <h1>财产保全申请书</h1>
-                <p><strong>申请人：</strong><span class="highlight-name">[债权人姓名/名称]</span>，[身份证号/统一社会信用代码]，住址：[地址]，联系电话：[电话]。</p>
-                <p><strong>被申请人一：</strong><span class="highlight-name">[债务人公司全称]</span>，住所地：[注册地址]。</p>
-                <p><strong>被申请人二：</strong><span class="highlight-name">[未实缴股东姓名]</span>，[身份证号]，住址：[地址]。</p>
-
-                <p class="section-title">申请事项</p>
-                <p class="indent">请求贵院依法冻结/查封/扣押被申请人名下价值人民币 <span class="highlight-amount">[金额]</span> 元的财产。</p>
-
-                <p class="section-title">事实与理由</p>
-                <p class="indent">[说明申请财产保全的紧迫性和必要性：包括公司存在转移财产的风险、股东可能处置个人财产等情况]</p>
-                <p class="indent">申请人愿提供相应担保。依据《中华人民共和国民事诉讼法》第一百零三条之规定，特向贵院提出申请。</p>
-
-                <div class="signature-block">
-                    <p>此致</p>
-                    <p><strong>[管辖法院名称]</strong></p>
-                    <p style="margin-top:48px;">申请人：______________</p>
-                    <p style="margin-top:16px;">2026年   月   日</p>
-                </div>
-            `,
+            complaint: `<h1>民 事 起 诉 状</h1>
+<p><strong>原告：</strong><span class="highlight-name">[债权人姓名/名称]</span>，[身份证号/统一社会信用代码]，住址：[地址]，联系电话：[电话]。</p>
+<p><strong>被告一：</strong><span class="highlight-name">[债务人公司全称]</span>，住所地：[注册地址]，统一社会信用代码：[代码]，法定代表人：[姓名]。</p>
+<p><strong>被告二：</strong><span class="highlight-name">[未实缴股东姓名]</span>，[身份证号]，住址：[地址]。</p>
+<p class="section-title">诉讼请求</p>
+<p class="indent">1. 判令被告一立即向原告偿还债务本金人民币 <span class="highlight-amount">[金额]</span> 元及逾期利息（以 <span class="highlight-amount">[金额]</span> 元为基数，按 [利率] 自 [日期] 起计算至实际清偿之日止）；</p>
+<p class="indent">2. 判令被告二在其未出资范围内对被告一的上述债务承担补充赔偿责任；</p>
+<p class="indent">3. 判令二被告承担本案全部诉讼费用。</p>
+<p class="section-title">事实与理由</p>
+<p class="indent">[根据实际案情填写：债务形成过程、公司不能清偿的事实、股东未实缴出资的具体情况、原告已采取的措施等]</p>
+<p class="indent">依据《中华人民共和国公司法》第五十四条、《全国法院民商事审判工作会议纪要》（九民纪要）第6条之规定，特向贵院提起诉讼，请求依法支持原告诉讼请求。</p>
+<div class="signature-block"><p>此致</p><p><strong>[管辖法院名称]</strong></p><p style="margin-top:48px;">具状人：______________</p><p style="margin-top:16px;">2026年   月   日</p></div>`,
+            support: `<h1>检察支持起诉申请书</h1>
+<p><strong>申请人：</strong><span class="highlight-name">[债权人姓名/名称]</span>，[身份证号/统一社会信用代码]，住址：[地址]，联系电话：[电话]。</p>
+<p><strong>被申请人一：</strong><span class="highlight-name">[债务人公司全称]</span>，住所地：[注册地址]。</p>
+<p><strong>被申请人二：</strong><span class="highlight-name">[未实缴股东姓名]</span>，[身份证号]，住址：[地址]。</p>
+<p class="section-title">申请事项</p>
+<p class="indent">请求检察机关对申请人与[债务人公司]及[股东]之间的股东出资纠纷一案支持起诉。</p>
+<p class="section-title">事实与理由</p>
+<p class="indent">[说明案件基本情况，包括债权形成过程、公司不能清偿的事实、股东未实缴出资的情况，以及申请人维权困难的原因]</p>
+<p class="indent">依据《中华人民共和国民事诉讼法》第十六条之规定，特向贵院提出申请，恳请检察机关支持起诉。</p>
+<p style="margin-top:24px;"><strong>附：相关证据材料</strong></p>
+<p class="indent">1. 申请人身份证明；2. 债权凭证；3. 公司工商登记信息；4. 公司不能清偿的证明；5. 其他相关材料。</p>
+<div class="signature-block"><p>此致</p><p><strong>[检察机关名称]</strong></p><p style="margin-top:48px;">申请人（签名/捺印）：______________</p><p style="margin-top:16px;">2026年   月   日</p></div>`,
+            evidence_list: `<h1>证 据 清 单</h1><p style="margin-bottom:24px;">案由：股东出资纠纷</p>
+<table style="width:100%;border-collapse:collapse;margin-top:16px;" border="1" cellpadding="10" cellspacing="0">
+<tr style="background:#f5f5f5;"><th style="width:8%;">序号</th><th style="width:30%;">证据名称</th><th style="width:42%;">证明目的</th><th style="width:20%;">状态</th></tr>
+<tr><td style="text-align:center;">1</td><td>债权凭证（合同/欠条/判决书）</td><td>证明债权债务关系存在</td><td style="text-align:center;">□ 已有 / □ 缺失</td></tr>
+<tr><td style="text-align:center;">2</td><td>公司工商登记信息</td><td>证明股东认缴/实缴出资情况</td><td style="text-align:center;">□ 已有 / □ 缺失</td></tr>
+<tr><td style="text-align:center;">3</td><td>公司财务报告/审计报告</td><td>证明公司不能清偿到期债务</td><td style="text-align:center;">□ 已有 / □ 缺失</td></tr>
+<tr><td style="text-align:center;">4</td><td>催收记录</td><td>证明已向公司主张权利</td><td style="text-align:center;">□ 已有 / □ 缺失</td></tr>
+<tr><td style="text-align:center;">5</td><td>股东出资情况证明</td><td>证明股东存在未实缴出资</td><td style="text-align:center;">□ 已有 / □ 缺失</td></tr>
+<tr><td style="text-align:center;">6</td><td>公司/股东银行流水</td><td>证明公司财产状况/抽逃出资</td><td style="text-align:center;">□ 已有 / □ 缺失</td></tr>
+<tr><td style="text-align:center;">7</td><td>公司减资/股权转让变更记录</td><td>证明逃避出资义务的行为</td><td style="text-align:center;">□ 已有 / □ 缺失</td></tr>
+</table><p style="margin-top:32px;"><strong>说明：</strong>请根据案件实际情况在"状态"栏勾选已有证据或标注缺失，缺失证据请尽快补充。</p>
+<div class="signature-block"><p style="margin-top:48px;">提交人：______________</p><p style="margin-top:16px;">2026年   月   日</p></div>`,
+            preservation: `<h1>财产保全申请书</h1>
+<p><strong>申请人：</strong><span class="highlight-name">[债权人姓名/名称]</span>，[身份证号/统一社会信用代码]，住址：[地址]，联系电话：[电话]。</p>
+<p><strong>被申请人一：</strong><span class="highlight-name">[债务人公司全称]</span>，住所地：[注册地址]。</p>
+<p><strong>被申请人二：</strong><span class="highlight-name">[未实缴股东姓名]</span>，[身份证号]，住址：[地址]。</p>
+<p class="section-title">申请事项</p>
+<p class="indent">请求贵院依法冻结/查封/扣押被申请人名下价值人民币 <span class="highlight-amount">[金额]</span> 元的财产。</p>
+<p class="section-title">事实与理由</p>
+<p class="indent">[说明申请财产保全的紧迫性和必要性：包括公司存在转移财产的风险、股东可能处置个人财产等情况]</p>
+<p class="indent">申请人愿提供相应担保。依据《中华人民共和国民事诉讼法》第一百零三条之规定，特向贵院提出申请。</p>
+<div class="signature-block"><p>此致</p><p><strong>[管辖法院名称]</strong></p><p style="margin-top:48px;">申请人：______________</p><p style="margin-top:16px;">2026年   月   日</p></div>`,
         };
 
-        // Guide card content for each doc type
         function buildDocGuide(type) {
-            const profile = lastCaseProfile || {};
-            const debtor = profile.debtor_company || '待补充';
-            const amount = profile.debt_amount || '待补充';
-            const gaps = profile.missing_evidence || [];
-
+            const p = lastCaseProfile || {};
+            const d = p.debtor_company || '待补充';
+            const a = p.debt_amount || '待补充';
+            const g = p.missing_evidence || [];
             const purposes = {
                 complaint: '提交给人民法院，用于起诉债务人公司和未实缴股东，要求股东在未出资范围内承担补充赔偿责任。',
                 support: '提交给人民检察院，申请检察机关对您的案件支持起诉，降低个人维权难度。',
                 evidence_list: '整理并列出案件涉及的全部证据，明确已有证据和缺失证据，为诉讼做准备。',
                 preservation: '提交给人民法院，申请冻结或查封对方财产，防止对方转移资产导致判决无法执行。',
             };
-
-            const checkItems = {
+            const checks = {
                 complaint: '原告/被告身份信息、债务金额、利息计算方式、管辖法院是否正确。',
                 support: '申请人信息、案件基本事实、申请支持起诉的理由是否充分。',
                 evidence_list: '证据名称是否准确、证明目的是否清楚、缺失证据是否已被识别。',
                 preservation: '保全金额是否合理、担保方式是否可行、是否有财产线索。',
             };
-
-            const gapText = gaps.length
-                ? gaps.slice(0, 3).map(g => `<li>${escapeHtml(g)}</li>`).join('')
-                : '<li>目前无明显缺口，但仍需核对原件、签名、日期和联系方式。</li>';
-
-            return `
-                <p><strong style="color:#e5e7eb;">用途：</strong>${purposes[type] || '用于维权。'}</p>
-                <p><strong style="color:#e5e7eb;">已识别关键信息：</strong>债务人 <strong>${escapeHtml(debtor)}</strong>，金额 <strong>${escapeHtml(amount)}</strong>。</p>
-                <p><strong style="color:#e5e7eb;">签字前重点核对：</strong>${checkItems[type] || '主体信息、金额、日期。'}</p>
-                <p><strong style="color:#e5e7eb;">还建议补充：</strong></p>
-                <ol style="padding-left:1.2em;list-style:decimal;">${gapText}</ol>
-                <p><strong style="color:#e5e7eb;">下一步：</strong>核对内容无误后导出，签字/盖章，按法院或检察院要求提交。</p>
-            `;
+            const gt = g.length ? g.slice(0, 3).map(x => `<li>${escapeHtml(x)}</li>`).join('') :
+                '<li>目前无明显缺口，但仍需核对原件、签名、日期和联系方式。</li>';
+            return `<p><strong style="color:#e5e7eb;">用途：</strong>${purposes[type]||'用于维权。'}</p><p><strong style="color:#e5e7eb;">已识别关键信息：</strong>债务人 <strong>${escapeHtml(d)}</strong>，金额 <strong>${escapeHtml(a)}</strong>。</p><p><strong style="color:#e5e7eb;">签字前重点核对：</strong>${checks[type]||'主体信息、金额、日期。'}</p><p><strong style="color:#e5e7eb;">还建议补充：</strong></p><ol style="padding-left:1.2em;list-style:decimal;">${gt}</ol><p><strong style="color:#e5e7eb;">下一步：</strong>核对内容无误后导出，签字/盖章，按法院或检察院要求提交。</p>`;
         }
 
         // ===== STATE =====
@@ -982,6 +978,9 @@
         let chatHistory = [];
         let currentSources = [];
         let lastCaseProfile = null;
+        let evidenceStatus = {}; // { "证据名": "ok" | "partial" | "missing" }
+        let caseTimelineNodes = [];
+        let nextSteps = [];
 
         // ===== VIEW SWITCHING =====
         function switchView(view) {
@@ -990,14 +989,12 @@
                 if (el) el.style.display = 'none';
             });
             const map = { landing: 'view-landing', chat: 'view-chat', doc: 'view-doc', admin: 'view-admin' };
-            const target = document.getElementById(map[view] || 'view-landing');
-            if (target) target.style.display = 'block';
+            const t = document.getElementById(map[view] || 'view-landing');
+            if (t) t.style.display = 'block';
             window.scrollTo({ top: 0, behavior: 'instant' });
-
             document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-            const nav = document.getElementById(`nav-${view}`);
-            if (nav) nav.classList.add('active');
-
+            const n = document.getElementById(`nav-${view}`);
+            if (n) n.classList.add('active');
             if (view === 'landing') renderScenarios();
             if (view === 'admin') refreshAdmin();
             if (view === 'doc') initDocView();
@@ -1005,37 +1002,45 @@
 
         // ===== LANDING =====
         function renderScenarios() {
-            const grid = document.getElementById('scenario-grid');
-            if (!grid) return;
-            grid.innerHTML = Object.entries(SCENARIOS).map(([id, s]) => `
-                <div class="scenario-card ${s.primary ? 'primary' : ''}" onclick="selectScenario('${id}')">
+            const g = document.getElementById('scenario-grid');
+            if (!g) return;
+            g.innerHTML = Object.entries(SCENARIOS).map(([id, s]) => `
+                <div class="scenario-card ${s.primary?'primary':''}" onclick="selectScenario('${id}')">
                     <div class="flex items-start gap-4">
                         <span class="text-2xl flex-shrink-0">${s.icon}</span>
                         <div>
                             <div class="flex items-center gap-2 mb-1">
                                 <h3 class="font-semibold text-white text-sm">${s.title}</h3>
-                                ${s.primary ? '<span class="tag tag-gold" style="font-size:10px;">主线</span>' : ''}
+                                ${s.primary?'<span class="tag tag-gold" style="font-size:10px;">主线</span>':''}
                             </div>
                             <p class="text-xs" style="color:var(--text3);">${s.desc}</p>
                         </div>
                     </div>
-                </div>
-            `).join('');
+                </div>`).join('');
         }
 
-        function selectScenario(scenarioId) {
-            currentScenario = scenarioId;
-            const s = SCENARIOS[scenarioId];
-            updateScenarioBadge(scenarioId);
+        function selectScenario(id) {
+            currentScenario = id;
+            const s = SCENARIOS[id];
+            updateScenarioBadge(id);
             switchView('chat');
-
-            const chatEl = document.getElementById('chat-messages');
-            const emptyEl = document.getElementById('chat-empty');
-            if (emptyEl) emptyEl.style.display = 'none';
-            chatEl.innerHTML = '';
+            const c = document.getElementById('chat-messages');
+            const e = document.getElementById('chat-empty');
+            if (e) e.style.display = 'none';
+            c.innerHTML = '';
             chatHistory = [];
+            evidenceStatus = {};
+            caseTimelineNodes = [];
+            nextSteps = [];
 
-            // AI 发欢迎语
+            // Init evidence list with all items as "none"
+            if (s.evidenceItems && s.evidenceItems.length && s.evidenceItems[0] !== '请先描述具体案情再判断所需证据') {
+                s.evidenceItems.forEach(item => { evidenceStatus[item] = 'none'; });
+            }
+            renderEvidenceList();
+            renderTimeline();
+            renderNextSteps();
+
             appendMessage('ai', s.welcome);
             chatHistory.push({ role: "assistant", content: s.welcome });
             document.getElementById('chat-input').focus();
@@ -1046,29 +1051,193 @@
             currentScenario = "7";
             updateScenarioBadge("7");
             switchView('chat');
-            const chatEl = document.getElementById('chat-messages');
-            const emptyEl = document.getElementById('chat-empty');
-            if (emptyEl) emptyEl.style.display = 'none';
-            chatEl.innerHTML = '';
+            const c = document.getElementById('chat-messages');
+            const e = document.getElementById('chat-empty');
+            if (e) e.style.display = 'none';
+            c.innerHTML = '';
             chatHistory = [];
-            const welcome = SCENARIOS["7"].welcome;
-            appendMessage('ai', welcome);
-            chatHistory.push({ role: "assistant", content: welcome });
+            evidenceStatus = {};
+            caseTimelineNodes = [];
+            nextSteps = [];
+            renderEvidenceList();
+            renderTimeline();
+            renderNextSteps();
+            const w = SCENARIOS["7"].welcome;
+            appendMessage('ai', w);
+            chatHistory.push({ role: "assistant", content: w });
             document.getElementById('chat-input').focus();
             updateSendBtn();
         }
 
         function updateScenarioBadge(id) {
-            const badge = document.getElementById('chat-scenario-badge');
-            if (!badge) return;
+            const b = document.getElementById('chat-scenario-badge');
+            if (!b) return;
             const s = SCENARIOS[id];
-            if (s) {
-                badge.textContent = `${s.icon} 场景${id}`;
-                badge.className = s.primary ? 'tag tag-gold' : 'tag tag-slate';
-            } else {
-                badge.textContent = '通用法律咨询';
-                badge.className = 'tag tag-slate';
+            if (s) { b.textContent = `${s.icon} 场景${id}`;
+                b.className = s.primary ? 'tag tag-gold' : 'tag tag-slate'; } else { b.textContent = '通用法律咨询';
+                b.className = 'tag tag-slate'; }
+        }
+
+        // ===== EVIDENCE PANEL (Left Sidebar) =====
+        function renderEvidenceList() {
+            const ul = document.getElementById('evidence-list');
+            if (!ul) return;
+            const items = SCENARIOS[currentScenario]?.evidenceItems || [];
+            if (!items.length || items[0] === '请先描述具体案情再判断所需证据') {
+                ul.innerHTML =
+                    '<li class="flex items-start gap-2" style="color:var(--text3);"><span class="ev-dot none"></span>发送案情后自动分析</li>';
+                return;
             }
+            ul.innerHTML = items.map(item => {
+                const status = evidenceStatus[item] || 'none';
+                const colorClass = status === 'ok' ? 'ok' : status === 'partial' ? 'partial' : status ===
+                    'missing' ? 'missing' : 'none';
+                const textColor = status === 'ok' ? 'color:var(--green);' : status === 'partial' ?
+                    'color:var(--amber);' : status === 'missing' ? 'color:#ef4444;' : 'color:var(--text3);';
+                return `<li class="flex items-start gap-2" style="${textColor}"><span class="ev-dot ${colorClass}"></span>${escapeHtml(item)}</li>`;
+            }).join('');
+        }
+
+        function updateEvidenceFromProfile(profile) {
+            if (!profile) return;
+            const existingEvidence = profile.existing_evidence || [];
+            const scenarioItems = SCENARIOS[currentScenario]?.evidenceItems || [];
+            if (!scenarioItems.length || scenarioItems[0] === '请先描述具体案情再判断所需证据') return;
+
+            scenarioItems.forEach(item => {
+                // Check if any existing evidence matches this requirement
+                const matched = existingEvidence.some(ev =>
+                    item.includes(ev.replace(/（.*）/, '').replace(/[()]/g, '')) ||
+                    ev.includes(item.substring(0, 4))
+                );
+                if (matched) {
+                    evidenceStatus[item] = 'partial'; // partial until AI confirms
+                } else if (evidenceStatus[item] !== 'ok') {
+                    evidenceStatus[item] = 'missing';
+                }
+            });
+
+            // Mark items as OK if they appear in the AI response with high confidence
+            if (profile.debtor_company && profile.debtor_company !== '待补充') {
+                Object.keys(evidenceStatus).forEach(k => {
+                    if (k.includes('工商') || k.includes('公司')) evidenceStatus[k] = 'ok';
+                });
+            }
+            if (profile.debt_amount && profile.debt_amount !== '待补充') {
+                Object.keys(evidenceStatus).forEach(k => {
+                    if (k.includes('债权凭证') || k.includes('合同') || k.includes('欠条')) evidenceStatus[k] =
+                        'ok';
+                });
+            }
+            renderEvidenceList();
+        }
+
+        // ===== NEXT STEPS PANEL =====
+        function renderNextSteps() {
+            const panel = document.getElementById('next-steps-panel');
+            if (!panel) return;
+            if (!nextSteps.length) {
+                panel.innerHTML = '<p class="text-xs" style="color:var(--text3);">发送案情后自动提示该做什么、缺什么材料。</p>';
+                return;
+            }
+            panel.innerHTML = `
+                <p class="text-xs mb-2" style="color:var(--text2);">系统已根据您的案情整理出以下行动清单：</p>
+                <ul class="space-y-2 text-xs" style="color:var(--text);">
+                    ${nextSteps.slice(0, 5).map((s, i) => `<li class="flex gap-2"><span style="color:var(--gold);">${i+1}.</span><span>${escapeHtml(s)}</span></li>`).join('')}
+                </ul>`;
+        }
+
+        function updateNextSteps(profile) {
+            if (!profile) return;
+            const actions = [];
+            if (profile.debtor_company === '待补充' || !profile.debtor_company) {
+                actions.push('先查清债务人公司的准确全称，可通过企查查、天眼查或工商局网站查询');
+            }
+            if (profile.debt_amount === '待补充' || !profile.debt_amount) {
+                actions.push('把债务金额写清楚，最好用欠条、合同或判决书固定下来');
+            }
+            if (!profile.existing_evidence || profile.existing_evidence.length <= 1) {
+                actions.push('先拍照保存合同、欠条、聊天记录、转账凭证等现有证据');
+            }
+            if (profile.shareholder_info === '待补充' || !profile.shareholder_info) {
+                actions.push('通过工商信息查询股东的认缴出资额、实缴出资额和出资期限');
+            }
+            if (currentScenario === '2') {
+                actions.push('收集公司财务报表或审计报告，或向法院申请调查公司财产状况');
+            }
+            if (currentScenario === '4') {
+                actions.push('向银行申请调取公司和股东的银行流水，特别是出资后的资金流向');
+            }
+            if (!actions.length) {
+                actions.push('证据比较清楚，可以进入文书生成阶段');
+                actions.push('整理材料，按证据清单核对是否有遗漏');
+            }
+            actions.push('如有困难，可向当地检察院申请支持起诉');
+            nextSteps = actions;
+            renderNextSteps();
+        }
+
+        // ===== CASE TIMELINE =====
+        function renderTimeline() {
+            const ol = document.getElementById('case-timeline');
+            if (!ol) return;
+            if (!caseTimelineNodes.length) {
+                ol.innerHTML = '<li style="color:var(--text3);">发送案情后自动生成。</li>';
+                return;
+            }
+            ol.innerHTML = caseTimelineNodes.map((n, i) => `
+                <li class="flex gap-2 relative">
+                    <span class="tl-dot"></span>
+                    <div>
+                        <p class="text-xs" style="color:var(--text3);">${escapeHtml(n.date||'')}</p>
+                        <p class="text-xs" style="color:var(--text);">${escapeHtml(n.title||'')}</p>
+                        ${n.detail?`<p class="text-xs mt-0.5" style="color:var(--text3);">${escapeHtml(n.detail)}</p>`:''}
+                    </div>
+                </li>`).join('');
+        }
+
+        function updateTimeline(profile) {
+            if (!profile) return;
+            const nodes = [];
+            if (profile.debt_amount && profile.debt_amount !== '待补充') {
+                nodes.push({ date: '债务形成', title: `债务金额 ${profile.debt_amount}`,
+                    detail: profile.debt_basis !== '待补充' ? profile.debt_basis : '' });
+            }
+            if (profile.debtor_company && profile.debtor_company !== '待补充') {
+                nodes.push({ date: '债务人', title: profile.debtor_company, detail: '已识别债务人主体' });
+            }
+            if (profile.existing_evidence && profile.existing_evidence.length > 0) {
+                nodes.push({ date: '已收集证据', title: `${profile.existing_evidence.length} 项证据`,
+                    detail: profile.existing_evidence.slice(0, 3).join('、') });
+            }
+            nodes.push({ date: '当前', title: '等待进一步分析', detail: '请继续提供信息或请求AI研判' });
+            caseTimelineNodes = nodes;
+            renderTimeline();
+        }
+
+        // ===== QUICK ACTIONS =====
+        function requestAIJudgment() {
+            const input = document.getElementById('chat-input');
+            const presets = {
+                "1": "请综合研判目前我提供的信息，指出我的证据链是否完整？如果要追究股东责任，还缺什么材料？请给我打分。",
+                "2": "请帮我分析，根据我目前提供的信息，公司是否满足股东出资加速到期的条件？我需要补足哪些证据？",
+                "3": "请综合研判，公司延长出资期限的行为是否构成恶意逃避债务？我还需要收集什么证据？",
+                "4": "请分析我手上的资金转出线索，是否构成抽逃出资？需要哪些证据来证明？",
+                "5": "请研判公司减资程序是否合法，我作为债权人有哪些救济途径？",
+                "6": "请分析这次股权转让是否存在逃避出资义务的情况，我应该追究谁的责任？",
+                "7": "请先综合研判我的情况属于哪种维权场景，然后给出证据分析和下一步建议。",
+            };
+            const preset = presets[currentScenario] || presets["7"];
+            input.value = preset;
+            updateSendBtn();
+            sendMessage();
+        }
+
+        function showMissingEvidence() {
+            const input = document.getElementById('chat-input');
+            input.value = "请详细告诉我，目前还缺哪些关键证据？对于每一项缺失证据，请给我替代性证据建议。";
+            updateSendBtn();
+            sendMessage();
         }
 
         // ===== VOICE (FAKE) =====
@@ -1101,19 +1270,15 @@
             const input = document.getElementById('chat-input');
             const query = input.value.trim();
             if (!query) return;
-
             const emptyEl = document.getElementById('chat-empty');
             if (emptyEl) emptyEl.style.display = 'none';
-
             appendMessage('user', query);
             input.value = '';
             updateSendBtn();
             chatHistory.push({ role: "user", content: query });
-
             const aiDiv = appendMessage('ai', '');
             const contentDiv = aiDiv.querySelector('.ai-content');
             const reasoningDiv = aiDiv.querySelector('.ai-reasoning');
-
             const sendBtn = document.getElementById('send-btn');
             if (sendBtn) sendBtn.disabled = true;
 
@@ -1129,20 +1294,17 @@
                         user_name: "债权人",
                     }),
                 });
-
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
                 let buffer = '';
                 let fullContent = '';
                 let fullReasoning = '';
-
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) break;
                     buffer += decoder.decode(value, { stream: true });
                     const lines = buffer.split('\n');
                     buffer = lines.pop() || '';
-
                     for (const line of lines) {
                         if (!line.startsWith('data: ')) continue;
                         const jsonStr = line.slice(6);
@@ -1151,21 +1313,24 @@
                             const data = JSON.parse(jsonStr);
                             if (data.type === 'meta') {
                                 if (data.sources) currentSources = data.sources;
-                                if (data.case_profile) lastCaseProfile = data.case_profile;
-                                updateEvidencePanel(data);
+                                if (data.case_profile) {
+                                    lastCaseProfile = data.case_profile;
+                                    updateEvidenceFromProfile(data.case_profile);
+                                    updateNextSteps(data.case_profile);
+                                    updateTimeline(data.case_profile);
+                                }
                             } else if (data.type === 'reasoning') {
                                 fullReasoning += data.content;
-                                if (reasoningDiv && fullReasoning.length < 2000) {
-                                    reasoningDiv.innerHTML =
-                                        `<details class="cursor-pointer"><summary class="text-xs" style="color:var(--text3);">思考过程</summary><p class="text-xs mt-1" style="color:var(--text3);">${escapeHtml(fullReasoning)}</p></details>`;
-                                }
+                                if (reasoningDiv && fullReasoning.length < 2000) reasoningDiv.innerHTML =
+                                    `<details class="cursor-pointer"><summary class="text-xs" style="color:var(--text3);">思考过程</summary><p class="text-xs mt-1" style="color:var(--text3);">${escapeHtml(fullReasoning)}</p></details>`;
                             } else if (data.type === 'chunk') {
                                 fullContent += data.content;
                                 if (contentDiv) contentDiv.innerHTML = marked.parse(fullContent);
                                 scrollChat();
                                 updateScoreFromContent(fullContent);
+                                updateEvidenceFromContent(fullContent);
                             }
-                        } catch (e) { /* partial JSON */ }
+                        } catch (e) {}
                     }
                 }
                 chatHistory.push({ role: "assistant", content: fullContent });
@@ -1173,7 +1338,6 @@
                 if (contentDiv) contentDiv.innerHTML =
                     `<p style="color:#f87171;">网络错误：${escapeHtml(e.message)}</p><p class="text-xs mt-2" style="color:var(--text3);">请确认后端运行在 ${API_BASE}</p>`;
             }
-
             if (sendBtn) sendBtn.disabled = false;
             scrollChat();
         }
@@ -1183,58 +1347,21 @@
             const div = document.createElement('div');
             div.className = 'mb-8';
             if (role === 'user') {
-                div.innerHTML = `
-                    <div class="flex justify-end">
-                        <div class="max-w-[85%] px-5 py-3 rounded-2xl rounded-br-md" style="background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.12);">
-                            <p class="text-sm text-white leading-relaxed whitespace-pre-wrap">${escapeHtml(text)}</p>
-                        </div>
-                    </div>`;
+                div.innerHTML = `<div class="flex justify-end"><div class="max-w-[85%] px-5 py-3 rounded-2xl rounded-br-md" style="background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.12);"><p class="text-sm text-white leading-relaxed whitespace-pre-wrap">${escapeHtml(text)}</p></div></div>`;
             } else {
-                div.innerHTML = `
-                    <div class="flex gap-4">
-                        <span class="text-2xl flex-shrink-0 select-none" style="margin-top:2px;">🛡</span>
-                        <div class="flex-1 min-w-0">
-                            <p class="text-xs mb-2 font-medium" style="color:var(--gold-dim);">Justitia · AI 法律顾问</p>
-                            <div class="ai-reasoning"></div>
-                            <div class="ai-content markdown-body"></div>
-                        </div>
-                    </div>`;
-                if (text) {
-                    const cd = div.querySelector('.ai-content');
-                    if (cd) cd.innerHTML = marked.parse(text);
-                }
+                div.innerHTML = `<div class="flex gap-4"><span class="text-2xl flex-shrink-0 select-none" style="margin-top:2px;">🛡</span><div class="flex-1 min-w-0"><p class="text-xs mb-2 font-medium" style="color:var(--gold-dim);">Justitia · AI 法律顾问</p><div class="ai-reasoning"></div><div class="ai-content markdown-body"></div></div></div>`;
+                if (text) { const cd = div.querySelector('.ai-content'); if (cd) cd.innerHTML = marked.parse(
+                    text); }
             }
             container.appendChild(div);
             scrollChat();
             return div;
         }
 
-        function scrollChat() {
-            const el = document.getElementById('chat-messages');
-            if (el) el.scrollTop = el.scrollHeight;
-        }
+        function scrollChat() { const el = document.getElementById('chat-messages'); if (el) el.scrollTop = el
+            .scrollHeight; }
 
-        // ===== EVIDENCE PANEL =====
-        function updateEvidencePanel(meta) {
-            const panel = document.getElementById('evidence-content');
-            if (!panel) return;
-            let html = '';
-            if (meta.sources?.length) {
-                html += '<p class="font-semibold text-white mb-2 text-xs">法律参考</p>';
-                meta.sources.slice(0, 3).forEach(s => {
-                    html +=
-                        `<p class="text-xs mb-1.5"><span class="tag tag-slate" style="font-size:10px;">${escapeHtml(s.filename)}</span></p>`;
-                });
-            }
-            if (meta.finance?.sql) {
-                html += '<p class="font-semibold text-white mt-4 mb-2 text-xs">财务查询</p>';
-                html +=
-                    `<p class="text-xs font-mono break-all" style="color:#4ade80;">${escapeHtml(meta.finance.sql.substring(0, 100))}</p>`;
-            }
-            if (!html) html = '<p style="color:var(--text3);">等待更多信息…</p>';
-            panel.innerHTML = html;
-        }
-
+        // ===== Real-time updates from AI response =====
         function updateScoreFromContent(content) {
             const m = content.match(/可行性评分[：:]\s*(\d{1,3})\s*分?/);
             if (m) updateScoreRing(parseInt(m[1]));
@@ -1242,11 +1369,41 @@
 
         function updateScoreRing(score) {
             const ring = document.getElementById('score-ring');
+            const label = document.getElementById('score-label');
             if (!ring) return;
             ring.textContent = score;
             const c = score >= 70 ? '#4ade80' : score >= 40 ? '#fbbf24' : '#f87171';
             ring.style.borderColor = c;
             ring.style.color = c;
+            if (label) {
+                label.textContent = score >= 70 ? '可行性较高' : score >= 40 ? '需补强证据' : '证据不足';
+                label.style.color = c;
+            }
+        }
+
+        function updateEvidenceFromContent(content) {
+            // Scan AI response for evidence confirmation patterns
+            const scenarioItems = SCENARIOS[currentScenario]?.evidenceItems || [];
+            if (!scenarioItems.length) return;
+
+            // Keywords that indicate confirmed evidence
+            const confirmedPatterns = [
+                { pattern: /债权凭证.*已.?有|已.?提供.*合同|已.?提供.*欠条|合同.*已.?确认/, items: ['债权凭证', '合同', '欠条'] },
+                { pattern: /工商.*已.?查|工商信息.*已.?获取|企业信用.*已.?查/, items: ['工商', '企查查', '天眼查'] },
+                { pattern: /催收.*已.?进行|已.?催收|已.?发函|已.?通知/, items: ['催收'] },
+                { pattern: /财务.*已.?提供|审计.*已.?获取|报表.*已.?有/, items: ['财务', '审计', '报表'] },
+                { pattern: /银行流水.*已.?获取|流水.*已.?提供|转账.*已.?确认/, items: ['流水', '转账', '银行'] },
+            ];
+
+            confirmedPatterns.forEach(({ pattern, items }) => {
+                if (pattern.test(content)) {
+                    Object.keys(evidenceStatus).forEach(k => {
+                        if (items.some(ik => k.includes(ik))) evidenceStatus[k] = 'ok';
+                    });
+                }
+            });
+
+            renderEvidenceList();
         }
 
         // ===== FILE UPLOAD =====
@@ -1264,12 +1421,19 @@
                     const data = await resp.json();
                     if (data.text) {
                         const preview = data.text.length > 400 ? data.text.substring(0, 400) + '...' : data
-                            .text;
+                        .text;
                         appendMessage('ai',
-                            `**文件识别结果** (${data.engine || 'OCR'})\n\n\`\`\`\n${preview}\n\`\`\`\n\n已提取文本，您可以基于这些内容继续提问。`
+                            `**文件识别结果** (${data.engine||'OCR'})\n\n\`\`\`\n${preview}\n\`\`\`\n\n已提取文本，您可以基于这些内容继续提问。`
                             );
                         chatHistory.push({ role: "user", content: `[上传文件: ${file.name}]` });
                         chatHistory.push({ role: "assistant", content: `文件识别结果：\n${data.text}` });
+                        // Mark file upload evidence
+                        if (file.name.includes('合同') || file.name.includes('欠条') || file.name.includes(
+                                '判决')) {
+                            Object.keys(evidenceStatus).forEach(k => { if (k.includes('债权凭证') || k.includes(
+                                        '合同') || k.includes('欠条')) evidenceStatus[k] = 'ok'; });
+                        }
+                        renderEvidenceList();
                     }
                 } catch (e) {
                     appendMessage('ai', `文件上传失败：${escapeHtml(e.message)}`);
@@ -1279,46 +1443,33 @@
         }
 
         // ===== DOCUMENT WORKBENCH =====
-        function initDocView() {
-            const checked = document.querySelector('input[name=doc_type]:checked');
-            if (checked) switchTemplate(checked.value);
-        }
+        function initDocView() { const c = document.querySelector('input[name=doc_type]:checked'); if (c) switchTemplate(
+                c.value); }
 
         function switchTemplate(type) {
             const editor = document.getElementById('editable-doc');
             if (!editor || !docTemplates[type]) return;
-
-            // Update variables display
-            const profile = lastCaseProfile || {};
-            document.getElementById('var-creditor').textContent = profile.creditor_name || '待提取';
-            document.getElementById('var-debtor').textContent = profile.debtor_company || '待提取';
-            document.getElementById('var-shareholder').textContent = profile.shareholder_info || '待提取';
-            document.getElementById('var-amount').textContent = profile.debt_amount || '待提取';
-            document.getElementById('var-capital').textContent = profile.subscription_capital || '待提取';
-
-            // Update guide card
+            const p = lastCaseProfile || {};
+            document.getElementById('var-creditor').textContent = p.creditor_name || '待提取';
+            document.getElementById('var-debtor').textContent = p.debtor_company || '待提取';
+            document.getElementById('var-shareholder').textContent = p.shareholder_info || '待提取';
+            document.getElementById('var-amount').textContent = p.debt_amount || '待提取';
+            document.getElementById('var-capital').textContent = p.subscription_capital || '待提取';
             const guide = document.getElementById('doc-guide-card');
             if (guide) guide.innerHTML = buildDocGuide(type);
-
-            // Render template with fade
             editor.style.opacity = '0';
             editor.style.transition = 'opacity 0.15s';
-            setTimeout(() => {
-                editor.innerHTML = docTemplates[type];
-                editor.style.opacity = '1';
-            }, 150);
+            setTimeout(() => { editor.innerHTML = docTemplates[type];
+                editor.style.opacity = '1'; }, 150);
         }
 
-        function refreshTemplate() {
-            const checked = document.querySelector('input[name=doc_type]:checked');
-            if (checked) switchTemplate(checked.value);
-        }
+        function refreshTemplate() { const c = document.querySelector('input[name=doc_type]:checked'); if (c) switchTemplate(
+                c.value); }
 
         async function exportDocx() {
             const editor = document.getElementById('editable-doc');
             const html = editor.innerHTML.trim();
             if (!html) { alert('文书内容为空，无法导出。'); return; }
-
             try {
                 const resp = await fetch(`${API_BASE}/api/export-docx`, {
                     method: 'POST',
@@ -1334,17 +1485,13 @@
                 a.click();
                 URL.revokeObjectURL(url);
             } catch (e) {
-                // Fallback: download as .doc
                 const wordHtml =
                     `<!doctype html><html><head><meta charset="utf-8"><title>债优盾法律文书</title></head><body>${html}</body></html>`;
                 const blob = new Blob([wordHtml], { type: 'application/msword;charset=utf-8' });
-                const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
-                a.href = url;
+                a.href = URL.createObjectURL(blob);
                 a.download = '债优盾法律文书.doc';
                 a.click();
-                URL.revokeObjectURL(url);
-                console.warn('DOCX export failed, fallback to .doc:', e);
             }
         }
 
@@ -1361,25 +1508,18 @@
                 document.getElementById('stat-docs').textContent = events.filter(e => e.type === 'doc_export')
                     .length;
                 const tbody = document.getElementById('admin-events');
-                if (tbody) {
-                    tbody.innerHTML = events.slice(-20).reverse().map(e => `
-                        <tr class="border-b hover:bg-white/[0.02]" style="border-color:var(--border);">
-                            <td class="py-2.5 px-3" style="color:var(--text3);">${(e.timestamp || '').substring(11, 19)}</td>
-                            <td class="py-2.5 px-3"><span class="tag ${e.type==='chat'?'tag-gold':'tag-green'}">${e.type||''}</span></td>
-                            <td class="py-2.5 px-3">${e.data?.scenario||'-'}</td>
-                            <td class="py-2.5 px-3 truncate max-w-[240px]" style="color:var(--text2);">${escapeHtml((e.data?.query || e.data?.filename || JSON.stringify(e.data||{}).substring(0,60)))}</td>
-                        </tr>
-                    `).join('');
-                }
+                if (tbody) tbody.innerHTML = events.slice(-20).reverse().map(e => `
+                    <tr class="border-b hover:bg-white/[0.02]" style="border-color:var(--border);">
+                        <td class="py-2.5 px-3" style="color:var(--text3);">${(e.timestamp||'').substring(11,19)}</td>
+                        <td class="py-2.5 px-3"><span class="tag ${e.type==='chat'?'tag-gold':'tag-green'}">${e.type||''}</span></td>
+                        <td class="py-2.5 px-3">${e.data?.scenario||'-'}</td>
+                        <td class="py-2.5 px-3 truncate max-w-[240px]" style="color:var(--text2);">${escapeHtml((e.data?.query||e.data?.filename||JSON.stringify(e.data||{}).substring(0,60)))}</td>
+                    </tr>`).join('');
             } catch (e) { console.error(e); }
         }
 
-        // ===== UTILS =====
-        function escapeHtml(s) {
-            const d = document.createElement('div');
-            d.textContent = s;
-            return d.innerHTML;
-        }
+        function escapeHtml(s) { const d = document.createElement('div');
+            d.textContent = s; return d.innerHTML; }
 
         // ===== INIT =====
         marked.setOptions({ breaks: true, gfm: true });
