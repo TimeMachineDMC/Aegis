@@ -147,7 +147,7 @@ class ChatRequest(BaseModel):
     score_threshold: float = 0.5
     scenario: str = "unknown"  # 1-7 或 unknown
     user_name: str = "债权人"
-    case_profile: dict = None
+    case_profile: Optional[dict] = None
 
 
 class SourceItem(BaseModel):
