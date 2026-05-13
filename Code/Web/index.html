@@ -485,6 +485,39 @@
             animation: shieldPulse 3s ease-in-out infinite;
         }
 
+        .glow-generating {
+            animation: borderPulse 2s infinite ease-in-out;
+        }
+
+        @keyframes borderPulse {
+            0%, 100% {
+                border-color: rgba(255, 255, 255, 0.06);
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            }
+            50% {
+                border-color: rgba(201, 168, 76, 0.6);
+                box-shadow: 0 0 20px rgba(201, 168, 76, 0.2);
+            }
+        }
+
+        .bubble-ai {
+            background: rgba(17, 24, 39, 0.8);
+            border: 1px solid rgba(201, 168, 76, 0.1);
+            position: relative;
+            box-shadow: 0 4px 30px rgba(201, 168, 76, 0.04);
+        }
+
+        .bubble-ai::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 20%;
+            bottom: 20%;
+            width: 2px;
+            background: var(--gold);
+            box-shadow: 0 0 10px var(--gold);
+        }
+
         /* Timeline nodes */
         .tl-dot {
             width: 8px;
@@ -640,7 +673,8 @@
             <div class="max-w-6xl mx-auto px-6 flex gap-5">
                 <div class="w-64 flex-shrink-0 hidden lg:block"></div>
                 <div class="flex-1">
-                    <div class="input-bar flex items-end gap-2 px-4 py-2.5">
+                    <div id="file-list" class="flex flex-wrap gap-2 mb-4"></div>
+                    <div class="input-bar flex items-end gap-2 px-4 py-2.5" id="input-wrapper">
                         <label class="cursor-pointer p-2 rounded-lg hover:bg-white/5 transition flex-shrink-0"
                             style="color:var(--text3);" title="上传文件">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1507,18 +1541,31 @@
         // ===== CHAT =====
         async function sendMessage() {
             const input = document.getElementById('chat-input');
-            const query = input.value.trim();
+            let query = input.value.trim();
             if (!query) return;
+
+            // Attach uploaded file contents to the query
+            const readyFiles = attachedFiles.filter(f => !f._loading && f.full_content);
+            if (readyFiles.length > 0) {
+                const fileContexts = readyFiles.map(f => `[文件: ${f.name}]\n${f.full_content}`).join('\n\n');
+                query = `${fileContexts}\n\n[用户问题]\n${query}`;
+            }
+
             const emptyEl = document.getElementById('chat-empty');
             if (emptyEl) emptyEl.style.display = 'none';
-            appendMessage('user', query);
+            appendMessage('user', input.value.trim());
             input.value = '';
             updateSendBtn();
             chatHistory.push({ role: "user", content: query });
+            attachedFiles = [];
+            renderFileTags();
             const aiDiv = appendMessage('ai', '');
             const contentDiv = aiDiv.querySelector('.ai-content');
             const sendBtn = document.getElementById('send-btn');
             if (sendBtn) sendBtn.disabled = true;
+            isGenerating = true;
+            const wrapper = document.getElementById('input-wrapper');
+            if (wrapper) wrapper.classList.add('glow-generating');
 
             try {
                 const response = await apiFetch("/api/chat", {
@@ -1599,6 +1646,8 @@
                     `<p style="color:#f87171;">网络错误：${escapeHtml(e.message)}</p><p class="text-xs mt-2" style="color:var(--text3);">请确认后端运行在 ${API_BASE_URL}</p>`;
             }
             if (sendBtn) sendBtn.disabled = false;
+            isGenerating = false;
+            if (wrapper) wrapper.classList.remove('glow-generating');
             scrollChat();
         }
 
@@ -1609,7 +1658,7 @@
             if (role === 'user') {
                 div.innerHTML = `<div class="flex justify-end"><div class="max-w-[85%] px-5 py-3 rounded-2xl rounded-br-md" style="background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.12);"><p class="text-sm text-white leading-relaxed whitespace-pre-wrap">${escapeHtml(text)}</p></div></div>`;
             } else {
-                div.innerHTML = `<div class="flex gap-4"><span class="text-2xl flex-shrink-0 select-none" style="margin-top:2px;">🛡</span><div class="flex-1 min-w-0"><p class="text-xs mb-2 font-medium" style="color:var(--gold-dim);">Justitia · AI 法律顾问</p><div class="ai-content markdown-body"></div></div></div>`;
+                div.innerHTML = `<div class="flex gap-4"><span class="text-2xl flex-shrink-0 select-none" style="margin-top:2px;">🛡</span><div class="flex-1 min-w-0"><p class="text-xs mb-2 font-medium" style="color:var(--gold-dim);">Justitia · AI 法律顾问</p><div class="ai-content bubble-ai rounded-r-xl rounded-bl-xl px-6 py-5 markdown-body"></div></div></div>`;
                 if (text) { const cd = div.querySelector('.ai-content'); if (cd) cd.innerHTML = marked.parse(
                     text); }
             }
@@ -1667,35 +1716,88 @@
         }
 
         // ===== FILE UPLOAD =====
+        let attachedFiles = [];
+        let isGenerating = false;
+
+        function createFileTag(name, isLoading = false) {
+            const div = document.createElement('div');
+            div.className = `flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-bold tracking-tighter ${isLoading ? 'bg-zinc-800 text-zinc-600 animate-pulse' : 'bg-amber-500/10 border border-amber-500/20 text-amber-500'}`;
+            const textSpan = document.createElement('span');
+            textSpan.innerText = (isLoading ? "解析中: " : "已提取: ") + name;
+            div.appendChild(textSpan);
+            if (!isLoading) {
+                const delBtn = document.createElement('button');
+                delBtn.type = "button";
+                delBtn.className = "ml-1 hover:text-white text-xs transition-colors";
+                delBtn.innerHTML = "×";
+                delBtn.onclick = () => {
+                    attachedFiles = attachedFiles.filter(f => f.name !== name);
+                    renderFileTags();
+                };
+                div.appendChild(delBtn);
+            }
+            return div;
+        }
+
+        function renderFileTags() {
+            const container = document.getElementById('file-list');
+            if (!container) return;
+            container.innerHTML = '';
+            attachedFiles.forEach(f => container.appendChild(createFileTag(f.name, f._loading)));
+        }
+
         async function handleFileUpload(input) {
             const files = input.files;
             if (!files.length) return;
             const emptyEl = document.getElementById('chat-empty');
             if (emptyEl) emptyEl.style.display = 'none';
+
             for (const file of files) {
-                appendMessage('user', `📎 ${file.name}`);
+                // Add loading tag immediately
+                attachedFiles.push({ name: file.name, _loading: true });
+                renderFileTags();
+
                 const formData = new FormData();
                 formData.append('file', file);
                 try {
                     const resp = await apiFetch("/api/upload", { method: 'POST', body: formData });
                     const data = await resp.json();
-                    if (data.text) {
-                        const preview = data.text.length > 400 ? data.text.substring(0, 400) + '...' : data
-                        .text;
-                        appendMessage('ai',
-                            `**文件识别结果** (${data.engine||'OCR'})\n\n\`\`\`\n${preview}\n\`\`\`\n\n已提取文本，您可以基于这些内容继续提问。`
-                            );
-                        chatHistory.push({ role: "user", content: `[上传文件: ${file.name}]` });
-                        chatHistory.push({ role: "assistant", content: `文件识别结果：\n${data.text}` });
-                        // Mark file upload evidence
-                        if (file.name.includes('合同') || file.name.includes('欠条') || file.name.includes(
-                                '判决')) {
-                            Object.keys(evidenceStatus).forEach(k => { if (k.includes('债权凭证') || k.includes(
-                                        '合同') || k.includes('欠条')) evidenceStatus[k] = 'ok'; });
-                        }
-                        renderEvidenceList();
+                    if (data.error) {
+                        attachedFiles = attachedFiles.filter(f => f.name !== file.name);
+                        renderFileTags();
+                        appendMessage('ai', `文件上传失败：${escapeHtml(data.error)}`);
+                        continue;
                     }
+                    // Replace loading tag with done tag
+                    attachedFiles = attachedFiles.filter(f => f.name !== file.name);
+                    attachedFiles.push({
+                        name: file.name,
+                        full_content: data.full_content || data.text || '',
+                        content_preview: data.content_preview || '',
+                        ocr_confidence: data.ocr_confidence,
+                        ocr_engine: data.ocr_engine,
+                    });
+                    renderFileTags();
+
+                    // Show extracted text in chat
+                    const preview = (data.content_preview || data.full_content || '').substring(0, 400);
+                    if (preview) {
+                        const engineInfo = data.ocr_engine ? ` (${data.ocr_engine}${data.ocr_confidence ? ', 置信度 ' + (data.ocr_confidence*100).toFixed(0) + '%' : ''})` : '';
+                        appendMessage('ai',
+                            `**文件识别结果**${engineInfo}\n\n\`\`\`\n${preview}${(data.full_content||'').length > 400 ? '...' : ''}\n\`\`\`\n\n已提取文本，您可以基于这些内容继续提问。`
+                        );
+                        chatHistory.push({ role: "user", content: `[上传文件: ${file.name}]` });
+                        chatHistory.push({ role: "assistant", content: `文件识别结果：\n${data.full_content || data.content_preview}` });
+                    }
+
+                    // Mark file upload evidence
+                    if (file.name.includes('合同') || file.name.includes('欠条') || file.name.includes('判决')) {
+                        Object.keys(evidenceStatus).forEach(k => { if (k.includes('债权凭证') || k.includes('合同') || k.includes('欠条')) evidenceStatus[k] = 'ok'; });
+                    }
+                    renderEvidenceList();
                 } catch (e) {
+                    attachedFiles = attachedFiles.filter(f => f.name !== file.name);
+                    renderFileTags();
                     appendMessage('ai', `文件上传失败：${escapeHtml(e.message)}`);
                 }
             }

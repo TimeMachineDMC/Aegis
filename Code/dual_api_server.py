@@ -94,18 +94,35 @@ def initialize_ocr_engine():
 initialize_ocr_engine()
 
 
+def now_text() -> str:
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+def backend_log(event: str, detail: str = ""):
+    suffix = f" | {detail}" if detail else ""
+    print(f"[{now_text()}] {event}{suffix}", flush=True)
+
+
 def run_ocr(image_np: np.ndarray) -> tuple:
     if ocr_engine is None:
         raise RuntimeError(ocr_init_error or "OCR engine is not initialized")
     if ocr_engine_name and ocr_engine_name.startswith("RapidOCR"):
         result = ocr_engine(image_np)
         lines = [str(line).strip() for line in getattr(result, "txts", ()) if str(line).strip()]
-        return "\n".join(lines), None
+        scores = [float(s) for s in getattr(result, "scores", ()) if s is not None]
+        confidence = round(sum(scores) / len(scores), 4) if scores else None
+        return "\n".join(lines), confidence
     else:
-        result = ocr_engine.readtext(image_np)
-        lines = [item[1] for item in result if item[2] > 0.3]
-        avg_conf = float(np.mean([item[2] for item in result])) if result else 0.0
-        return "\n".join(lines), avg_conf
+        result = ocr_engine.readtext(image_np, detail=1, paragraph=False)
+        lines = []
+        scores = []
+        for item in result:
+            if len(item) >= 2 and str(item[1]).strip():
+                lines.append(str(item[1]).strip())
+            if len(item) >= 3:
+                scores.append(float(item[2]))
+        confidence = round(sum(scores) / len(scores), 4) if scores else None
+        return "\n".join(lines), confidence
 
 
 # ChromaDB
@@ -647,13 +664,24 @@ def export_creditor_complaint_docx(html_content: str, filename: str = "债优盾
 
 
 # ================= 11. API Endpoints =================
+@app.middleware("http")
+async def add_private_network_access_header(request, call_next):
+    response = await call_next(request)
+    response.headers["Access-Control-Allow-Private-Network"] = "true"
+    return response
+
+
 @app.get("/api/health")
 async def health_check():
     tables = get_finance_tables()
     return {
         "status": "ok",
         "service": "Aegis 债优盾",
+        "database_path": str(DB_SAVE_PATH),
+        "database_exists": DB_SAVE_PATH.exists(),
+        "ocr_ready": ocr_engine is not None,
         "ocr_engine": ocr_engine_name,
+        "ocr_init_error": ocr_init_error if ocr_engine is None else None,
         "chroma_loaded": vectordb is not None,
         "finance_tables": len(tables),
         "scenarios": len(SCENARIOS),
@@ -793,17 +821,37 @@ async def upload_file(file: UploadFile = File(...)):
     if len(content) > MAX_UPLOAD_SIZE:
         raise HTTPException(413, f"文件大小超过限制（最大 10 MB）")
     ext = Path(file.filename).suffix.lower()
+    original_filename = file.filename or "uploaded_file"
+
+    backend_log("FILE_UPLOAD", f"{original_filename} | {len(content)} bytes")
 
     extracted_text = ""
     ocr_confidence = None
 
     if ext in (".jpg", ".jpeg", ".png", ".bmp", ".tiff"):
         try:
+            if ocr_engine is None:
+                raise HTTPException(500, f"OCR 引擎未就绪：{ocr_init_error or '请检查 rapidocr/easyocr 安装'}")
+
+            backend_log("OCR_START", f"{ocr_engine_name} | {original_filename}")
             from PIL import Image
             img = Image.open(io.BytesIO(content)).convert("RGB")
             img_np = np.array(img)
             extracted_text, ocr_confidence = run_ocr(img_np)
+
+            if not extracted_text.strip():
+                return {"error": "OCR 未识别到有效文字，请换一张更清晰的图片，或直接输入文字内容。"}
+
+            print("\n" + "=" * 30 + " 扫描结果可视化 " + "=" * 30, flush=True)
+            print(extracted_text, flush=True)
+            print("=" * 76 + "\n", flush=True)
+
+            confidence_log = f"，平均置信度: {ocr_confidence}" if ocr_confidence is not None else ""
+            backend_log("OCR_DONE", f"{original_filename} | 提取字数: {len(extracted_text)}{confidence_log}")
+        except HTTPException:
+            raise
         except Exception as e:
+            backend_log("OCR_ERROR", str(e))
             raise HTTPException(500, f"OCR 处理失败：{str(e)}")
 
     elif ext == ".pdf":
@@ -827,17 +875,18 @@ async def upload_file(file: UploadFile = File(...)):
 
     extracted_text = extracted_text.strip()[:8000]
     save_platform_event("file_upload", {
-        "filename": file.filename,
+        "filename": original_filename,
         "ext": ext,
         "text_length": len(extracted_text),
         "ocr_confidence": ocr_confidence,
     })
 
     return {
-        "filename": file.filename,
-        "text": extracted_text,
-        "confidence": ocr_confidence,
-        "engine": ocr_engine_name,
+        "filename": original_filename,
+        "content_preview": extracted_text[:500],
+        "full_content": extracted_text,
+        "ocr_engine": ocr_engine_name if ext in (".jpg", ".jpeg", ".png", ".bmp", ".tiff") else None,
+        "ocr_confidence": ocr_confidence,
     }
 
 
@@ -906,6 +955,7 @@ async def serve_static(path: str):
 
 # ================= 14. Entry Point =================
 if __name__ == "__main__":
+    backend_log("SERVER_START", f"Aegis 债优盾 API Server starting at http://{SERVER_HOST}:{SERVER_PORT}")
     print(f"\n{'='*60}")
     print(f"  Aegis 债优盾 — 中小债权人维权智能平台")
     print(f"  股东出资义务加速到期专项 AI 法律顾问")
