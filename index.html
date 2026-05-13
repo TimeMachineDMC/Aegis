@@ -742,19 +742,23 @@
                     </div>
                     <div class="glass-card p-4">
                         <h3 class="text-xs font-bold uppercase tracking-widest mb-3" style="color:var(--text3);">AI 提取变量</h3>
-                        <div class="space-y-3 text-xs">
-                            <div><span class="block mb-1" style="color:var(--text3);">债权人 / 原告</span><span class="tag tag-gold"
-                                    id="var-creditor">待提取</span></div>
-                            <div><span class="block mb-1" style="color:var(--text3);">债务人公司</span><span class="tag tag-slate"
-                                    id="var-debtor">待提取</span></div>
-                            <div><span class="block mb-1" style="color:var(--text3);">未实缴股东</span><span class="tag tag-slate"
-                                    id="var-shareholder">待提取</span></div>
-                            <div><span class="block mb-1" style="color:var(--text3);">涉案金额</span><span class="tag tag-red"
-                                    id="var-amount">待提取</span></div>
-                            <div><span class="block mb-1" style="color:var(--text3);">认缴出资额</span><span class="tag tag-slate"
-                                    id="var-capital">待提取</span></div>
+                        <div class="space-y-2 text-xs">
+                            <div class="flex justify-between"><span style="color:var(--text3);">债权人</span><span class="tag tag-gold" id="var-creditor">待提取</span></div>
+                            <div class="flex justify-between"><span style="color:var(--text3);">身份证号</span><span style="color:var(--text2);" id="var-creditor-id">待提取</span></div>
+                            <div class="flex justify-between"><span style="color:var(--text3);">债务人公司</span><span class="tag tag-slate" id="var-debtor">待提取</span></div>
+                            <div class="flex justify-between"><span style="color:var(--text3);">统一信用代码</span><span style="color:var(--text2);" id="var-debtor-code">待提取</span></div>
+                            <div class="flex justify-between"><span style="color:var(--text3);">未实缴股东</span><span class="tag tag-slate" id="var-shareholder">待提取</span></div>
+                            <div class="flex justify-between"><span style="color:var(--text3);">涉案金额</span><span class="tag tag-red" id="var-amount">待提取</span></div>
+                            <div class="flex justify-between"><span style="color:var(--text3);">认缴出资</span><span class="tag tag-slate" id="var-capital">待提取</span></div>
+                            <div class="flex justify-between"><span style="color:var(--text3);">实缴出资</span><span class="tag tag-slate" id="var-paid">待提取</span></div>
+                            <div class="flex justify-between"><span style="color:var(--text3);">未实缴金额</span><span style="color:#f87171;" id="var-unpaid">待提取</span></div>
+                            <div class="flex justify-between"><span style="color:var(--text3);">出资期限</span><span style="color:var(--text2);" id="var-deadline">待提取</span></div>
+                            <div class="flex justify-between"><span style="color:var(--text3);">管辖法院</span><span style="color:var(--text2);" id="var-court">待提取</span></div>
                         </div>
-                        <button onclick="refreshTemplate()" class="btn-ghost w-full mt-5 text-xs py-2">🔄 重新渲染</button>
+                        <div class="flex gap-2 mt-4">
+                            <button onclick="loadDemoProfile()" class="btn-ghost w-full text-xs py-2" style="font-size:10px;">📋 载入演示数据</button>
+                            <button onclick="refreshTemplate()" class="btn-ghost text-xs py-2" style="font-size:10px;">🔄</button>
+                        </div>
                     </div>
                     <div class="glass-card p-4">
                         <h3 class="text-xs font-bold uppercase tracking-widest mb-3" style="color:var(--gold-dim);">白话说明</h3>
@@ -1480,6 +1484,22 @@
             renderTimeline();
         }
 
+        function updateDocVariables(profile) {
+            if (!profile) return;
+            const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.textContent = val; };
+            set('var-creditor', profile.creditor_name);
+            set('var-creditor-id', profile.creditor_id);
+            set('var-debtor', profile.debtor_company);
+            set('var-debtor-code', profile.debtor_code);
+            set('var-shareholder', profile.shareholder_name);
+            set('var-amount', profile.debt_amount);
+            set('var-capital', profile.subscription_capital);
+            set('var-paid', profile.paid_capital);
+            set('var-unpaid', profile.unpaid_capital);
+            set('var-deadline', profile.contribution_deadline);
+            set('var-court', profile.court_name);
+        }
+
         // ===== QUICK ACTIONS =====
         function requestAIJudgment() {
             const input = document.getElementById('chat-input');
@@ -1613,6 +1633,7 @@
                                     updateEvidenceFromProfile(data.case_profile);
                                     updateNextSteps(data.case_profile);
                                     updateTimeline(data.case_profile);
+                                    updateDocVariables(data.case_profile);
                                 }
                             } else if (data.type === 'chunk') {
                                 fullContent += data.content;
@@ -1804,24 +1825,175 @@
             input.value = '';
         }
 
+        // ===== DEMO PROFILE (周建国案) =====
+        const DEMO_PROFILE = {
+            creditor_name: "周建国",
+            creditor_id: "33012119780415XXXX",
+            creditor_address: "杭州市萧山区XX街道XX号",
+            creditor_phone: "138XXXXXXXX",
+            debtor_company: "鑫辉贸易有限公司",
+            debtor_code: "91330110XXXXXXXXXX",
+            debtor_address: "杭州市余杭区XX路XX号XX室",
+            debtor_legal_rep: "王建华",
+            debt_amount: "70万元",
+            debt_basis: "供货合同",
+            debt_date: "2024年6月20日",
+            shareholder_name: "王建华",
+            shareholder_id: "33010119800520XXXX",
+            shareholder_address: "杭州市余杭区XX小区XX幢XX室",
+            shareholder_phone: "139XXXXXXXX",
+            subscription_capital: "400万元",
+            paid_capital: "50万元",
+            unpaid_capital: "350万元",
+            contribution_deadline: "2035年12月31日",
+            total_capital: "500万元",
+            company_status: "资不抵债，已停止经营",
+            court_name: "杭州市余杭区人民法院",
+            court_abbr: "余杭",
+            case_number: "（2025）浙0110民初XXXX号",
+            filing_date: "2025年____月____日",
+            copy_count: "2",
+            existing_evidence: [
+                "合同/协议",
+                "银行转账记录/流水",
+                "工商登记/公示信息",
+                "通讯/催收记录",
+                "送货单/签收记录"
+            ],
+        };
+
+        function loadDemoProfile() {
+            lastCaseProfile = { ...DEMO_PROFILE };
+            // Update sidebar
+            document.getElementById('var-creditor').textContent = lastCaseProfile.creditor_name;
+            document.getElementById('var-debtor').textContent = lastCaseProfile.debtor_company;
+            document.getElementById('var-shareholder').textContent = lastCaseProfile.shareholder_name;
+            document.getElementById('var-amount').textContent = lastCaseProfile.debt_amount;
+            document.getElementById('var-capital').textContent = lastCaseProfile.subscription_capital;
+            document.getElementById('var-creditor-id').textContent = lastCaseProfile.creditor_id;
+            document.getElementById('var-debtor-code').textContent = lastCaseProfile.debtor_code;
+            document.getElementById('var-paid').textContent = lastCaseProfile.paid_capital;
+            document.getElementById('var-unpaid').textContent = lastCaseProfile.unpaid_capital;
+            document.getElementById('var-deadline').textContent = lastCaseProfile.contribution_deadline;
+            document.getElementById('var-court').textContent = lastCaseProfile.court_name;
+            // Refresh current template
+            const c = document.querySelector('input[name=doc_type]:checked');
+            if (c) switchTemplate(c.value);
+        }
+
+        function clearDemoProfile() {
+            lastCaseProfile = null;
+            document.querySelectorAll('[id^="var-"]').forEach(el => { el.textContent = '待提取'; });
+            const c = document.querySelector('input[name=doc_type]:checked');
+            if (c) switchTemplate(c.value);
+        }
+
         // ===== DOCUMENT WORKBENCH =====
         function initDocView() { const c = document.querySelector('input[name=doc_type]:checked'); if (c) switchTemplate(
                 c.value); }
+
+        function fillTemplate(html, profile) {
+            if (!profile) return html;
+            const now = new Date();
+            const year = String(now.getFullYear());
+            const dateStr = `${year}年${now.getMonth() + 1}月${now.getDate()}日`;
+
+            const map = [
+                // Creditor
+                [/\[债权人名称\]/g, profile.creditor_name],
+                [/\[债权人姓名\]/g, profile.creditor_name],
+                [/\[原告姓名\]/g, profile.creditor_name],
+                [/\[申请人姓名\]/g, profile.creditor_name],
+                [/\[原告公司名称 \/ 原告个人姓名\]/g, profile.creditor_name],
+                [/\[申请人（原告）\]/g, profile.creditor_name],
+                [/\[证件号码\]/g, profile.creditor_id],
+                [/\[具体代码 \/ 身份证号码\]/g, profile.creditor_id],
+                [/\[身份证号码\]/g, profile.shareholder_id || profile.creditor_id],
+                [/\[详细地址\]/g, profile.creditor_address],
+                [/\[地址\]/g, profile.shareholder_address || profile.creditor_address],
+                [/\[电话\]/g, profile.creditor_phone],
+                [/\[联系电话\]/g, profile.shareholder_phone || profile.creditor_phone],
+                [/\[电话号码\]/g, profile.creditor_phone],
+                // Debtor
+                [/\[债务人公司名称\]/g, profile.debtor_company],
+                [/\[公司名称\]/g, profile.debtor_company],
+                [/\[公司\]/g, profile.debtor_company],
+                [/\[代码\]/g, profile.debtor_code],
+                [/\[统一社会信用代码\]/g, profile.debtor_code],
+                [/\[公司住所地\]/g, profile.debtor_address],
+                [/\[法定代表人姓名\]/g, profile.debtor_legal_rep],
+                [/\[法定代表人\]/g, profile.debtor_legal_rep],
+                [/\[具体职务\]/g, '执行董事/总经理'],
+                [/\[姓名\]/g, profile.debtor_legal_rep],
+                // Shareholder
+                [/\[股东姓名\]/g, profile.shareholder_name],
+                [/\[股东姓名 \/ 名称\]/g, profile.shareholder_name],
+                [/\[股东一姓名 \/ 名称\]/g, profile.shareholder_name],
+                [/\[股东二姓名 \/ 名称\]/g, profile.shareholder_name !== profile.debtor_legal_rep ? profile.shareholder_name : '李芳'],
+                [/\[股东姓名 \/ 名称\]（如有其他被告，依次列出）/g, profile.shareholder_name],
+                // Amounts
+                [/\[认缴出资额\]/g, profile.subscription_capital],
+                [/\[金额\]/g, profile.debt_amount],
+                [/\[具体债务金额\]/g, profile.debt_amount],
+                [/\[涉案金额\]/g, profile.debt_amount],
+                [/\[保全金额\]/g, profile.debt_amount],
+                [/\[注册资本\]/g, profile.total_capital],
+                [/\[已缴付金额\]/g, profile.paid_capital],
+                // Dates
+                [/\[出资期限日期\]/g, profile.contribution_deadline],
+                [/\[日期\]/g, profile.debt_date],
+                [/\[起诉日期\]/g, dateStr],
+                [/\[年份\]/g, year],
+                // Court
+                [/\[具体法院名称\]/g, profile.court_name],
+                [/\[有管辖权的人民法院名称\]/g, profile.court_name],
+                [/\[管辖法院\]/g, profile.court_name],
+                [/\[公司住所地\] 人民法院/g, `${profile.court_name}`],
+                [/\[法院简称\]/g, profile.court_abbr],
+                // Case info
+                [/\[文书号\]/g, profile.case_number],
+                [/\[案号\]/g, profile.case_number],
+                [/\[其他证据\]/g, (profile.existing_evidence || []).join('、') || '相关证据材料'],
+                [/\[X\]/g, profile.copy_count],
+                // Names in example text
+                [/王某某/g, profile.creditor_name],
+                [/德拉曼公司/g, profile.debtor_company],
+                [/25,000/g, profile.debt_amount.replace(/[^0-9]/g, '') || '700000'],
+                [/XX人民检察院/g, `${profile.court_abbr || 'XX'}人民检察院`],
+                [/XX人民法院/g, profile.court_name],
+                [/XX法律援助中心（司法局）/g, `${profile.court_abbr || 'XX'}法律援助中心（司法局）`],
+            ];
+
+            let result = html;
+            for (const [pattern, value] of map) {
+                if (!value || value === '待补充' || value === '待提取') continue;
+                result = result.replace(pattern, value);
+            }
+            return result;
+        }
 
         function switchTemplate(type) {
             const editor = document.getElementById('editable-doc');
             if (!editor || !docTemplates[type]) return;
             const p = lastCaseProfile || {};
+            // Update sidebar variables
             document.getElementById('var-creditor').textContent = p.creditor_name || '待提取';
             document.getElementById('var-debtor').textContent = p.debtor_company || '待提取';
-            document.getElementById('var-shareholder').textContent = p.shareholder_info || '待提取';
+            document.getElementById('var-shareholder').textContent = p.shareholder_name || '待提取';
             document.getElementById('var-amount').textContent = p.debt_amount || '待提取';
             document.getElementById('var-capital').textContent = p.subscription_capital || '待提取';
+            document.getElementById('var-creditor-id').textContent = p.creditor_id || '待提取';
+            document.getElementById('var-debtor-code').textContent = p.debtor_code || '待提取';
+            document.getElementById('var-paid').textContent = p.paid_capital || '待提取';
+            document.getElementById('var-unpaid').textContent = p.unpaid_capital || '待提取';
+            document.getElementById('var-deadline').textContent = p.contribution_deadline || '待提取';
+            document.getElementById('var-court').textContent = p.court_name || '待提取';
             const guide = document.getElementById('doc-guide-card');
             if (guide) guide.innerHTML = buildDocGuide(type);
+            const filledHtml = fillTemplate(docTemplates[type], p);
             editor.style.opacity = '0';
             editor.style.transition = 'opacity 0.15s';
-            setTimeout(() => { editor.innerHTML = docTemplates[type];
+            setTimeout(() => { editor.innerHTML = filledHtml;
                 editor.style.opacity = '1'; }, 150);
         }
 

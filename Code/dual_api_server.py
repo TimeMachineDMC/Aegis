@@ -426,43 +426,191 @@ def build_creditor_case_profile(query: str, scenario: str, user_name: str, previ
     else:
         profile = {
             "creditor_name": user_name,
+            "creditor_id": "待补充",
+            "creditor_address": "待补充",
+            "creditor_phone": "待补充",
             "debtor_company": "待补充",
+            "debtor_code": "待补充",
+            "debtor_address": "待补充",
+            "debtor_legal_rep": "待补充",
             "debt_amount": "待补充",
             "debt_basis": "待补充",
-            "shareholder_info": "待补充",
+            "debt_date": "待补充",
+            "shareholder_name": "待补充",
+            "shareholder_id": "待补充",
+            "shareholder_address": "待补充",
+            "shareholder_phone": "待补充",
             "subscription_capital": "待补充",
             "paid_capital": "待补充",
+            "unpaid_capital": "待补充",
             "contribution_deadline": "待补充",
+            "total_capital": "待补充",
             "company_status": "待补充",
+            "court_name": "待补充",
+            "court_abbr": "待补充",
+            "case_number": "待补充",
+            "filing_date": "待补充",
+            "copy_count": "2",
             "existing_evidence": [],
             "scenario": get_scenario_label(scenario),
             "scenario_id": scenario,
         }
 
-    # Simple extraction
-    amount_match = re.search(r'(\d+[\.,]?\d*)\s*(万|元|块)', query)
-    if amount_match:
-        profile["debt_amount"] = amount_match.group(0)
-
-    company_match = re.search(r'(?:公司|被告|债务人)\s*(?:是|为|叫做)?\s*([^\s，。,\.]{2,30}(?:有限公司|股份有限公司|有限责任公司|公司|集团))', query)
-    if company_match:
+    # --- Company name ---
+    company_match = re.search(
+        r'([^\s，。,\.]{2,30}(?:有限公司|股份有限公司|有限责任公司|公司|集团))',
+        query
+    )
+    if company_match and not re.search(r'[第条章节]|法律|公司法|根据|依照', company_match.group(1)):
         profile["debtor_company"] = company_match.group(1)
 
+    # --- Unified social credit code ---
+    code_match = re.search(r'(?:统一社会信用代码|信用代码)[：:]\s*([A-Za-z0-9]{18})', query)
+    if not code_match:
+        code_match = re.search(r'91330110[A-Za-z0-9]{10}', query)
+    if code_match:
+        profile["debtor_code"] = code_match.group(1) if code_match.lastindex else code_match.group(0)
+
+    # --- Legal representative ---
+    legal_rep_match = re.search(r'(?:法定代表人|法人)[：:：\s]*(?:是|为)?\s*(\S{2,4})', query)
+    if legal_rep_match:
+        profile["debtor_legal_rep"] = legal_rep_match.group(1)
+
+    # --- Amount extraction (multiple patterns) ---
+    # Pattern: "欠/还剩 X 万"
+    amount_match = re.search(r'(?:欠|还剩|尚欠|剩余|拖欠)\s*(?:我|了)?\s*(\d+(?:[\.,]\d+)?)\s*(万|万元|元|块)', query)
+    if not amount_match:
+        # Pattern: "总价款 X 万"
+        amount_match = re.search(r'总价(?:款|金)?\s*(\d+(?:[\.,]\d+)?)\s*(万|万元)', query)
+    if not amount_match:
+        # Pattern: "X 万元" near "债务" or "货款"
+        amount_match = re.search(r'(\d+[\.,]?\d*)\s*(万|万元)\s*(?:元|债|货)', query)
+    if not amount_match:
+        # Generic "amount 万/元"
+        amount_match = re.search(r'(\d+[\.,]?\d*)\s*(万|元|块)', query)
+    if amount_match:
+        amt = amount_match.group(1)
+        unit = amount_match.group(2)
+        if unit == '万' or unit == '万元':
+            profile["debt_amount"] = f"{amt}万元"
+        else:
+            val = float(amt.replace(',', ''))
+            if val >= 10000:
+                profile["debt_amount"] = f"{val/10000:.0f}万元"
+            else:
+                profile["debt_amount"] = f"{val:.0f}元"
+
+    # --- Contract/debt date ---
+    date_match = re.search(r'(?:合同约定|约定|到期)\s*(\d{4}\s*年\s*\d{1,2}\s*月\s*\d{1,2}\s*日)', query)
+    if not date_match:
+        date_match = re.search(r'(\d{4}\s*年\s*\d{1,2}\s*月\s*\d{1,2}\s*日)\s*(?:前|之前|到期)', query)
+    if date_match:
+        profile["debt_date"] = date_match.group(1).replace(' ', '')
+
+    # --- Shareholder name ---
+    shareholder_match = re.search(r'(?:股东|大股东)\s*(\S{2,4})\s*(?:认缴|持股|占|个人)', query)
+    if not shareholder_match:
+        shareholder_match = re.search(r'([^\s，。,\.]{2,4})\s*认缴\s*\d+', query)
+    if shareholder_match:
+        profile["shareholder_name"] = shareholder_match.group(1)
+
+    # --- Subscribed capital ---
+    sub_cap_match = re.search(r'(?:认缴|认缴出资)\s*(\d+(?:[\.,]\d+)?)\s*(万|万元|元)', query)
+    if not sub_cap_match:
+        sub_cap_match = re.search(r'认缴\s*(?:出资)?\s*(?:额)?[：:：\s]*(\d+(?:[\.,]\d+)?)\s*(万|万元)', query)
+    if sub_cap_match:
+        profile["subscription_capital"] = f"{sub_cap_match.group(1)}{sub_cap_match.group(2).replace('元元','元')}"
+
+    # --- Paid capital ---
+    paid_cap_match = re.search(r'实缴\s*(?:出资)?\s*(?:只有|仅|了)?\s*(\d+(?:[\.,]\d+)?)\s*(万|万元|元)', query)
+    if not paid_cap_match:
+        paid_cap_match = re.search(r'实缴\s*(?:额)?[：:：\s]*(\d+(?:[\.,]\d+)?)\s*(万|万元)', query)
+    if paid_cap_match:
+        profile["paid_capital"] = f"{paid_cap_match.group(1)}{paid_cap_match.group(2).replace('元元','元')}"
+
+    # --- Total registered capital ---
+    total_cap_match = re.search(r'注册资本\s*(\d+(?:[\.,]\d+)?)\s*(万|万元|元)', query)
+    if total_cap_match:
+        profile["total_capital"] = f"{total_cap_match.group(1)}{total_cap_match.group(2).replace('元元','元')}"
+
+    # --- Contribution deadline ---
+    deadline_match = re.search(r'出资期限\s*(?:是|为)?\s*(\d{4}\s*年\s*\d{1,2}\s*月\s*\d{1,2}\s*日)', query)
+    if not deadline_match:
+        deadline_match = re.search(r'(?:出资期限|认缴期限)[：:：\s]*(\d{4}[年.-]\d{1,2}[月.-]\d{1,2})', query)
+    if deadline_match:
+        profile["contribution_deadline"] = deadline_match.group(1).replace(' ', '')
+
+    # --- Unpaid capital (calculate if possible) ---
+    sub_val = re.search(r'(\d+)', profile.get("subscription_capital", "0"))
+    paid_val = re.search(r'(\d+)', profile.get("paid_capital", "0"))
+    if sub_val and paid_val:
+        unpaid = int(sub_val.group(1)) - int(paid_val.group(1))
+        if unpaid > 0:
+            profile["unpaid_capital"] = f"{unpaid}万元"
+
+    # --- Company address ---
+    addr_match = re.search(r'(?:地址|住所|住所地|位于)[：:：\s]*(.{2,40}(?:市|区|县).{2,30}(?:路|街|号)(?:.{0,20}(?:室|层|楼))?)', query)
+    if addr_match:
+        profile["debtor_address"] = addr_match.group(1)
+        # Infer court from address
+        city_match = re.search(r'([一-龥]{2,4}(?:市|区|县))', addr_match.group(1))
+        if city_match:
+            profile["court_name"] = f"{city_match.group(1)}人民法院"
+            abbr_match = re.search(r'([一-龥]{2,4})(?:市|区|县)', city_match.group(1))
+            if abbr_match:
+                profile["court_abbr"] = abbr_match.group(1)
+
+    # --- Phone numbers ---
+    phone_match = re.search(r'(?:电话|手机|联系)[：:：\s]*(1[3-9]\d{9})', query)
+    if phone_match:
+        profile["debtor_legal_rep"] = profile.get("debtor_legal_rep", "待补充")
+        profile["shareholder_phone"] = phone_match.group(1) if profile.get("shareholder_phone", "待补充") == "待补充" else profile["shareholder_phone"]
+
+    # --- Company status ---
+    if any(k in query for k in ['停业', '停止经营', '搬空', '搬走', '人去楼空']):
+        profile["company_status"] = "已停止经营"
+    elif any(k in query for k in ['资不抵债', '资产.*负债', '负债.*资产']):
+        profile["company_status"] = "资不抵债"
+    elif any(k in query for k in ['破产', '清算']):
+        profile["company_status"] = "已进入破产程序"
+    elif any(k in query for k in ['注销', '吊销']):
+        profile["company_status"] = "已注销/吊销"
+    if profile.get("company_status", "待补充") == "待补充":
+        if any(k in query for k in ['不能清偿', '无法清偿', '无力偿还', '没钱', '账上没钱', '无财产']):
+            profile["company_status"] = "不能清偿到期债务"
+
+    # --- Debt basis ---
+    basis_checks = [
+        ('合同', '合同/协议'), ('欠条', '欠条/借条'), ('借条', '欠条/借条'),
+        ('判决', '生效判决书'), ('裁定', '生效裁定书'), ('调解书', '调解书'),
+        ('供货', '供货合同'), ('借款', '借款合同'), ('工程款', '工程款'),
+        ('货款', '货款'), ('劳务费', '劳务费'), ('工资', '工资'),
+    ]
+    for keyword, label in basis_checks:
+        if keyword in query:
+            profile["debt_basis"] = label
+            break
+
+    # --- Evidence ---
     evidence_types = []
     if any(k in query for k in ['欠条', '借条', '借据']):
         evidence_types.append("债权凭证（欠条/借条/借据）")
     if any(k in query for k in ['合同', '协议']):
         evidence_types.append("合同/协议")
-    if any(k in query for k in ['转账', '银行', '流水', '汇款']):
+    if any(k in query for k in ['转账', '银行', '流水', '汇款', '银行流水']):
         evidence_types.append("银行转账记录/流水")
-    if any(k in query for k in ['微信', '聊天', '短信']):
-        evidence_types.append("通讯记录（微信/短信）")
-    if any(k in query for k in ['工商', '企查查', '天眼查', '公示']):
+    if any(k in query for k in ['微信', '聊天', '短信', '催收']):
+        evidence_types.append("通讯/催收记录")
+    if any(k in query for k in ['工商', '企查查', '天眼查', '公示', '登记']):
         evidence_types.append("工商登记/公示信息")
     if any(k in query for k in ['判决', '裁定', '调解书']):
         evidence_types.append("法院裁判文书")
     if any(k in query for k in ['对账单', '结算单', '确认函']):
         evidence_types.append("对账单/结算单/确认函")
+    if any(k in query for k in ['送货单', '签收', '收货']):
+        evidence_types.append("送货单/签收记录")
+    if any(k in query for k in ['验资', '出资证明']):
+        evidence_types.append("出资/验资证明")
     if evidence_types:
         prev_evidence = profile.get("existing_evidence", [])
         if prev_evidence == ["待识别"]:
