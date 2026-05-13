@@ -5,7 +5,7 @@ cd /d "%~dp0"
 echo Aegis 债优盾 backend for Windows
 echo This starts the local API at http://127.0.0.1:8080
 echo Same PC test: https://timemachinedmc.github.io/Aegis/?api=http://127.0.0.1:8080
-echo Other devices use the cpolar URL configured in config.js.
+echo Other devices use the cpolar URL configured in index.html.
 echo.
 
 if "%AEGIS_PORT%"=="" set AEGIS_PORT=8080
@@ -20,6 +20,7 @@ powershell -NoProfile -Command "try { Invoke-WebRequest -UseBasicParsing -Timeou
 if "%ERRORLEVEL%"=="0" (
     echo Aegis 债优盾 backend is already running at http://127.0.0.1:%AEGIS_PORT%
     echo Same PC test: https://timemachinedmc.github.io/Aegis/?api=http://127.0.0.1:%AEGIS_PORT%
+    echo Other devices use the cpolar URL configured in index.html.
     echo.
     echo Showing live backend logs. Press Ctrl-C to stop watching logs; backend keeps running.
     if exist ".runtime\backend-live.log" (
@@ -43,7 +44,7 @@ if not exist ".venv" (
 
 call .venv\Scripts\activate.bat
 python -m pip install --upgrade pip
-python -m pip install -r Code\\requirements.txt
+python -m pip install -r requirements.txt
 
 if exist "Model\chroma_db" if not exist ".runtime\chroma_db" (
     mkdir .runtime

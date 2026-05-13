@@ -6,7 +6,7 @@ cd "$(dirname "$0")"
 echo "Aegis 债优盾 backend for macOS"
 echo "This starts the local API at http://127.0.0.1:8080"
 echo "Same Mac test: https://timemachinedmc.github.io/Aegis/?api=http://127.0.0.1:8080"
-echo "Other devices use the cpolar URL configured in config.js."
+echo "Other devices use the cpolar URL configured in index.html."
 echo
 
 mkdir -p .runtime
@@ -14,6 +14,7 @@ PORT="${AEGIS_PORT:-8080}"
 LOG_FILE=".runtime/backend-live.log"
 
 if [ "${1:-}" = "stop" ]; then
+  launchctl bootout "gui/$(id -u)" "$HOME/Library/LaunchAgents/com.aegis.backend.plist" >/dev/null 2>&1 || true
   pids="$(lsof -tiTCP:"${PORT}" -sTCP:LISTEN 2>/dev/null || true)"
   if [ -n "$pids" ]; then
     echo "$pids" | xargs kill >/dev/null 2>&1 || true
@@ -27,6 +28,7 @@ fi
 if command -v curl >/dev/null 2>&1 && curl -fsS --max-time 3 "http://127.0.0.1:${PORT}/api/health" >/dev/null 2>&1; then
   echo "Aegis 债优盾 backend is already running at http://127.0.0.1:${PORT}"
   echo "Same Mac test: https://timemachinedmc.github.io/Aegis/?api=http://127.0.0.1:${PORT}"
+  echo "Other devices use the cpolar URL configured in index.html."
   if [ ! -t 1 ]; then
     exit 0
   fi
@@ -56,8 +58,8 @@ fi
 source .venv/bin/activate
 python -m pip install --upgrade pip
 
-if [ ! -f ".venv/.aegis_requirements_installed" ] || [ "Code/requirements.txt" -nt ".venv/.aegis_requirements_installed" ]; then
-  python -m pip install -r Code/requirements.txt
+if [ ! -f ".venv/.aegis_requirements_installed" ] || [ "requirements.txt" -nt ".venv/.aegis_requirements_installed" ]; then
+  python -m pip install -r requirements.txt
   touch .venv/.aegis_requirements_installed
 fi
 

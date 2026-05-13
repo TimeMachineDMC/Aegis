@@ -11,14 +11,7 @@ __pycache__/
 .venv/
 venv/
 .env
-**/.env
-
-# Local-only config overrides (may contain sensitive URLs / tokens)
-config.local.js
-
-# IDE
-.vscode/
-.idea/
+Code/.env
 
 # Runtime artifacts
 .runtime/

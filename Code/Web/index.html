@@ -10,8 +10,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css/github-markdown-dark.css">
-    <script src="config.js"></script>
-
     <style>
         :root {
             --bg: #0b1121;
@@ -791,15 +789,51 @@
 
     <!-- ==================== SCRIPTS ==================== -->
     <script>
-        // ===== CONFIG =====
-        const API_BASE = (() => {
-            const p = new URLSearchParams(window.location.search);
-            const api = p.get('api');
-            if (api) return api;
-            if (['localhost', '127.0.0.1'].includes(window.location.hostname)) return 'http://127.0.0.1:8080';
-            if (window.AEGIS_CONFIG?.publicApiBase) return window.AEGIS_CONFIG.publicApiBase;
-            return window.location.origin;
+        // GitHub Pages 给其他设备使用时必须走公网 HTTPS 后端。cpolar 地址变化后，只改下面这一行。
+        const PAGE_API_BASE_URL = "https://16240a92.r39.cpolar.top";
+        const LOCAL_BROWSER_API_BASE_URL = "http://127.0.0.1:8080";
+        const LOCAL_API_BASE_URL = window.location.protocol === "file:" ? LOCAL_BROWSER_API_BASE_URL : window.location.origin;
+        const apiFromUrl = new URLSearchParams(window.location.search).get("api");
+        const configuredApiBase = window.AEGIS_API_BASE_URL || apiFromUrl;
+        let API_BASE_URL = (configuredApiBase || (window.location.hostname.endsWith("github.io") ? PAGE_API_BASE_URL : LOCAL_API_BASE_URL)).replace(/\/+$/, "");
+
+        function apiEndpoint(path) {
+            return `${API_BASE_URL}${path}`;
+        }
+
+        async function isHealthyApiBase(baseUrl) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 2500);
+            try {
+                const response = await fetch(`${baseUrl.replace(/\/+$/, "")}/api/health`, {
+                    signal: controller.signal,
+                    cache: 'no-store'
+                });
+                if (!response.ok) return false;
+                const data = await response.json();
+                return data.status === "ok";
+            } catch (error) {
+                return false;
+            } finally {
+                clearTimeout(timer);
+            }
+        }
+
+        const apiBaseReady = (async () => {
+            if (configuredApiBase || !window.location.hostname.endsWith("github.io")) return;
+            const publicReady = await isHealthyApiBase(PAGE_API_BASE_URL);
+            if (publicReady) return;
+            const localReady = await isHealthyApiBase(LOCAL_BROWSER_API_BASE_URL);
+            if (localReady) {
+                API_BASE_URL = LOCAL_BROWSER_API_BASE_URL;
+                console.info(`公网后端暂不可用，已切换到本机后端：${API_BASE_URL}`);
+            }
         })();
+
+        async function apiFetch(path, options) {
+            await apiBaseReady;
+            return fetch(apiEndpoint(path), options);
+        }
 
         // ===== SCENARIOS =====
         const SCENARIOS = {
@@ -1459,7 +1493,7 @@
             if (sendBtn) sendBtn.disabled = true;
 
             try {
-                const response = await fetch(`${API_BASE}/api/chat`, {
+                const response = await apiFetch("/api/chat", {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1512,7 +1546,7 @@
                 chatHistory.push({ role: "assistant", content: fullContent });
             } catch (e) {
                 if (contentDiv) contentDiv.innerHTML =
-                    `<p style="color:#f87171;">网络错误：${escapeHtml(e.message)}</p><p class="text-xs mt-2" style="color:var(--text3);">请确认后端运行在 ${API_BASE}</p>`;
+                    `<p style="color:#f87171;">网络错误：${escapeHtml(e.message)}</p><p class="text-xs mt-2" style="color:var(--text3);">请确认后端运行在 ${API_BASE_URL}</p>`;
             }
             if (sendBtn) sendBtn.disabled = false;
             scrollChat();
@@ -1593,7 +1627,7 @@
                 const formData = new FormData();
                 formData.append('file', file);
                 try {
-                    const resp = await fetch(`${API_BASE}/api/upload`, { method: 'POST', body: formData });
+                    const resp = await apiFetch("/api/upload", { method: 'POST', body: formData });
                     const data = await resp.json();
                     if (data.text) {
                         const preview = data.text.length > 400 ? data.text.substring(0, 400) + '...' : data
@@ -1647,7 +1681,7 @@
             const html = editor.innerHTML.trim();
             if (!html) { alert('文书内容为空，无法导出。'); return; }
             try {
-                const resp = await fetch(`${API_BASE}/api/export-docx`, {
+                const resp = await apiFetch("/api/export-docx", {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ html_content: html, filename: "债优盾法律文书" }),
@@ -1674,7 +1708,7 @@
         // ===== ADMIN =====
         async function refreshAdmin() {
             try {
-                const resp = await fetch(`${API_BASE}/api/admin/events?password=admin888`);
+                const resp = await apiFetch("/api/admin/events?password=admin888");
                 const data = await resp.json();
                 const events = data.events || [];
                 document.getElementById('stat-total').textContent = data.total || events.length;
@@ -1704,7 +1738,7 @@
         if (urlScenario && SCENARIOS[urlScenario]) selectScenario(urlScenario);
 
         console.log('🛡 Aegis 债优盾 · 中小债权人维权智能平台');
-        console.log(`   API: ${API_BASE}`);
+        console.log(`   API: ${API_BASE_URL}`);
     </script>
 </body>
 

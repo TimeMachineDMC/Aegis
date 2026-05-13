@@ -1,9 +1,0 @@
-{
-  "buildCommand": "",
-  "outputDirectory": ".",
-  "cleanUrls": true,
-  "rewrites": [
-    { "source": "/", "destination": "/Code/Web/index.html" },
-    { "source": "/((?!Code/Web|api).*)", "destination": "/Code/Web/$1" }
-  ]
-}
