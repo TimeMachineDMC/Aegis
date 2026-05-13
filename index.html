@@ -249,6 +249,19 @@
             border: 1px solid rgba(248, 113, 113, 0.12);
         }
 
+        .tag-pending {
+            background: rgba(251, 191, 36, 0.1);
+            color: #fbbf24;
+            border: 1px solid rgba(251, 191, 36, 0.12);
+        }
+
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
         /* ====== Evidence Dots ====== */
         .ev-dot {
             width: 8px;
@@ -779,49 +792,98 @@
     </main>
 
     <!-- ==================== VIEW: ADMIN ==================== -->
-    <main id="view-admin" class="view-section" style="display:none;">
-        <div class="max-w-5xl mx-auto px-6 pt-12 pb-24">
-            <div class="flex items-center justify-between mb-10">
+    <main id="view-admin" class="view-section max-w-6xl mx-auto px-6 pt-12 pb-24" style="display:none;">
+        <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
+            <div>
+                <h2 class="text-xl font-bold text-white mb-1">管理看板</h2>
+                <p class="text-xs" style="color:var(--text3);">近七天咨询记录、文书导出与平台事件概览。</p>
+            </div>
+            <button type="button" onclick="loadAdminRecords()"
+                class="self-start md:self-auto btn-ghost text-xs px-4 py-2 rounded-lg border" style="border-color:var(--border);">
+                刷新记录
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div class="glass-card p-5">
+                <p class="text-xs mb-2" style="color:var(--text3);">记录总数</p>
+                <p id="admin-total-count" class="text-2xl font-bold text-white">0</p>
+            </div>
+            <div class="glass-card p-5">
+                <p class="text-xs mb-2" style="color:var(--text3);">待跟进案件</p>
+                <p id="admin-pending-count" class="text-2xl font-bold" style="color:#fbbf24;">0</p>
+            </div>
+            <div class="glass-card p-5">
+                <p class="text-xs mb-2" style="color:var(--text3);">最近同步</p>
+                <p id="admin-last-sync" class="text-sm font-mono" style="color:var(--text2);">--</p>
+            </div>
+        </div>
+
+        <section id="admin-risk-summary" class="mb-8 hidden">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
                 <div>
-                    <h2 class="text-xl font-bold text-white mb-1">管理看板</h2>
-                    <p class="text-xs" style="color:var(--text3);">平台事件与案件概览</p>
+                    <p class="text-xs font-bold tracking-widest uppercase mb-1" style="color:var(--gold-dim);">风险预警</p>
+                    <h3 class="text-lg font-bold text-white">同债务人公司咨询记录聚合</h3>
                 </div>
-                <div class="flex items-center gap-2"><span class="status-dot"></span><span class="text-xs"
-                        style="color:var(--text3);">运行中</span></div>
+                <span class="text-xs" style="color:var(--text3);">近七天多源记录池</span>
             </div>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10" id="admin-stats">
-                <div class="glass-card p-5 text-center">
-                    <p class="text-2xl font-bold text-white" id="stat-total">--</p>
-                    <p class="text-xs mt-1" style="color:var(--text3);">总咨询</p>
+            <div id="admin-risk-list" class="grid grid-cols-1 lg:grid-cols-2 gap-3"></div>
+        </section>
+
+        <section id="admin-case-detail" class="hidden mb-8 glass-card overflow-hidden">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-5" style="border-bottom:1px solid var(--border);">
+                <div>
+                    <p class="text-xs font-bold tracking-widest uppercase mb-1" style="color:var(--gold-dim);">案件详情</p>
+                    <h3 id="admin-detail-title" class="text-lg font-bold text-white">--</h3>
                 </div>
-                <div class="glass-card p-5 text-center">
-                    <p class="text-2xl font-bold" style="color:#4ade80;" id="stat-scored">--</p>
-                    <p class="text-xs mt-1" style="color:var(--text3);">已完成评分</p>
+                <button type="button" onclick="closeAdminDetail()"
+                    class="self-start md:self-auto text-xs hover:opacity-80 transition-opacity" style="color:var(--text3);">关闭</button>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-0">
+                <div class="p-5" style="border-right:1px solid var(--border);">
+                    <div id="admin-detail-facts" class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm"></div>
+                    <div class="mt-5">
+                        <p class="text-xs font-bold mb-2" style="color:var(--text3);">原始问题 / 摘要</p>
+                        <p id="admin-detail-question" class="text-sm leading-relaxed" style="color:var(--text2);"></p>
+                    </div>
+                    <div class="mt-5">
+                        <p class="text-xs font-bold mb-2" style="color:var(--text3);">AI 答复 / 处理记录</p>
+                        <div id="admin-detail-answer" class="text-sm leading-relaxed max-h-48 overflow-y-auto pr-2" style="color:var(--text2);"></div>
+                    </div>
                 </div>
-                <div class="glass-card p-5 text-center">
-                    <p class="text-2xl font-bold" style="color:#fbbf24;" id="stat-files">--</p>
-                    <p class="text-xs mt-1" style="color:var(--text3);">文件上传</p>
-                </div>
-                <div class="glass-card p-5 text-center">
-                    <p class="text-2xl font-bold" style="color:#818cf8;" id="stat-docs">--</p>
-                    <p class="text-xs mt-1" style="color:var(--text3);">文书导出</p>
+                <div class="p-5">
+                    <p class="text-xs font-bold mb-3" style="color:var(--text3);">案件时间线</p>
+                    <ol id="admin-detail-timeline" class="space-y-3 text-sm"></ol>
+                    <div class="mt-5">
+                        <p class="text-xs font-bold mb-2" style="color:var(--text3);">证据缺口</p>
+                        <ul id="admin-detail-missing" class="space-y-2 text-sm" style="color:var(--text2);"></ul>
+                    </div>
+                    <div class="mt-5">
+                        <p class="text-xs font-bold mb-2" style="color:var(--text3);">参考来源</p>
+                        <div id="admin-detail-sources" class="space-y-2 text-sm" style="color:var(--text2);"></div>
+                    </div>
                 </div>
             </div>
-            <div class="glass-card p-6 overflow-x-auto">
-                <h3 class="font-semibold text-white mb-4 text-sm">事件日志</h3>
-                <table class="w-full text-xs">
-                    <thead>
-                        <tr class="border-b text-left" style="border-color:var(--border);color:var(--text3);">
-                            <th class="py-2.5 px-3 font-medium">时间</th>
-                            <th class="py-2.5 px-3 font-medium">类型</th>
-                            <th class="py-2.5 px-3 font-medium">场景</th>
-                            <th class="py-2.5 px-3 font-medium">摘要</th>
-                        </tr>
-                    </thead>
-                    <tbody id="admin-events" style="color:var(--text2);"></tbody>
-                </table>
-                <button onclick="refreshAdmin()" class="btn-ghost text-xs mt-4 py-1.5 px-4">刷新</button>
-            </div>
+        </section>
+
+        <div class="glass-card overflow-x-auto">
+            <table class="min-w-full text-left text-sm">
+                <thead class="text-xs uppercase tracking-wider" style="color:var(--text3);">
+                    <tr>
+                        <th class="px-4 py-3">时间</th>
+                        <th class="px-4 py-3">阶段</th>
+                        <th class="px-4 py-3">债权人/债务人</th>
+                        <th class="px-4 py-3">问题 / 摘要</th>
+                        <th class="px-4 py-3">状态</th>
+                        <th class="px-4 py-3">处理人</th>
+                    </tr>
+                </thead>
+                <tbody id="admin-records-body" style="color:var(--text2);">
+                    <tr>
+                        <td colspan="6" class="px-4 py-8 text-center" style="color:var(--text3);">进入管理看板后自动加载。</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </main>
 
@@ -2030,26 +2092,171 @@
         }
 
         // ===== ADMIN =====
-        async function refreshAdmin() {
+        // ===== ADMIN DASHBOARD =====
+        let adminRecords = [];
+        let adminRiskSummary = [];
+
+        async function loadAdminRecords() {
+            const tbody = document.getElementById('admin-records-body');
+            const totalEl = document.getElementById('admin-total-count');
+            const pendingEl = document.getElementById('admin-pending-count');
+            const syncEl = document.getElementById('admin-last-sync');
+            if (!tbody) return;
+
+            tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center" style="color:var(--text3);">正在读取后端记录...</td></tr>`;
             try {
-                const resp = await apiFetch("/api/admin/events?password=admin888");
-                const data = await resp.json();
-                const events = data.events || [];
-                document.getElementById('stat-total').textContent = data.total || events.length;
-                document.getElementById('stat-scored').textContent = events.filter(e => e.type === 'chat').length;
-                document.getElementById('stat-files').textContent = events.filter(e => e.type === 'file_upload')
-                    .length;
-                document.getElementById('stat-docs').textContent = events.filter(e => e.type === 'doc_export')
-                    .length;
-                const tbody = document.getElementById('admin-events');
-                if (tbody) tbody.innerHTML = events.slice(-20).reverse().map(e => `
-                    <tr class="border-b hover:bg-white/[0.02]" style="border-color:var(--border);">
-                        <td class="py-2.5 px-3" style="color:var(--text3);">${(e.timestamp||'').substring(11,19)}</td>
-                        <td class="py-2.5 px-3"><span class="tag ${e.type==='chat'?'tag-gold':'tag-green'}">${e.type||''}</span></td>
-                        <td class="py-2.5 px-3">${e.data?.scenario||'-'}</td>
-                        <td class="py-2.5 px-3 truncate max-w-[240px]" style="color:var(--text2);">${escapeHtml((e.data?.query||e.data?.filename||JSON.stringify(e.data||{}).substring(0,60)))}</td>
-                    </tr>`).join('');
-            } catch (e) { console.error(e); }
+                const response = await apiFetch('/api/admin/records?days=7&password=admin888');
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.detail || `HTTP ${response.status}`);
+
+                const records = data.records || [];
+                adminRiskSummary = data.risk_summary || [];
+                renderAdminRiskSummary(adminRiskSummary);
+                const pending = records.filter(row => /待/.test(row.status || "")).length;
+                totalEl.innerText = records.length;
+                pendingEl.innerText = pending;
+                syncEl.innerText = new Date().toLocaleString('zh-CN', { hour12: false });
+
+                if (!records.length) {
+                    adminRecords = [];
+                    tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center" style="color:var(--text3);">近七天暂无记录。</td></tr>`;
+                    return;
+                }
+
+                adminRecords = records;
+                tbody.innerHTML = records.map(row => `
+                    <tr class="hover:bg-white/[0.02] cursor-pointer" onclick="openAdminDetail('${escapeHtml(row.id || "")}')" style="border-bottom:1px solid var(--border);">
+                        <td class="px-4 py-3 whitespace-nowrap text-xs" style="color:var(--text3);">${escapeHtml(row.timestamp || "")}</td>
+                        <td class="px-4 py-3 whitespace-nowrap">${escapeHtml(row.stage || "")}</td>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <div class="font-bold" style="color:var(--text1);">${escapeHtml(row.creditor_name || "")}</div>
+                            <div class="text-xs" style="color:var(--text3);">${escapeHtml(row.debtor_company || "")}</div>
+                        </td>
+                        <td class="px-4 py-3 min-w-[18rem]">
+                            <div class="line-clamp-2">${escapeHtml(row.question || row.summary || "")}</div>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <span class="rounded-full px-2 py-1 text-xs ${/待/.test(row.status || "") ? 'tag-pending' : 'tag-green'}">${escapeHtml(row.status || "已记录")}</span>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap" style="color:var(--text3);">${escapeHtml(row.assignee || "")}</td>
+                    </tr>
+                `).join("");
+            } catch (error) {
+                renderAdminRiskSummary([]);
+                tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center" style="color:#f87171;">读取失败：${escapeHtml(error.message || '请确认后端服务正在运行。')}</td></tr>`;
+            }
+        }
+
+        function renderFact(label, value, emphasis = false) {
+            return `
+                <div class="rounded-lg border p-3" style="border-color:var(--border);background:rgba(17,24,39,0.4);">
+                    <p class="text-xs mb-1" style="color:var(--text3);">${escapeHtml(label)}</p>
+                    <p class="text-sm ${emphasis ? 'font-bold' : ''}" style="color:${emphasis ? 'var(--gold)' : 'var(--text1)'};">${escapeHtml(value || "待补充")}</p>
+                </div>
+            `;
+        }
+
+        function riskBadgeClass(level = "") {
+            if (/高/.test(level)) return 'tag-red';
+            if (/中/.test(level)) return 'tag-gold';
+            return 'tag-green';
+        }
+
+        function renderAdminRiskSummary(summary = []) {
+            const section = document.getElementById('admin-risk-summary');
+            const list = document.getElementById('admin-risk-list');
+            if (!section || !list) return;
+            if (!summary.length) {
+                section.classList.add('hidden');
+                list.innerHTML = "";
+                return;
+            }
+            section.classList.remove('hidden');
+            list.innerHTML = summary.slice(0, 6).map(item => `
+                <div class="glass-card p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <p class="text-sm font-bold text-white">${escapeHtml(item.debtor_company || "待补充债务人")}</p>
+                            <p class="text-xs mt-1" style="color:var(--text3);">${escapeHtml(item.creditor_display || "")}</p>
+                        </div>
+                        <span class="rounded-full border px-2 py-1 text-xs ${riskBadgeClass(item.level)}">${escapeHtml(item.level || "关注")}</span>
+                    </div>
+                    <p class="text-xs leading-relaxed mt-3" style="color:var(--text2);">${escapeHtml(item.warning_text || "")}</p>
+                    ${(item.evidence_labels || []).length ? `<div class="flex flex-wrap gap-1.5 mt-3 text-xs" style="color:var(--text3);">${item.evidence_labels.map(l => `<span class="tag tag-green">${escapeHtml(l)}</span>`).join("")}</div>` : ""}
+                </div>
+            `).join("");
+        }
+
+        function openAdminDetail(id) {
+            const row = adminRecords.find(item => item.id === id);
+            if (!row) return;
+            const profile = row.case_profile || {};
+            document.getElementById('admin-case-detail').classList.remove('hidden');
+            document.getElementById('admin-detail-title').innerText = `${row.creditor_name || "债权人"} · ${row.debtor_company || "待补充债务人"} · ${row.stage || "平台记录"}`;
+            document.getElementById('admin-detail-facts').innerHTML = [
+                renderFact('债务人公司', profile.debtor_company, profile.debtor_company !== "待补充"),
+                renderFact('债务金额', profile.debt_amount, profile.debt_amount !== "待补充"),
+                renderFact('法定代表人', profile.debtor_legal_rep),
+                renderFact('债务依据', profile.debt_basis),
+                renderFact('债务日期', profile.debt_date),
+                renderFact('股东姓名', profile.shareholder_name, profile.shareholder_name !== "待补充"),
+                renderFact('认缴出资', profile.subscription_capital, profile.subscription_capital !== "待补充"),
+                renderFact('实缴出资', profile.paid_capital),
+                renderFact('未实缴金额', profile.unpaid_capital, profile.unpaid_capital !== "待补充"),
+                renderFact('出资期限', profile.contribution_deadline),
+                renderFact('公司状态', profile.company_status, /资不抵债|停止经营/.test(profile.company_status || "")),
+                renderFact('现有证据', (profile.existing_evidence || []).join('、') || '待补充'),
+            ].join("");
+            document.getElementById('admin-detail-question').innerText = row.question || row.summary || "暂无";
+            document.getElementById('admin-detail-answer').innerHTML = row.answer ? marked.parse(row.answer) : escapeHtml(row.summary || "暂无详细处理记录");
+            document.getElementById('admin-detail-timeline').innerHTML = renderAdminTimeline(profile);
+            const missing = profile.missing_items || buildMissingItems(profile);
+            document.getElementById('admin-detail-missing').innerHTML = missing.length
+                ? missing.map(item => `<li class="flex gap-2"><span style="color:var(--gold-dim);">•</span><span>${escapeHtml(item)}</span></li>`).join("")
+                : `<li style="color:var(--text3);">暂无明显缺口。</li>`;
+            document.getElementById('admin-detail-sources').innerHTML = (row.sources || []).length
+                ? (row.sources || []).map(s => `<span class="tag tag-green mr-1 mb-1">${escapeHtml(s)}</span>`).join("")
+                : `<span style="color:var(--text3);">暂无参考来源。</span>`;
+            document.getElementById('admin-case-detail').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function closeAdminDetail() {
+            document.getElementById('admin-case-detail').classList.add('hidden');
+        }
+
+        function renderAdminTimeline(profile) {
+            const events = [];
+            if (profile.debt_date && profile.debt_date !== "待补充")
+                events.push({ date: profile.debt_date, detail: `债务到期日` });
+            if (profile.contribution_deadline && profile.contribution_deadline !== "待补充")
+                events.push({ date: profile.contribution_deadline, detail: `股东出资期限` });
+            if (profile.company_status && profile.company_status !== "待补充")
+                events.push({ date: "当前", detail: `公司状态: ${profile.company_status}` });
+            if (!events.length) {
+                return `<li style="color:var(--text3);">暂无明确时间节点。</li>`;
+            }
+            return events.map(item => `
+                <li class="relative pl-4" style="border-left:1px solid var(--gold-dim);">
+                    <span class="absolute -left-[5px] top-1.5 w-2 h-2 rounded-full" style="background:var(--gold);"></span>
+                    <p class="text-xs font-bold" style="color:var(--gold-dim);">${escapeHtml(item.date || "")}</p>
+                    <p class="text-xs leading-relaxed mt-1" style="color:var(--text2);">${escapeHtml(item.detail || "")}</p>
+                </li>
+            `).join("");
+        }
+
+        function buildMissingItems(profile) {
+            const items = [];
+            if (!profile.debtor_company || profile.debtor_company === "待补充") items.push("债务人公司全称");
+            if (!profile.shareholder_name || profile.shareholder_name === "待补充") items.push("未实缴股东姓名");
+            if (!profile.debt_amount || profile.debt_amount === "待补充") items.push("明确债务金额");
+            if (!profile.debt_basis || profile.debt_basis === "待补充") items.push("债务依据（合同/欠条等）");
+            if (!profile.unpaid_capital || profile.unpaid_capital === "待补充") items.push("股东未实缴出资金额");
+            if (!(profile.existing_evidence || []).length) items.push("证据文件上传");
+            return items;
+        }
+
+        function refreshAdmin() {
+            loadAdminRecords();
         }
 
         function escapeHtml(s) { const d = document.createElement('div');

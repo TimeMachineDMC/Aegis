@@ -214,6 +214,93 @@ def save_platform_event(event_type: str, data: dict):
         print(f"[Event] Write failed: {e}")
 
 
+def read_jsonl(path: Path) -> list[dict]:
+    if not path.exists():
+        return []
+    rows = []
+    with path.open("r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rows.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+    return rows
+
+
+def parse_timestamp(value: str) -> datetime | None:
+    if not value:
+        return None
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S"):
+        try:
+            return datetime.strptime(value[:19], fmt)
+        except ValueError:
+            continue
+    return None
+
+
+def build_admin_risk_summary(records: list[dict]) -> list[dict]:
+    """Aggregate records by debtor company for risk overview."""
+    groups: dict[str, dict] = {}
+    for row in records:
+        profile = row.get("case_profile") or {}
+        company = profile.get("debtor_company", "待补充")
+        if company == "待补充":
+            continue
+
+        group = groups.setdefault(company, {
+            "debtor_company": company,
+            "level": "关注",
+            "record_count": 0,
+            "creditor_names": set(),
+            "debt_amount": profile.get("debt_amount", "待补充"),
+            "latest_timestamp": row.get("timestamp", ""),
+            "evidence_labels": [],
+            "risk_tags": set(),
+        })
+
+        group["record_count"] += 1
+        group["latest_timestamp"] = max(group.get("latest_timestamp", ""), row.get("timestamp", ""))
+        if profile.get("creditor_name") and profile["creditor_name"] != "待补充":
+            group["creditor_names"].add(profile["creditor_name"])
+        if profile.get("company_status") and profile["company_status"] != "待补充":
+            group["risk_tags"].add(profile["company_status"])
+
+        # Escalate level based on indicators
+        status = profile.get("company_status", "")
+        if "资不抵债" in status or "停止经营" in status:
+            group["level"] = "高风险"
+        elif "无力" in status or "亏损" in status:
+            if group["level"] != "高风险":
+                group["level"] = "中风险"
+
+        evidence = profile.get("existing_evidence", [])
+        if isinstance(evidence, list):
+            for e in evidence:
+                if e not in group["evidence_labels"]:
+                    group["evidence_labels"].append(e)
+
+    summary = []
+    for item in groups.values():
+        item["risk_tags"] = sorted(item["risk_tags"])
+        creditors = sorted(item["creditor_names"])
+        item["creditor_display"] = "、".join(creditors[:3]) if creditors else "待补充"
+        item["warning_text"] = (
+            f"{item['debtor_company']} 已汇聚 {item['record_count']} 条咨询记录"
+            f"{'，风险等级：' + item['level'] if item['level'] != '关注' else ''}。"
+        )
+        summary.append(item)
+
+    summary.sort(key=lambda item: (
+        {"高风险": 3, "中风险": 2, "关注": 1}.get(item["level"], 0),
+        item["record_count"],
+        item["latest_timestamp"]
+    ), reverse=True)
+    return summary[:8]
+
+
 # ================= 4. Scenario Definitions =================
 SCENARIOS = {
     "1": {
@@ -1066,17 +1153,93 @@ async def get_scenarios():
 
 
 # ================= 12. Admin Dashboard =================
-@app.get("/api/admin/events")
-async def get_admin_events(password: str = ""):
+@app.get("/api/admin/records")
+async def admin_records(days: int = 7, password: str = ""):
     if password != "admin888":
         raise HTTPException(401, "密码错误")
-    events = []
-    if EVENT_LOG_PATH.exists():
-        with open(EVENT_LOG_PATH, "r", encoding="utf-8") as f:
-            for line in f:
-                if line.strip():
-                    events.append(json.loads(line))
-    return {"events": events[-200:], "total": len(events)}
+    cutoff = datetime.now() - timedelta(days=max(1, min(days, 30)))
+    records = []
+
+    # Read chat logs
+    for item in read_jsonl(LOG_FILE_PATH):
+        ts = parse_timestamp(item.get("timestamp", ""))
+        if ts is None or ts < cutoff:
+            continue
+        query = item.get("user_query", "")
+        profile = build_creditor_case_profile(query, item.get("scenario", "unknown"), "债权人")
+        records.append({
+            "id": f"chat_{item.get('timestamp', '')}",
+            "timestamp": item.get("timestamp"),
+            "stage": "AI 法律研判",
+            "creditor_name": profile.get("creditor_name", "债权人"),
+            "debtor_company": profile.get("debtor_company", "待补充"),
+            "question": query,
+            "summary": item.get("justitia_answer", "")[:180],
+            "status": "AI 已答复",
+            "assignee": "Aegis 债优盾",
+            "answer": item.get("justitia_answer", ""),
+            "sources": item.get("reference_sources", []),
+            "case_profile": profile,
+            "record_type": "chat",
+        })
+
+    # Read event logs
+    for item in read_jsonl(EVENT_LOG_PATH):
+        ts = parse_timestamp(item.get("timestamp", ""))
+        if ts is None or ts < cutoff:
+            continue
+        data = item.get("data") or {}
+        event_type = item.get("type", "")
+        if event_type == "chat":
+            query = data.get("query", "")
+            profile = build_creditor_case_profile(query, data.get("scenario", "unknown"), "债权人")
+            records.append({
+                "id": f"event_{item.get('timestamp', '')}",
+                "timestamp": item.get("timestamp"),
+                "stage": "AI 法律研判",
+                "creditor_name": profile.get("creditor_name", "债权人"),
+                "debtor_company": profile.get("debtor_company", "待补充"),
+                "question": query,
+                "summary": data.get("query", "")[:180],
+                "status": "AI 已答复",
+                "assignee": "Aegis 债优盾",
+                "case_profile": profile,
+                "record_type": "event_chat",
+            })
+        elif event_type == "file_upload":
+            profile = build_creditor_case_profile("", "unknown", "债权人")
+            records.append({
+                "id": f"file_{item.get('timestamp', '')}",
+                "timestamp": item.get("timestamp"),
+                "stage": "文件上传",
+                "creditor_name": "债权人",
+                "debtor_company": profile.get("debtor_company", "待补充"),
+                "question": data.get("filename", ""),
+                "summary": f"上传文件: {data.get('filename', '')}",
+                "status": "已记录",
+                "assignee": "",
+                "case_profile": profile,
+                "record_type": "file_upload",
+            })
+        elif event_type == "doc_export":
+            profile = build_creditor_case_profile("", "unknown", "债权人")
+            records.append({
+                "id": f"doc_{item.get('timestamp', '')}",
+                "timestamp": item.get("timestamp"),
+                "stage": "文书导出",
+                "creditor_name": "债权人",
+                "debtor_company": profile.get("debtor_company", "待补充"),
+                "question": data.get("filename", ""),
+                "summary": f"导出文书: {data.get('filename', '')}",
+                "status": "已记录",
+                "assignee": "",
+                "case_profile": profile,
+                "record_type": "doc_export",
+            })
+
+    records.sort(key=lambda row: row.get("timestamp", ""), reverse=True)
+    backend_log("ADMIN_DASHBOARD_QUERY", f"days={days} | records={len(records)}")
+    return {"days": days, "records": records[:200], "risk_summary": build_admin_risk_summary(records)}
 
 
 # ================= 13. Static Frontend =================
