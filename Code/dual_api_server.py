@@ -60,6 +60,9 @@ DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 if not DEEPSEEK_API_KEY:
     raise ValueError("DEEPSEEK_API_KEY not found. Copy .env.example to Code/.env or project .env first.")
 
+LLM_MODEL = os.getenv("LLM_MODEL", "deepseek-chat")
+LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "8192"))
+
 # OCR Engine
 ocr_engine = None
 ocr_engine_name = None
@@ -124,7 +127,11 @@ app = FastAPI(title="Aegis 债优盾", description="中小债权人维权智能�
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://127.0.0.1:8080",
+        "http://localhost:8080",
+        "https://timemachinedmc.github.io",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -137,9 +144,10 @@ class ChatRequest(BaseModel):
     stream: bool = True
     history: list = []
     top_k: int = 5
-    score_threshold: float = 1.5
+    score_threshold: float = 0.5
     scenario: str = "unknown"  # 1-7 或 unknown
     user_name: str = "债权人"
+    case_profile: dict = None
 
 
 class SourceItem(BaseModel):
@@ -156,11 +164,6 @@ class ChatResponse(BaseModel):
 class ExportRequest(BaseModel):
     html_content: str
     filename: str = "债优盾法律文书"
-
-
-class AdminQuery(BaseModel):
-    password: str = "admin888"
-    filters: dict = {}
 
 
 # ================= 3. Utility Functions =================
@@ -260,6 +263,12 @@ LEGAL_KEYWORDS = [
     '出资', '实缴', '认缴', '加速到期', '减资', '增资', '抽逃', '验资', '出资期限',
     '债权人', '债务人', '欠债', '讨债', '追债', '债权凭证', '不能清偿', '到期债务',
     '股东会', '决议', '扩大出资', '转让股权', '逃避债务',
+    '追加执行', '追加被执行人', '终本', '终结本次执行', '终结执行',
+    '欠条', '借条', '欠薪', '工程款', '货款', '劳务费',
+    '已具备破产原因', '资不抵债', '无可供执行财产',
+    '申请财产保全', '诉前保全', '证据保全', '执行异议',
+    '实缴出资', '未实缴', '未出资', '出资不实', '虚假出资',
+    '补充赔偿责任', '连带责任', '股东责任',
 ]
 
 FINANCE_KEYWORDS = [
@@ -279,8 +288,24 @@ FINANCE_KEYWORDS = [
 def detect_intent(query: str) -> dict:
     is_legal = any(k in query for k in LEGAL_KEYWORDS)
     is_finance = any(k in query for k in FINANCE_KEYWORDS)
-    is_domain = is_legal or is_finance or len(query) > 15
+    is_domain = is_legal or is_finance
     return {"is_legal": is_legal, "is_finance": is_finance, "is_domain": is_domain}
+
+
+def auto_classify_scenario(query: str) -> str:
+    rules = [
+        ("3", ["延长出资期限", "延长了出资", "出资期限延长", "修改章程.*出资", "股东会.*延", "改到.*20", "变更.*出资期限"]),
+        ("5", ["减资", "减少注册资本", "注册资本.*变", "不通知.*减"]),
+        ("4", ["抽逃", "出资.*转走", "转走.*出资", "出资后.*转", "验资后", "验资.*完.*转", "出资款.*转", "预付款.*转"]),
+        ("6", ["股权转让", "转让股权", "股东.*转让", "转让.*股东", "受让.*老人", "转给.*老人", "转让.*逃避"]),
+        ("2", ["加速到期", "提前.*出资", "出资.*加速", "破产原因", "具备破产", "终本", "终结.*执行", "执行.*终本"]),
+        ("1", ["欠钱", "欠款", "欠条", "借条", "告股东", "追.*股东", "股东.*未.*出资", "未实缴", "实缴.*0", "实缴只有"]),
+    ]
+    for scenario_id, patterns in rules:
+        for pat in patterns:
+            if re.search(pat, query):
+                return scenario_id
+    return ""
 
 
 # ================= 6. Financial DB Query Engine =================
@@ -338,12 +363,22 @@ async def query_finance_db(query: str) -> dict:
         sql_query = match.group(1).strip()
         print(f"[Finance SQL] {sql_query}")
 
-        conn = sqlite3.connect(str(FINANCE_DB_PATH))
-        cursor = conn.cursor()
-        cursor.execute(sql_query)
-        rows = cursor.fetchall()
-        cols = [desc[0] for desc in cursor.description] if cursor.description else []
-        conn.close()
+        sql_upper = sql_query.upper().strip()
+        if not sql_upper.startswith("SELECT"):
+            print(f"[Finance] Blocked non-SELECT: {sql_query}")
+            return {"sql": sql_query, "result": None, "context": "仅允许 SELECT 查询。"}
+        FORBIDDEN_SQL = ["DROP", "DELETE", "ALTER", "INSERT", "UPDATE", "CREATE",
+                         "TRUNCATE", "EXEC", "EXECUTE", "ATTACH", "DETACH", "PRAGMA"]
+        for kw in FORBIDDEN_SQL:
+            if re.search(r'\b' + kw + r'\b', sql_upper):
+                print(f"[Finance] Blocked forbidden keyword {kw}: {sql_query}")
+                return {"sql": sql_query, "result": None, "context": f"SQL 包含禁止关键字: {kw}"}
+
+        with sqlite3.connect(str(FINANCE_DB_PATH)) as conn:
+            cursor = conn.cursor()
+            cursor.execute(sql_query)
+            rows = cursor.fetchall()
+            cols = [desc[0] for desc in cursor.description] if cursor.description else []
 
         db_results = [dict(zip(cols, row)) for row in rows]
         context = f"本地财务数据库查到的真实数据（共{len(rows)}条）：{json.dumps(db_results, ensure_ascii=False)}"
@@ -358,30 +393,34 @@ async def query_finance_db(query: str) -> dict:
 def get_finance_tables() -> list:
     if not FINANCE_DB_PATH.exists():
         return []
-    conn = sqlite3.connect(str(FINANCE_DB_PATH))
-    cursor = conn.cursor()
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
-    tables = [row[0] for row in cursor.fetchall()]
-    conn.close()
+    with sqlite3.connect(str(FINANCE_DB_PATH)) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
+        tables = [row[0] for row in cursor.fetchall()]
     return tables
 
 
 # ================= 7. Case Profile Builder (债权人版本) =================
-def build_creditor_case_profile(query: str, scenario: str, user_name: str) -> dict:
-    profile = {
-        "creditor_name": user_name,
-        "debtor_company": "待补充",
-        "debt_amount": "待补充",
-        "debt_basis": "待补充",
-        "shareholder_info": "待补充",
-        "subscription_capital": "待补充",
-        "paid_capital": "待补充",
-        "contribution_deadline": "待补充",
-        "company_status": "待补充",
-        "existing_evidence": [],
-        "scenario": get_scenario_label(scenario),
-        "scenario_id": scenario,
-    }
+def build_creditor_case_profile(query: str, scenario: str, user_name: str, previous_profile: dict = None) -> dict:
+    if previous_profile and isinstance(previous_profile, dict):
+        profile = dict(previous_profile)  # start from previous
+        profile["scenario"] = get_scenario_label(scenario)
+        profile["scenario_id"] = scenario
+    else:
+        profile = {
+            "creditor_name": user_name,
+            "debtor_company": "待补充",
+            "debt_amount": "待补充",
+            "debt_basis": "待补充",
+            "shareholder_info": "待补充",
+            "subscription_capital": "待补充",
+            "paid_capital": "待补充",
+            "contribution_deadline": "待补充",
+            "company_status": "待补充",
+            "existing_evidence": [],
+            "scenario": get_scenario_label(scenario),
+            "scenario_id": scenario,
+        }
 
     # Simple extraction
     amount_match = re.search(r'(\d+[\.,]?\d*)\s*(万|元|块)', query)
@@ -407,12 +446,43 @@ def build_creditor_case_profile(query: str, scenario: str, user_name: str) -> di
         evidence_types.append("法院裁判文书")
     if any(k in query for k in ['对账单', '结算单', '确认函']):
         evidence_types.append("对账单/结算单/确认函")
-    profile["existing_evidence"] = evidence_types if evidence_types else ["待识别"]
+    if evidence_types:
+        prev_evidence = profile.get("existing_evidence", [])
+        if prev_evidence == ["待识别"]:
+            prev_evidence = []
+        merged = list(dict.fromkeys(prev_evidence + evidence_types))
+        profile["existing_evidence"] = merged
+    elif not profile.get("existing_evidence") or profile["existing_evidence"] == ["待识别"]:
+        profile["existing_evidence"] = ["待识别"]
 
     return profile
 
 
 # ================= 8. Evidence Gap Analysis =================
+EVIDENCE_KEYWORD_MAP = {
+    "债权凭证": ["债权", "合同", "欠条", "借条", "判决", "裁定", "调解", "债权凭证", "裁判文书", "协议"],
+    "公司不能清偿": ["不能清偿", "终本", "终结执行", "资不抵债", "无财产", "执行", "账户没钱", "账上没钱"],
+    "工商登记": ["工商", "企查查", "天眼查", "公示", "登记", "股东"],
+    "催收记录": ["催收", "发函", "通知", "微信", "聊天", "短信", "通讯记录"],
+    "财务报告": ["审计", "报表", "财务", "负债表", "利润表", "现金流", "审计报告"],
+    "出资证明": ["验资", "出资", "银行流水", "实缴", "认缴", "转账", "汇款"],
+    "减资记录": ["减资", "注册资本变更", "注册资本.*变"],
+    "股权转让": ["股权转让", "股东变更", "转让协议", "转让.*股东"],
+}
+
+def _is_evidence_match(required_item: str, existing_items: list) -> bool:
+    for ex in existing_items:
+        if ex in required_item or required_item in ex:
+            return True
+    # category-based matching
+    for category, keywords in EVIDENCE_KEYWORD_MAP.items():
+        if category in required_item:
+            for ex in existing_items:
+                for kw in keywords:
+                    if kw in ex or (len(kw) >= 3 and kw in required_item and any(k in ex for k in keywords[:3])):
+                        return True
+    return False
+
 def analyze_evidence_gaps(profile: dict, scenario: str) -> dict:
     """根据场景分析证据缺口"""
     required_evidence = {
@@ -426,14 +496,15 @@ def analyze_evidence_gaps(profile: dict, scenario: str) -> dict:
     }
 
     needed = required_evidence.get(scenario, required_evidence["1"])
-    existing_set = set(profile.get("existing_evidence", []))
-    gaps = [e for e in needed if not any(ex in e or e in ex for ex in existing_set)]
+    existing_items = profile.get("existing_evidence", [])
+    gaps = [e for e in needed if not _is_evidence_match(e, existing_items)]
 
+    matched = len(needed) - len(gaps)
     return {
         "required": needed,
-        "existing": profile.get("existing_evidence", []),
+        "existing": existing_items,
         "gaps": gaps,
-        "completeness": max(0, len(existing_set) / max(len(needed), 1)),
+        "completeness": matched / max(len(needed), 1),
     }
 
 
@@ -526,21 +597,6 @@ Respond strictly in Chinese.
 
 
 # ================= 10. DOCX Export (债权人版本) =================
-def clean_html_summary(html: str) -> str:
-    if not html:
-        return "债优盾法律文书"
-    soup = BeautifulSoup(html, "html.parser")
-    for tag in soup(["script", "style", "svg", "img", "button", "input"]):
-        tag.decompose()
-    for tag in soup.find_all(True):
-        for attr in list(tag.attrs):
-            if attr not in ("colspan", "rowspan"):
-                del tag[attr]
-    cleaned = str(soup)
-    cleaned = re.sub(r'\n\s*\n', '\n', cleaned)
-    return (cleaned or "债优盾法律文书")[:80]
-
-
 def export_creditor_complaint_docx(html_content: str, filename: str = "债优盾法律文书") -> io.BytesIO:
     soup = BeautifulSoup(html_content, "html.parser")
     doc = Document()
@@ -612,9 +668,18 @@ async def chat_endpoint(request: ChatRequest):
     source_items = []
     sql_meta = None
 
+    # Auto-classify scenario 7 / unknown
+    classified_scenario = ""
+    if request.scenario in ("7", "unknown"):
+        classified_scenario = auto_classify_scenario(request.query)
+        if classified_scenario and classified_scenario in SCENARIOS:
+            print(f"[AutoClassify] Scenario {request.scenario} → {classified_scenario} ({SCENARIOS[classified_scenario]['title']})")
+
+    effective_scenario = classified_scenario or request.scenario
+
     # Build case profile
-    case_profile = build_creditor_case_profile(request.query, request.scenario, request.user_name)
-    evidence_analysis = analyze_evidence_gaps(case_profile, request.scenario)
+    case_profile = build_creditor_case_profile(request.query, effective_scenario, request.user_name, request.case_profile)
+    evidence_analysis = analyze_evidence_gaps(case_profile, effective_scenario)
 
     # Intent routing
     if intent["is_domain"]:
@@ -659,51 +724,63 @@ async def chat_endpoint(request: ChatRequest):
                 messages.append({"role": msg["role"], "content": msg["content"]})
     messages.append({"role": "user", "content": request.query})
 
+    MAX_HISTORY_EXCHANGES = 20
+    if len(messages) > 1 + MAX_HISTORY_EXCHANGES * 2:
+        messages = [messages[0]] + messages[-(MAX_HISTORY_EXCHANGES * 2):]
+
     if not request.stream:
         # Non-streaming
         response = await client.chat.completions.create(
-            model="deepseek-chat",
+            model=LLM_MODEL,
             messages=messages,
-            max_tokens=8192,
+            max_tokens=LLM_MAX_TOKENS,
         )
         answer = response.choices[0].message.content
-        save_chat_log(request.query, "", answer, source_items, request.scenario)
-        return {"answer": answer, "sources": source_items, "case_profile": case_profile}
+        save_chat_log(request.query, "", answer, source_items, effective_scenario)
+        save_platform_event("chat", {
+            "query": request.query[:200],
+            "scenario": effective_scenario,
+            "sources_count": len(source_items),
+            "user_name": request.user_name,
+        })
+        return {"answer": answer, "sources": source_items, "case_profile": case_profile, "classified_scenario": classified_scenario}
 
     # Streaming
     async def generate_stream():
-        meta = {"type": "meta", "sources": source_items, "case_profile": case_profile}
+        meta = {"type": "meta", "sources": source_items, "case_profile": case_profile, "classified_scenario": classified_scenario}
         if sql_meta:
             meta["finance"] = sql_meta
         yield f"data: {json.dumps(meta, ensure_ascii=False)}\n\n"
 
-        accumulated_reasoning = ""
         accumulated_content = ""
 
         try:
             response = await client.chat.completions.create(
-                model="deepseek-chat",
+                model=LLM_MODEL,
                 messages=messages,
                 stream=True,
-                max_tokens=8192,
+                max_tokens=LLM_MAX_TOKENS,
             )
             async for chunk in response:
                 if not chunk.choices:
                     continue
                 delta = chunk.choices[0].delta
-                if hasattr(delta, 'reasoning_content') and delta.reasoning_content:
-                    accumulated_reasoning += delta.reasoning_content
-                    yield f"data: {json.dumps({'type': 'reasoning', 'content': delta.reasoning_content}, ensure_ascii=False)}\n\n"
                 if hasattr(delta, 'content') and delta.content:
                     accumulated_content += delta.content
                     yield f"data: {json.dumps({'type': 'chunk', 'content': delta.content}, ensure_ascii=False)}\n\n"
         except Exception as e:
             print(f"[LLM Error] {e}")
-            fallback = f"抱歉，AI 服务暂时不可用（{str(e)[:100]}）。请稍后重试。"
+            fallback = f"抱歉，AI 服务暂时不可用。请稍后重试。"
             accumulated_content += fallback
             yield f"data: {json.dumps({'type': 'chunk', 'content': fallback}, ensure_ascii=False)}\n\n"
 
-        save_chat_log(request.query, accumulated_reasoning, accumulated_content, source_items, request.scenario)
+        save_chat_log(request.query, "", accumulated_content, source_items, effective_scenario)
+        save_platform_event("chat", {
+            "query": request.query[:200],
+            "scenario": effective_scenario,
+            "sources_count": len(source_items),
+            "user_name": request.user_name,
+        })
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(generate_stream(), media_type="text/event-stream")
@@ -712,6 +789,9 @@ async def chat_endpoint(request: ChatRequest):
 @app.post("/api/upload")
 async def upload_file(file: UploadFile = File(...)):
     content = await file.read()
+    MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB
+    if len(content) > MAX_UPLOAD_SIZE:
+        raise HTTPException(413, f"文件大小超过限制（最大 10 MB）")
     ext = Path(file.filename).suffix.lower()
 
     extracted_text = ""
@@ -764,6 +844,10 @@ async def upload_file(file: UploadFile = File(...)):
 @app.post("/api/export-docx")
 async def export_docx(request: ExportRequest):
     buf = export_creditor_complaint_docx(request.html_content, request.filename)
+    save_platform_event("doc_export", {
+        "filename": request.filename,
+        "content_length": len(request.html_content),
+    })
     safe_filename = re.sub(r'[<>:"/\\|?*]', '_', request.filename)[:80]
     return StreamingResponse(
         buf,
@@ -787,6 +871,8 @@ async def get_scenarios():
 # ================= 12. Admin Dashboard =================
 @app.get("/api/admin/events")
 async def get_admin_events(password: str = ""):
+    if password != "admin888":
+        raise HTTPException(401, "密码错误")
     events = []
     if EVENT_LOG_PATH.exists():
         with open(EVENT_LOG_PATH, "r", encoding="utf-8") as f:
