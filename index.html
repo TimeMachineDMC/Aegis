@@ -63,6 +63,7 @@
                 opacity: 0;
                 transform: translateY(14px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -70,10 +71,12 @@
         }
 
         @keyframes pulse-dot {
+
             0%,
             100% {
                 box-shadow: 0 0 0 0 currentColor;
             }
+
             50% {
                 box-shadow: 0 0 0 6px transparent;
             }
@@ -356,9 +359,11 @@
         ::-webkit-scrollbar {
             width: 5px;
         }
+
         ::-webkit-scrollbar-track {
             background: transparent;
         }
+
         ::-webkit-scrollbar-thumb {
             background: rgba(255, 255, 255, 0.06);
             border-radius: 10px;
@@ -485,10 +490,12 @@
         }
 
         @keyframes shieldPulse {
+
             0%,
             100% {
                 filter: drop-shadow(0 4px 24px rgba(201, 168, 76, 0.2));
             }
+
             50% {
                 filter: drop-shadow(0 4px 40px rgba(201, 168, 76, 0.4));
             }
@@ -503,10 +510,13 @@
         }
 
         @keyframes borderPulse {
-            0%, 100% {
+
+            0%,
+            100% {
                 border-color: rgba(255, 255, 255, 0.06);
                 box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
             }
+
             50% {
                 border-color: rgba(201, 168, 76, 0.6);
                 box-shadow: 0 0 20px rgba(201, 168, 76, 0.2);
@@ -652,7 +662,8 @@
                     <div class="mt-4 pt-3 text-center" style="border-top:1px solid var(--border);">
                         <p class="text-xs mb-2" style="color:var(--text3);">加速到期可行性</p>
                         <div class="flex justify-center">
-                            <div class="score-ring" id="score-ring" style="border-color:#374151;color:var(--text3);">--</div>
+                            <div class="score-ring" id="score-ring" style="border-color:#374151;color:var(--text3);">--
+                            </div>
                         </div>
                         <p class="text-xs mt-1" id="score-label" style="color:var(--text3);">等待分析</p>
                     </div>
@@ -664,7 +675,8 @@
                 <!-- Scenario bar -->
                 <div class="pt-4 pb-2 flex items-center gap-3 flex-wrap">
                     <span id="chat-scenario-badge" class="tag tag-slate">通用法律咨询</span>
-                    <button onclick="switchView('landing')" class="text-xs underline underline-offset-4 hover:text-white transition"
+                    <button onclick="switchView('landing')"
+                        class="text-xs underline underline-offset-4 hover:text-white transition"
                         style="color:var(--text3);">切换场景</button>
                     <span class="text-xs ml-auto" style="color:var(--text3);">DeepSeek-V4</span>
                 </div>
@@ -697,8 +709,9 @@
                             <input type="file" id="file-input" accept="image/*,.pdf,.docx,.doc,.txt"
                                 onchange="handleFileUpload(this)" class="hidden" multiple>
                         </label>
-                        <button onclick="insertSampleQuestion()" class="p-2 rounded-lg hover:bg-white/5 transition flex-shrink-0"
-                            style="color:var(--text3);" title="示例问题">
+                        <button onclick="insertSampleQuestion()"
+                            class="p-2 rounded-lg hover:bg-white/5 transition flex-shrink-0" style="color:var(--text3);"
+                            title="示例问题">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
                                     d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
@@ -737,9 +750,11 @@
             <div class="grid grid-cols-1 lg:grid-cols-4 gap-5">
                 <div class="col-span-1 space-y-4">
                     <div class="glass-card p-4">
-                        <h3 class="text-xs font-bold uppercase tracking-widest mb-3" style="color:var(--gold-dim);">文书类型</h3>
+                        <h3 class="text-xs font-bold uppercase tracking-widest mb-3" style="color:var(--gold-dim);">文书类型
+                        </h3>
                         <div class="space-y-1">
-                            <label class="radio-label"><input type="radio" name="doc_type" value="complaint_acceleration" checked
+                            <label class="radio-label"><input type="radio" name="doc_type"
+                                    value="complaint_acceleration" checked
                                     onchange="switchTemplate(this.value)">民事起诉状（加速到期）</label>
                             <label class="radio-label"><input type="radio" name="doc_type" value="complaint_expired"
                                     onchange="switchTemplate(this.value)">民事起诉状（期限届满未出资）</label>
@@ -747,34 +762,50 @@
                                     onchange="switchTemplate(this.value)">申请追加被执行人</label>
                             <label class="radio-label"><input type="radio" name="doc_type" value="preservation"
                                     onchange="switchTemplate(this.value)">财产保全申请书</label>
-                            <label class="radio-label"><input type="radio" name="doc_type" value="prelitigation_preservation"
+                            <label class="radio-label"><input type="radio" name="doc_type"
+                                    value="prelitigation_preservation"
                                     onchange="switchTemplate(this.value)">诉前财产保全申请书</label>
                             <label class="radio-label"><input type="radio" name="doc_type" value="evidence_list"
                                     onchange="switchTemplate(this.value)">证据清单</label>
                         </div>
                     </div>
                     <div class="glass-card p-4">
-                        <h3 class="text-xs font-bold uppercase tracking-widest mb-3" style="color:var(--text3);">AI 提取变量</h3>
+                        <h3 class="text-xs font-bold uppercase tracking-widest mb-3" style="color:var(--text3);">AI 提取变量
+                        </h3>
                         <div class="space-y-2 text-xs">
-                            <div class="flex justify-between"><span style="color:var(--text3);">债权人</span><span class="tag tag-gold" id="var-creditor">待提取</span></div>
-                            <div class="flex justify-between"><span style="color:var(--text3);">身份证号</span><span style="color:var(--text2);" id="var-creditor-id">待提取</span></div>
-                            <div class="flex justify-between"><span style="color:var(--text3);">债务人公司</span><span class="tag tag-slate" id="var-debtor">待提取</span></div>
-                            <div class="flex justify-between"><span style="color:var(--text3);">统一信用代码</span><span style="color:var(--text2);" id="var-debtor-code">待提取</span></div>
-                            <div class="flex justify-between"><span style="color:var(--text3);">未实缴股东</span><span class="tag tag-slate" id="var-shareholder">待提取</span></div>
-                            <div class="flex justify-between"><span style="color:var(--text3);">涉案金额</span><span class="tag tag-red" id="var-amount">待提取</span></div>
-                            <div class="flex justify-between"><span style="color:var(--text3);">认缴出资</span><span class="tag tag-slate" id="var-capital">待提取</span></div>
-                            <div class="flex justify-between"><span style="color:var(--text3);">实缴出资</span><span class="tag tag-slate" id="var-paid">待提取</span></div>
-                            <div class="flex justify-between"><span style="color:var(--text3);">未实缴金额</span><span style="color:#f87171;" id="var-unpaid">待提取</span></div>
-                            <div class="flex justify-between"><span style="color:var(--text3);">出资期限</span><span style="color:var(--text2);" id="var-deadline">待提取</span></div>
-                            <div class="flex justify-between"><span style="color:var(--text3);">管辖法院</span><span style="color:var(--text2);" id="var-court">待提取</span></div>
+                            <div class="flex justify-between"><span style="color:var(--text3);">债权人</span><span
+                                    class="tag tag-gold" id="var-creditor">待提取</span></div>
+                            <div class="flex justify-between"><span style="color:var(--text3);">身份证号</span><span
+                                    style="color:var(--text2);" id="var-creditor-id">待提取</span></div>
+                            <div class="flex justify-between"><span style="color:var(--text3);">债务人公司</span><span
+                                    class="tag tag-slate" id="var-debtor">待提取</span></div>
+                            <div class="flex justify-between"><span style="color:var(--text3);">统一信用代码</span><span
+                                    style="color:var(--text2);" id="var-debtor-code">待提取</span></div>
+                            <div class="flex justify-between"><span style="color:var(--text3);">未实缴股东</span><span
+                                    class="tag tag-slate" id="var-shareholder">待提取</span></div>
+                            <div class="flex justify-between"><span style="color:var(--text3);">涉案金额</span><span
+                                    class="tag tag-red" id="var-amount">待提取</span></div>
+                            <div class="flex justify-between"><span style="color:var(--text3);">认缴出资</span><span
+                                    class="tag tag-slate" id="var-capital">待提取</span></div>
+                            <div class="flex justify-between"><span style="color:var(--text3);">实缴出资</span><span
+                                    class="tag tag-slate" id="var-paid">待提取</span></div>
+                            <div class="flex justify-between"><span style="color:var(--text3);">未实缴金额</span><span
+                                    style="color:#f87171;" id="var-unpaid">待提取</span></div>
+                            <div class="flex justify-between"><span style="color:var(--text3);">出资期限</span><span
+                                    style="color:var(--text2);" id="var-deadline">待提取</span></div>
+                            <div class="flex justify-between"><span style="color:var(--text3);">管辖法院</span><span
+                                    style="color:var(--text2);" id="var-court">待提取</span></div>
                         </div>
                         <div class="flex gap-2 mt-4">
-                            <button onclick="loadDemoProfile()" class="btn-ghost w-full text-xs py-2" style="font-size:10px;">📋 载入演示数据</button>
-                            <button onclick="refreshTemplate()" class="btn-ghost text-xs py-2" style="font-size:10px;">🔄</button>
+                            <button onclick="loadDemoProfile()" class="btn-ghost w-full text-xs py-2"
+                                style="font-size:10px;">📋 载入演示数据</button>
+                            <button onclick="refreshTemplate()" class="btn-ghost text-xs py-2"
+                                style="font-size:10px;">🔄</button>
                         </div>
                     </div>
                     <div class="glass-card p-4">
-                        <h3 class="text-xs font-bold uppercase tracking-widest mb-3" style="color:var(--gold-dim);">白话说明</h3>
+                        <h3 class="text-xs font-bold uppercase tracking-widest mb-3" style="color:var(--gold-dim);">白话说明
+                        </h3>
                         <div id="doc-guide-card" class="text-xs leading-relaxed space-y-2" style="color:var(--text2);">
                             <p>生成文书后，这里会同步解释材料的用途、需要核对的内容和下一步提交方式。</p>
                         </div>
@@ -799,7 +830,8 @@
                 <p class="text-xs" style="color:var(--text3);">近七天咨询记录、文书导出与平台事件概览。</p>
             </div>
             <button type="button" onclick="loadAdminRecords()"
-                class="self-start md:self-auto btn-ghost text-xs px-4 py-2 rounded-lg border" style="border-color:var(--border);">
+                class="self-start md:self-auto btn-ghost text-xs px-4 py-2 rounded-lg border"
+                style="border-color:var(--border);">
                 刷新记录
             </button>
         </div>
@@ -831,13 +863,15 @@
         </section>
 
         <section id="admin-case-detail" class="hidden mb-8 glass-card overflow-hidden">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-5" style="border-bottom:1px solid var(--border);">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-5"
+                style="border-bottom:1px solid var(--border);">
                 <div>
                     <p class="text-xs font-bold tracking-widest uppercase mb-1" style="color:var(--gold-dim);">案件详情</p>
                     <h3 id="admin-detail-title" class="text-lg font-bold text-white">--</h3>
                 </div>
                 <button type="button" onclick="closeAdminDetail()"
-                    class="self-start md:self-auto text-xs hover:opacity-80 transition-opacity" style="color:var(--text3);">关闭</button>
+                    class="self-start md:self-auto text-xs hover:opacity-80 transition-opacity"
+                    style="color:var(--text3);">关闭</button>
             </div>
             <div class="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-0">
                 <div class="p-5" style="border-right:1px solid var(--border);">
@@ -848,7 +882,8 @@
                     </div>
                     <div class="mt-5">
                         <p class="text-xs font-bold mb-2" style="color:var(--text3);">AI 答复 / 处理记录</p>
-                        <div id="admin-detail-answer" class="text-sm leading-relaxed max-h-48 overflow-y-auto pr-2" style="color:var(--text2);"></div>
+                        <div id="admin-detail-answer" class="text-sm leading-relaxed max-h-48 overflow-y-auto pr-2"
+                            style="color:var(--text2);"></div>
                     </div>
                 </div>
                 <div class="p-5">
@@ -890,7 +925,7 @@
     <!-- ==================== SCRIPTS ==================== -->
     <script>
         // GitHub Pages 给其他设备使用时必须走公网 HTTPS 后端。cpolar 地址变化后，只改下面这一行。
-        const PAGE_API_BASE_URL = "https://17bb5e19.r39.cpolar.top";
+        const PAGE_API_BASE_URL = "https://212c7c3a.r39.cpolar.top";
         const LOCAL_BROWSER_API_BASE_URL = "http://127.0.0.1:8080";
         const LOCAL_API_BASE_URL = window.location.protocol === "file:" ? LOCAL_BROWSER_API_BASE_URL : window.location.origin;
         const apiFromUrl = new URLSearchParams(window.location.search).get("api");
@@ -981,7 +1016,7 @@
                 icon: "📅",
                 primary: false,
                 evidenceItems: ["债权发生时间证明", "公司延长出资期限的工商变更记录", "债务发生时的公司章程",
-                "股东会关于延长出资期限的决议"],
+                    "股东会关于延长出资期限的决议"],
                 welcome: `您选择了 **场景三：债务发生后延长出资期限**。
 
 九民纪要第6条第(2)项明确规定：公司债务产生后，通过股东会决议延长股东出资期限的，债权人可以主张加速到期。
@@ -1301,7 +1336,7 @@
             };
             const gt = g.length ? g.slice(0, 3).map(x => `<li>${escapeHtml(x)}</li>`).join('') :
                 '<li>目前无明显缺口，但仍需核对原件、签名、日期和联系方式。</li>';
-            return `<p><strong style="color:#e5e7eb;">用途：</strong>${purposes[type]||'用于维权。'}</p><p><strong style="color:#e5e7eb;">已识别关键信息：</strong>债务人 <strong>${escapeHtml(d)}</strong>，金额 <strong>${escapeHtml(a)}</strong>。</p><p><strong style="color:#e5e7eb;">签字前重点核对：</strong>${checks[type]||'主体信息、金额、日期。'}</p><p><strong style="color:#e5e7eb;">还建议补充：</strong></p><ol style="padding-left:1.2em;list-style:decimal;">${gt}</ol><p><strong style="color:#e5e7eb;">下一步：</strong>核对内容无误后导出，签字/盖章，按法院要求提交。</p>`;
+            return `<p><strong style="color:#e5e7eb;">用途：</strong>${purposes[type] || '用于维权。'}</p><p><strong style="color:#e5e7eb;">已识别关键信息：</strong>债务人 <strong>${escapeHtml(d)}</strong>，金额 <strong>${escapeHtml(a)}</strong>。</p><p><strong style="color:#e5e7eb;">签字前重点核对：</strong>${checks[type] || '主体信息、金额、日期。'}</p><p><strong style="color:#e5e7eb;">还建议补充：</strong></p><ol style="padding-left:1.2em;list-style:decimal;">${gt}</ol><p><strong style="color:#e5e7eb;">下一步：</strong>核对内容无误后导出，签字/盖章，按法院要求提交。</p>`;
         }
 
         // ===== STATE =====
@@ -1336,13 +1371,13 @@
             const g = document.getElementById('scenario-grid');
             if (!g) return;
             g.innerHTML = Object.entries(SCENARIOS).map(([id, s]) => `
-                <div class="scenario-card ${s.primary?'primary':''}" onclick="selectScenario('${id}')">
+                <div class="scenario-card ${s.primary ? 'primary' : ''}" onclick="selectScenario('${id}')">
                     <div class="flex items-start gap-4">
                         <span class="text-2xl flex-shrink-0">${s.icon}</span>
                         <div>
                             <div class="flex items-center gap-2 mb-1">
                                 <h3 class="font-semibold text-white text-sm">${s.title}</h3>
-                                ${s.primary?'<span class="tag tag-gold" style="font-size:10px;">主线</span>':''}
+                                ${s.primary ? '<span class="tag tag-gold" style="font-size:10px;">主线</span>' : ''}
                             </div>
                             <p class="text-xs" style="color:var(--text3);">${s.desc}</p>
                         </div>
@@ -1404,9 +1439,13 @@
             const b = document.getElementById('chat-scenario-badge');
             if (!b) return;
             const s = SCENARIOS[id];
-            if (s) { b.textContent = `${s.icon} 场景${id}`;
-                b.className = s.primary ? 'tag tag-gold' : 'tag tag-slate'; } else { b.textContent = '通用法律咨询';
-                b.className = 'tag tag-slate'; }
+            if (s) {
+                b.textContent = `${s.icon} 场景${id}`;
+                b.className = s.primary ? 'tag tag-gold' : 'tag tag-slate';
+            } else {
+                b.textContent = '通用法律咨询';
+                b.className = 'tag tag-slate';
+            }
         }
 
         // ===== EVIDENCE PANEL (Left Sidebar) =====
@@ -1474,7 +1513,7 @@
             panel.innerHTML = `
                 <p class="text-xs mb-2" style="color:var(--text2);">系统已根据您的案情整理出以下行动清单：</p>
                 <ul class="space-y-2 text-xs" style="color:var(--text);">
-                    ${nextSteps.slice(0, 5).map((s, i) => `<li class="flex gap-2"><span style="color:var(--gold);">${i+1}.</span><span>${escapeHtml(s)}</span></li>`).join('')}
+                    ${nextSteps.slice(0, 5).map((s, i) => `<li class="flex gap-2"><span style="color:var(--gold);">${i + 1}.</span><span>${escapeHtml(s)}</span></li>`).join('')}
                 </ul>`;
         }
 
@@ -1520,9 +1559,9 @@
                 <li class="flex gap-2 relative">
                     <span class="tl-dot"></span>
                     <div>
-                        <p class="text-xs" style="color:var(--text3);">${escapeHtml(n.date||'')}</p>
-                        <p class="text-xs" style="color:var(--text);">${escapeHtml(n.title||'')}</p>
-                        ${n.detail?`<p class="text-xs mt-0.5" style="color:var(--text3);">${escapeHtml(n.detail)}</p>`:''}
+                        <p class="text-xs" style="color:var(--text3);">${escapeHtml(n.date || '')}</p>
+                        <p class="text-xs" style="color:var(--text);">${escapeHtml(n.title || '')}</p>
+                        ${n.detail ? `<p class="text-xs mt-0.5" style="color:var(--text3);">${escapeHtml(n.detail)}</p>` : ''}
                     </div>
                 </li>`).join('');
         }
@@ -1531,15 +1570,19 @@
             if (!profile) return;
             const nodes = [];
             if (profile.debt_amount && profile.debt_amount !== '待补充') {
-                nodes.push({ date: '债务形成', title: `债务金额 ${profile.debt_amount}`,
-                    detail: profile.debt_basis !== '待补充' ? profile.debt_basis : '' });
+                nodes.push({
+                    date: '债务形成', title: `债务金额 ${profile.debt_amount}`,
+                    detail: profile.debt_basis !== '待补充' ? profile.debt_basis : ''
+                });
             }
             if (profile.debtor_company && profile.debtor_company !== '待补充') {
                 nodes.push({ date: '债务人', title: profile.debtor_company, detail: '已识别债务人主体' });
             }
             if (profile.existing_evidence && profile.existing_evidence.length > 0) {
-                nodes.push({ date: '已收集证据', title: `${profile.existing_evidence.length} 项证据`,
-                    detail: profile.existing_evidence.slice(0, 3).join('、') });
+                nodes.push({
+                    date: '已收集证据', title: `${profile.existing_evidence.length} 项证据`,
+                    detail: profile.existing_evidence.slice(0, 3).join('、')
+                });
             }
             nodes.push({ date: '当前', title: '等待进一步分析', detail: '请继续提供信息或请求AI研判' });
             caseTimelineNodes = nodes;
@@ -1704,7 +1747,7 @@
                                 updateScoreFromContent(fullContent);
                                 updateEvidenceFromContent(fullContent);
                             }
-                        } catch (e) {}
+                        } catch (e) { }
                     }
                 }
                 if (currentSources && currentSources.length > 0 && aiDiv) {
@@ -1742,16 +1785,20 @@
                 div.innerHTML = `<div class="flex justify-end"><div class="max-w-[85%] px-5 py-3 rounded-2xl rounded-br-md" style="background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.12);"><p class="text-sm text-white leading-relaxed whitespace-pre-wrap">${escapeHtml(text)}</p></div></div>`;
             } else {
                 div.innerHTML = `<div class="flex gap-4"><span class="text-2xl flex-shrink-0 select-none" style="margin-top:2px;">🛡</span><div class="flex-1 min-w-0"><p class="text-xs mb-2 font-medium" style="color:var(--gold-dim);">Justitia · AI 法律顾问</p><div class="ai-content bubble-ai rounded-r-xl rounded-bl-xl px-6 py-5 markdown-body"></div></div></div>`;
-                if (text) { const cd = div.querySelector('.ai-content'); if (cd) cd.innerHTML = marked.parse(
-                    text); }
+                if (text) {
+                    const cd = div.querySelector('.ai-content'); if (cd) cd.innerHTML = marked.parse(
+                        text);
+                }
             }
             container.appendChild(div);
             scrollChat();
             return div;
         }
 
-        function scrollChat() { const el = document.getElementById('chat-messages'); if (el) el.scrollTop = el
-            .scrollHeight; }
+        function scrollChat() {
+            const el = document.getElementById('chat-messages'); if (el) el.scrollTop = el
+                .scrollHeight;
+        }
 
         // ===== Real-time updates from AI response =====
         function updateScoreFromContent(content) {
@@ -1865,9 +1912,9 @@
                     // Show extracted text in chat
                     const preview = (data.content_preview || data.full_content || '').substring(0, 400);
                     if (preview) {
-                        const engineInfo = data.ocr_engine ? ` (${data.ocr_engine}${data.ocr_confidence ? ', 置信度 ' + (data.ocr_confidence*100).toFixed(0) + '%' : ''})` : '';
+                        const engineInfo = data.ocr_engine ? ` (${data.ocr_engine}${data.ocr_confidence ? ', 置信度 ' + (data.ocr_confidence * 100).toFixed(0) + '%' : ''})` : '';
                         appendMessage('ai',
-                            `**文件识别结果**${engineInfo}\n\n\`\`\`\n${preview}${(data.full_content||'').length > 400 ? '...' : ''}\n\`\`\`\n\n已提取文本，您可以基于这些内容继续提问。`
+                            `**文件识别结果**${engineInfo}\n\n\`\`\`\n${preview}${(data.full_content || '').length > 400 ? '...' : ''}\n\`\`\`\n\n已提取文本，您可以基于这些内容继续提问。`
                         );
                         chatHistory.push({ role: "user", content: `[上传文件: ${file.name}]` });
                         chatHistory.push({ role: "assistant", content: `文件识别结果：\n${data.full_content || data.content_preview}` });
@@ -1951,8 +1998,10 @@
         }
 
         // ===== DOCUMENT WORKBENCH =====
-        function initDocView() { const c = document.querySelector('input[name=doc_type]:checked'); if (c) switchTemplate(
-                c.value); }
+        function initDocView() {
+            const c = document.querySelector('input[name=doc_type]:checked'); if (c) switchTemplate(
+                c.value);
+        }
 
         function fillTemplate(html, profile) {
             if (!profile) return html;
@@ -2055,12 +2104,16 @@
             const filledHtml = fillTemplate(docTemplates[type], p);
             editor.style.opacity = '0';
             editor.style.transition = 'opacity 0.15s';
-            setTimeout(() => { editor.innerHTML = filledHtml;
-                editor.style.opacity = '1'; }, 150);
+            setTimeout(() => {
+                editor.innerHTML = filledHtml;
+                editor.style.opacity = '1';
+            }, 150);
         }
 
-        function refreshTemplate() { const c = document.querySelector('input[name=doc_type]:checked'); if (c) switchTemplate(
-                c.value); }
+        function refreshTemplate() {
+            const c = document.querySelector('input[name=doc_type]:checked'); if (c) switchTemplate(
+                c.value);
+        }
 
         async function exportDocx() {
             const editor = document.getElementById('editable-doc');
@@ -2259,8 +2312,10 @@
             loadAdminRecords();
         }
 
-        function escapeHtml(s) { const d = document.createElement('div');
-            d.textContent = s; return d.innerHTML; }
+        function escapeHtml(s) {
+            const d = document.createElement('div');
+            d.textContent = s; return d.innerHTML;
+        }
 
         // ===== INIT =====
         marked.setOptions({ breaks: true, gfm: true });
