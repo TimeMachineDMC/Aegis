@@ -23,3 +23,5 @@ Data/
 Doc/
 
 Model/
+Model/chroma_db/chroma.sqlite3
+Model\chroma_db
